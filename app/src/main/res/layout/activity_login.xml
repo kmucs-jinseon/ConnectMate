@@ -8,38 +8,39 @@
     android:orientation="vertical"
     android:gravity="center_horizontal"
     android:padding="24dp"
-    android:background="@color/white">
+    android:background="@color/white"
+    tools:context=".LoginActivity">
 
     <!-- App Logo -->
     <ImageView
         android:id="@+id/logoImageView"
         android:layout_width="120dp"
         android:layout_height="120dp"
+        android:layout_marginTop="30dp"
         android:layout_marginBottom="16dp"
         android:src="@drawable/main_logo"
         android:contentDescription="@string/app_logo" />
-
 
     <!-- App Name -->
     <TextView
         android:id="@+id/appNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:fontFamily="sans-serif-medium"
         android:text="Connect Mate"
         android:textColor="#4479CE"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="32dp"
         tools:ignore="HardcodedText" />
 
-    <!-- Username / Email Input -->
+    <!-- Email Input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/emailInputLayout"
+        style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Email"
-        style="@style/InputLayoutStyle"
         tools:ignore="HardcodedText">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -52,10 +53,10 @@
     <!-- Password Input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/passwordInputLayout"
+        style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Password"
-        style="@style/InputLayoutStyle"
         app:endIconMode="password_toggle"
         tools:ignore="HardcodedText">
 
@@ -73,10 +74,10 @@
         style="@style/PrimaryButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:background="@color/main_blue"
-        android:elevation="2dp"
         android:text="Login"
+        android:backgroundTint="@color/primary_blue"
+        android:layout_marginTop="32dp"
+        android:elevation="2dp"
         tools:ignore="HardcodedText" />
 
     <!-- Sign Up Link -->
@@ -84,10 +85,11 @@
         android:id="@+id/signUpTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Sign Up"
+        android:textColor="@color/primary_blue"
+        android:textSize="14sp"
         android:layout_marginTop="16dp"
         android:fontFamily="sans-serif-medium"
-        android:text="Sign Up"
-        android:textColorLink="@color/main_blue"
-        android:textSize="14sp" />
+        tools:ignore="HardcodedText" />
 
 </LinearLayout>

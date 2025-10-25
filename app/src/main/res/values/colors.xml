@@ -1,6 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="main_blue">#457ACD</color>
+    <!-- Primary Colors -->
+    <color name="primary_blue">#307CD4</color>
+    <color name="primary_blue_dark">#2868B8</color>
+
+    <!-- Accent Colors -->
+    <color name="mint_400">#2DD4BF</color>
+    <color name="pink_400">#F472B6</color>
+
+    <!-- Neutrals -->
+    <color name="white">#FFFFFF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_700">#374151</color>
 </resources>
