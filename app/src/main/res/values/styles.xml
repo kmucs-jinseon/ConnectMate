@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="InputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <!-- Outline and hint colors -->
+        <item name="boxStrokeColor">@color/mint_400</item>
+        <item name="boxBackgroundColor">@color/white</item>
+        <item name="hintTextColor">@color/gray_700</item>
+
+        <!-- Label animation and style -->
+        <item name="hintAnimationEnabled">true</item>
+        <item name="hintTextAppearance">@style/TextAppearance.MaterialComponents.Body1</item>
+
+        <!-- Corner radius for rounded edges -->
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.App.Corner.Medium</item>
+
+        <!-- Error and helper text colors -->
+        <item name="errorTextColor">@color/pink_400</item>
+        <item name="helperTextTextColor">@color/gray_500</item>
+
+        <!-- Focused and unfocused stroke colors -->
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="boxStrokeWidth">1dp</item>
+    </style>
+
+
+    <style name="ShapeAppearanceOverlay.App.Corner.Medium" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
+
+</resources>

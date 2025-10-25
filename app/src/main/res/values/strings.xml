@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ConnectMate</string>
+    <string name="app_logo">mainLogo</string>
 </resources>
