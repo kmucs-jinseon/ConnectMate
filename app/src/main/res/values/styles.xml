@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Application Theme -->
+    <!-- =============================== -->
+    <!--        Application Theme        -->
+    <!-- =============================== -->
     <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryDark">@color/primary_blue_dark</item>
@@ -11,45 +13,54 @@
         <item name="android:windowBackground">@color/white</item>
     </style>
 
-    <!-- TextInputLayout Styling for Login Screen -->
+    <!-- =============================== -->
+    <!--      TextInputLayout Style      -->
+    <!-- =============================== -->
     <style name="InputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <!-- Outline and background -->
         <item name="boxStrokeColor">@color/primary_blue</item>
         <item name="boxBackgroundColor">@color/white</item>
-
-        <!-- Hint & Label Text -->
         <item name="hintTextColor">@color/gray_700</item>
         <item name="hintAnimationEnabled">true</item>
         <item name="hintTextAppearance">@style/TextAppearance.MaterialComponents.Body1</item>
-
-        <!-- Rounded corners -->
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.App.Corner.Medium</item>
-
-        <!-- Error & Helper Text -->
         <item name="errorTextColor">@color/pink_400</item>
         <item name="helperTextTextColor">@color/gray_500</item>
-
-        <!-- Focused state -->
         <item name="boxStrokeWidthFocused">2dp</item>
         <item name="boxStrokeWidth">1dp</item>
-
-        <!-- End icon tint (for password toggle) -->
         <item name="endIconTint">@color/primary_blue</item>
     </style>
 
-    <!-- Rounded Corner Shape -->
+    <!-- =============================== -->
+    <!--        Rounded Corner Shape      -->
+    <!-- =============================== -->
     <style name="ShapeAppearanceOverlay.App.Corner.Medium" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">10dp</item>
     </style>
 
-    <!-- Primary Button Style -->
+    <!-- =============================== -->
+    <!--        Primary Button Style      -->
+    <!-- =============================== -->
     <style name="PrimaryButton" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/primary_blue</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/white</item>
-        <item name="cornerRadius">8dp</item>
         <item name="android:textSize">16sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="backgroundTint">@color/primary_blue</item>
+    </style>
+
+    <!-- =============================== -->
+    <!--         Gradient Button Style    -->
+    <!-- =============================== -->
+    <style name="GradientButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:padding">12dp</item>
+        <item name="cornerRadius">12dp</item>
     </style>
 
 </resources>
