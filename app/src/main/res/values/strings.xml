@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- App Info -->
+    <!-- App Name -->
     <string name="app_name">MeetUp</string>
     <string name="connect_mate">Connect Mate</string>
-    <string name="splash_tagline">Find your next connection</string>
-    <string name="app_logo">App Logo</string>
+    <string name="tagline">Connect. Together. Grow.</string>
 
-    <!-- Auth -->
+    <!-- Login/Signup -->
     <string name="login">Login</string>
     <string name="sign_up">Sign Up</string>
     <string name="email_username">Email/Username</string>
@@ -27,6 +26,7 @@
     <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="more">More</string>
+    <string name="app_logo">App Logo</string>
 
     <!-- Map Screen -->
     <string name="nearby_locations">Nearby Locations</string>
@@ -49,7 +49,7 @@
     <string name="comments">Comments</string>
     <string name="events_attended">Events attended</string>
 
-    <!-- Create Activity -->
+    <!-- Create Activity Screen -->
     <string name="create_activity">Create Activity</string>
     <string name="share_your_idea">Share your idea with the community</string>
     <string name="activity_title">Activity Title</string>
@@ -70,7 +70,7 @@
     <string name="privacy">Privacy</string>
     <string name="preferences">Preferences</string>
     <string name="share_app">Share App</string>
-    <string name="help_support">Help &amp; Support</string>
+    <string name="help_support">Help Support</string>
     <string name="about">About</string>
     <string name="logout">Logout</string>
 
