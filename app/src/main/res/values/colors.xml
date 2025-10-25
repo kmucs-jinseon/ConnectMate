@@ -1,35 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Primary Colors -->
     <color name="primary_blue">#307CD4</color>
     <color name="primary_blue_dark">#2868B8</color>
-    <color name="blue_500">#3B82F6</color>
-    <color name="blue_700">#1D4ED8</color>
 
-    <!-- Mint Colors -->
-    <color name="mint_50">#F0FDF9</color>
-    <color name="mint_100">#CCFBEF</color>
-    <color name="mint_200">#99F6E0</color>
-    <color name="mint_300">#5FE9D0</color>
+    <!-- Accent Colors -->
     <color name="mint_400">#2DD4BF</color>
-    <color name="mint_500">#14B8A6</color>
-
-    <!-- Pink Colors -->
-    <color name="pink_50">#FDF2F8</color>
-    <color name="pink_100">#FCE7F3</color>
-    <color name="pink_200">#FBCFE8</color>
-    <color name="pink_300">#F9A8D4</color>
     <color name="pink_400">#F472B6</color>
-    <color name="pink_500">#EC4899</color>
 
-    <!-- Neutral Colors -->
+    <!-- Neutrals -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="gray_50">#F9FAFB</color>
-    <color name="gray_100">#F3F4F6</color>
-    <color name="gray_200">#E5E7EB</color>
     <color name="gray_500">#6B7280</color>
-    <color name="gray_600">#4B5563</color>
     <color name="gray_700">#374151</color>
-    <color name="gray_900">#111827</color>
 </resources>
