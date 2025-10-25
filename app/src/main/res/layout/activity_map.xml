@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gray_50">
+    android:background="@color/gray_500">
 
     <!-- Header -->
     <com.google.android.material.appbar.AppBarLayout
@@ -72,8 +72,8 @@
             android:layout_margin="16dp"
             android:background="@android:color/white"
             android:visibility="gone"
-            app:boxStrokeColor="@color/blue_500"
-            app:hintTextColor="@color/blue_500">
+            app:boxStrokeColor="@color/primary_blue"
+            app:hintTextColor="@color/primary_blue">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/search_edit_text"
@@ -106,7 +106,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:text="@string/nearby_locations"
-                android:textColor="@color/gray_900"
+                android:textColor="@color/gray_700"
                 android:textSize="18sp" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -128,7 +128,7 @@
         android:layout_marginBottom="96dp"
         android:contentDescription="@string/create_activity"
         android:src="@drawable/ic_plus"
-        app:backgroundTint="@color/blue_500"
+        app:backgroundTint="@color/primary_blue"
         app:elevation="6dp"
         app:pressedTranslationZ="12dp"
         app:shapeAppearanceOverlay="@style/Widget.MaterialComponents.FloatingActionButton"
