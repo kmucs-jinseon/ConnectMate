@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">MeetUp</string>
+    <string name="connect_mate">Connect Mate</string>
+    <string name="tagline">Connect. Together. Grow.</string>
+
+    <!-- Login/Signup -->
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="email_username">Email/Username</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="full_name">Full Name</string>
+    <string name="already_have_account">Already have an account?</string>
+
+    <!-- Navigation -->
+    <string name="map">Map</string>
+    <string name="chat">Chat</string>
+    <string name="profile">Profile</string>
+    <string name="settings">Settings</string>
+
+    <!-- Common -->
+    <string name="search">Search</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="more">More</string>
+    <string name="app_logo">App Logo</string>
+
+    <!-- Map Screen -->
+    <string name="nearby_locations">Nearby Locations</string>
+    <string name="location_icon">Location Icon</string>
+
+    <!-- Chat Screen -->
+    <string name="messages">Messages</string>
+    <string name="search_messages">Search messages…</string>
+
+    <!-- Profile Screen -->
+    <string name="john_doe">John Doe</string>
+    <string name="sample_bio">Community builder | Tech enthusiast | Coffee lover ☕</string>
+    <string name="posts">Posts</string>
+    <string name="followers">Followers</string>
+    <string name="following">Following</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="my_communities">My Communities</string>
+    <string name="activity">Activity</string>
+    <string name="posts_this_month">Posts this month</string>
+    <string name="comments">Comments</string>
+    <string name="events_attended">Events attended</string>
+
+    <!-- Create Activity Screen -->
+    <string name="create_activity">Create Activity</string>
+    <string name="share_your_idea">Share your idea with the community</string>
+    <string name="activity_title">Activity Title</string>
+    <string name="description">Description</string>
+    <string name="category">Category</string>
+    <string name="date">Date</string>
+    <string name="time">Time</string>
+    <string name="location_optional">Location (Optional)</string>
+    <string name="participant_limit">Participant Limit</string>
+    <string name="visibility">Visibility</string>
+    <string name="public_visibility">Public</string>
+    <string name="private_visibility">Private</string>
+    <string name="hashtags">Hashtags</string>
+
+    <!-- Settings -->
+    <string name="account">Account</string>
+    <string name="notifications">Notifications</string>
+    <string name="privacy">Privacy</string>
+    <string name="preferences">Preferences</string>
+    <string name="share_app">Share App</string>
+    <string name="help_support">Help & Support</string>
+    <string name="about">About</string>
+    <string name="logout">Logout</string>
+
+    <!-- Visibility Options -->
+    <string-array name="visibility_options">
+        <item>Everyone</item>
+        <item>Friends Only</item>
+        <item>Only Me</item>
+    </string-array>
+
+    <string-array name="visibility_values">
+        <item>everyone</item>
+        <item>friends</item>
+        <item>only_me</item>
+    </string-array>
+</resources>
