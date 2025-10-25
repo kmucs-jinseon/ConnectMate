@@ -1,9 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
+    <!-- Base Theme -->
     <style name="Base.Theme.ConnectMate" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Customize your light & dark theme here -->
+        <item name="colorPrimary">@color/primary_blue</item>
+        <item name="colorPrimaryDark">@color/primary_blue_dark</item>
+        <item name="colorSecondary">@color/mint_400</item>
+        <item name="android:statusBarColor">@color/primary_blue_dark</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowBackground">@color/white</item>
     </style>
 
+    <!-- Main Application Theme -->
     <style name="Theme.ConnectMate" parent="Base.Theme.ConnectMate" />
+
+
+
+    <!-- Android 12+ splash theme with fallback -->
+    <style name="Theme.ConnectMate.Splash" parent="Theme.SplashScreen">
+        <!-- System splash screen (Android 12+) -->
+        <item name="windowSplashScreenBackground">@color/primary_blue</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/main_logo</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.ConnectMate</item>
+
+        <!-- Fallback for Android 11 and below -->
+        <item name="android:windowBackground">@drawable/gradient_blue</item>
+    </style>
+
 </resources>
+
+
+
