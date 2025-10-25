@@ -42,6 +42,7 @@
     <string name="posts">Posts</string>
     <string name="followers">Followers</string>
     <string name="following">Following</string>
+    <string name="splash_tagline">Connect, Share, and Discover</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="my_communities">My Communities</string>
     <string name="activity">Activity</string>
