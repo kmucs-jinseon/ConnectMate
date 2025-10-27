@@ -31,6 +31,8 @@
     <!-- Map Screen -->
     <string name="nearby_locations">Nearby Locations</string>
     <string name="location_icon">Location Icon</string>
+    <string name="community_gym">Community Gym</string>
+    <string name="fitness">Fitness</string>
 
     <!-- Chat Screen -->
     <string name="messages">Messages</string>
@@ -86,4 +88,8 @@
         <item>friends</item>
         <item>only_me</item>
     </string-array>
+
+    <!-- Firebase Google Sign-In -->
+    <!-- TODO: Replace with actual client_id from google-services.json after enabling Google Sign-In in Firebase Console -->
+    <string name="default_web_client_id">697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
 </resources>

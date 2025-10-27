@@ -2,7 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ============================================================ -->
+    <!-- Required Permissions -->
+    <!-- ============================================================ -->
+    <!-- Network access for authentication and API calls -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Location permissions for Google Maps -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -13,33 +22,90 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ConnectMate"
+        android:usesCleartextTraffic="false"
         tools:targetApi="31">
+
+        <!-- ============================================================ -->
+        <!-- Google Maps API Key -->
+        <!-- ============================================================ -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="YOUR_API_KEY" />
 
+        <!-- ============================================================ -->
+        <!-- Kakao SDK Configuration -->
+        <!-- ============================================================ -->
+        <meta-data
+            android:name="com.kakao.sdk.AppKey"
+            android:value="${KAKAO_APP_KEY}" />
+
+        <!-- ============================================================ -->
+        <!-- Splash Screen Activity (Entry Point) -->
+        <!-- ============================================================ -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.ConnectMate.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".MainActivity"
-            android:exported="false">
-        </activity>
+
+        <!-- ============================================================ -->
+        <!-- Authentication Activities -->
+        <!-- ============================================================ -->
         <activity
             android:name=".LoginActivity"
-            android:exported="false">
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
         </activity>
+
         <activity
             android:name=".SignUpActivity"
-            android:exported="false">
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
         </activity>
+
+        <!-- ============================================================ -->
+        <!-- Main Application Activities -->
+        <!-- ============================================================ -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:launchMode="singleTop">
+        </activity>
+
+        <activity
+            android:name=".MapActivity"
+            android:exported="false"
+            android:label="Map">
+        </activity>
+
+        <activity
+            android:name=".CreateActivityActivity"
+            android:exported="false"
+            android:label="Create Activity"
+            android:windowSoftInputMode="adjustResize">
+        </activity>
+
+        <!-- ============================================================ -->
+        <!-- Kakao Login Redirect Activity -->
+        <!-- ============================================================ -->
+        <!-- This activity handles OAuth callback from Kakao Login -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="oauth"
+                    android:scheme="kakao${KAKAO_APP_KEY}" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

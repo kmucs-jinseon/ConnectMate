@@ -92,4 +92,98 @@
         android:fontFamily="sans-serif-medium"
         tools:ignore="HardcodedText" />
 
+    <!-- Divider with "OR" text -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OR"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            tools:ignore="HardcodedText" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC" />
+    </LinearLayout>
+
+    <!-- Social Login Text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Continue with"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp"
+        tools:ignore="HardcodedText" />
+
+    <!-- Circular Social Login Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <!-- Google Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/googleSignInButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_google_bg"
+            android:src="@drawable/ic_google"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign in with Google"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+        <!-- Kakao Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/kakaoSignInButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_kakao_bg"
+            android:src="@drawable/ic_kakao"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign in with Kakao"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+        <!-- Naver Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/naverSignInButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_naver_bg"
+            android:src="@drawable/ic_naver"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign in with Naver"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+    </LinearLayout>
+
 </LinearLayout>

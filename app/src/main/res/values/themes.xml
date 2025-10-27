@@ -17,16 +17,12 @@
 
 
 
-    <!-- Android 12+ splash theme with fallback -->
-    <style name="Theme.ConnectMate.Splash" parent="Theme.SplashScreen">
-        <!-- System splash screen (Android 12+) -->
-        <item name="windowSplashScreenBackground">@color/primary_blue</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/main_logo</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
-        <item name="postSplashScreenTheme">@style/Theme.ConnectMate</item>
-
-        <!-- Fallback for Android 11 and below -->
+    <!-- Splash Screen Theme -->
+    <style name="Theme.ConnectMate.Splash" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/gradient_blue</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:statusBarColor">@color/primary_blue_dark</item>
     </style>
 
 

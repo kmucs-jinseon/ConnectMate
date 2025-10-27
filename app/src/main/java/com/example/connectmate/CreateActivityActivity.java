@@ -127,7 +127,8 @@ public class CreateActivityActivity extends AppCompatActivity {
                     + "해시태그: " + hashtags;
 
             Toast.makeText(this, "활동 생성 완료!\n" + summary, Toast.LENGTH_LONG).show();
-        });
+
             // TODO: 실제 저장 로직 추가
+        });
     }
 }
