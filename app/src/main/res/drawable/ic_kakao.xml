@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Kakao Talk Logo - Official Speech Bubble Design -->
+    <path
+        android:fillColor="#3C1E1E"
+        android:pathData="M24,6C13.51,6 5,12.95 5,21.5c0,5.43 3.79,10.17 9.48,12.67l-2.14,7.86c-0.15,0.56 0.44,1.01 0.95,0.72l10.17,-6.41c0.84,0.09 1.69,0.16 2.54,0.16 10.49,0 19,-6.95 19,-15.5S34.49,6 24,6z"/>
+
+    <!-- Inner speech bubble cutout for detail -->
+    <path
+        android:fillColor="#3C1E1E"
+        android:pathData="M24,10c-7.73,0 -14,5.19 -14,11.5S16.27,33 24,33c0.66,0 1.31,-0.04 1.95,-0.1l0.56,-0.06 5.76,3.63 -1.37,-5.05 0.45,-0.25c3.56,-1.98 5.85,-5.27 5.85,-9.17C37,15.19 31.73,10 24,10z"/>
+</vector>

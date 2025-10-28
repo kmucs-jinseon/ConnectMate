@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Naver "N" Logo - Official Design -->
+    <!-- The iconic bold "N" with connecting diagonal -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32.5,25.7L15.8,4H4v40h11.5V22.3L32.2,44H44V4H32.5z"/>
+</vector>
