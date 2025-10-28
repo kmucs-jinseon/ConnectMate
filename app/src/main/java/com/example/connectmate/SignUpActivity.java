@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,12 +22,13 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.kakao.sdk.auth.model.OAuthToken;
 import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
 import com.navercorp.nid.oauth.OAuthLoginCallback;
+
+import java.util.Objects;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
@@ -40,7 +40,7 @@ public class SignUpActivity extends AppCompatActivity {
     private TextInputEditText emailEditText;
     private TextInputEditText passwordEditText;
     private TextInputEditText confirmPasswordEditText;
-    private Button signUpButton;
+    private com.google.android.material.button.MaterialButton signUpButton;
     private TextView loginTextView;
     private ImageButton googleSignUpButton;
     private ImageButton kakaoSignUpButton;
@@ -112,7 +112,7 @@ public class SignUpActivity extends AppCompatActivity {
 
             String webClientId = getString(R.string.default_web_client_id);
 
-            if (webClientId != null && !webClientId.isEmpty() && !webClientId.equals("YOUR_WEB_CLIENT_ID_HERE")) {
+            if (!webClientId.isEmpty() && !webClientId.equals("YOUR_WEB_CLIENT_ID_HERE")) {
                 gsoBuilder.requestIdToken(webClientId);
             } else {
                 Log.w(TAG, "Google Sign-In: Web Client ID not configured");
@@ -172,12 +172,11 @@ public class SignUpActivity extends AppCompatActivity {
                     signUpButton.setEnabled(true);
                     if (task.isSuccessful()) {
                         Log.d(TAG, "createUserWithEmail:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
                         Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
                         Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                        Toast.makeText(SignUpActivity.this, "Sign up failed: " + task.getException().getMessage(),
+                        Toast.makeText(SignUpActivity.this, "Sign up failed: " + Objects.requireNonNull(task.getException()).getMessage(),
                                 Toast.LENGTH_LONG).show();
                     }
                 });
@@ -284,7 +283,6 @@ public class SignUpActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "signInWithCredential:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
                         Toast.makeText(SignUpActivity.this, "Google sign up successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
@@ -338,8 +336,6 @@ public class SignUpActivity extends AppCompatActivity {
                 Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
             } else if (user != null) {
                 Log.d(TAG, "Kakao user info: " + user.getId());
-                String email = user.getKakaoAccount() != null && user.getKakaoAccount().getEmail() != null
-                        ? user.getKakaoAccount().getEmail() : "";
                 Toast.makeText(SignUpActivity.this, "Kakao signup successful!", Toast.LENGTH_SHORT).show();
                 navigateToMain();
             }
