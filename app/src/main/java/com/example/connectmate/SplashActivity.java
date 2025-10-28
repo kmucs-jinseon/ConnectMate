@@ -7,69 +7,59 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.splashscreen.SplashScreen;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 /**
  * SplashActivity
- * Displays the splash screen while the app initializes or loads data.
- * Uses Android 12+ SplashScreen API for smooth transition.
- * Checks if user is already authenticated before navigating.
+ * Displays a custom splash screen with logo, app title, and tagline.
+ * Shows for 2 seconds while checking user authentication status.
+ * Navigates to MainActivity if user is logged in, otherwise to LoginActivity.
  */
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
 
-    // Flag to keep the splash screen visible until loading completes
-    private boolean isDataLoading = true;
     private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Install the Android 12+ splash screen before super.onCreate()
-        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-
         super.onCreate(savedInstanceState);
+
+        // Set the custom splash screen layout
+        // Layout contains: logo, app title "Connect Mate", and tagline
         setContentView(R.layout.activity_splash);
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Authentication
         mAuth = FirebaseAuth.getInstance();
 
-        // Keep the splash screen visible while data is loading
-        splashScreen.setKeepOnScreenCondition(() -> isDataLoading);
-
-        // Start a simulated loading operation (replace with real data init)
-        startLoadingData();
+        // Start the authentication check and navigation
+        navigateAfterDelay();
     }
 
     /**
-     * Simulates data loading (e.g., API calls, DB setup).
-     * Replace this with your actual initialization logic if needed.
-     * Also checks if user is already authenticated.
+     * Waits 2 seconds to display the splash screen, then checks authentication
+     * and navigates to the appropriate screen.
      */
-    private void startLoadingData() {
-        // Use Handler tied to the main looper to delay transition
+    private void navigateAfterDelay() {
+        // Use Handler to delay the navigation by 2 seconds
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            // Data loading complete
-            isDataLoading = false;
-
-            // Check if user is already logged in
+            // Check if user is already logged in with Firebase
             FirebaseUser currentUser = mAuth.getCurrentUser();
 
             Intent intent;
             if (currentUser != null) {
-                // User is already authenticated, go to MainActivity
+                // User is authenticated - go directly to MainActivity
                 intent = new Intent(SplashActivity.this, MainActivity.class);
             } else {
-                // User is not authenticated, go to LoginActivity
+                // User is not authenticated - go to LoginActivity
                 intent = new Intent(SplashActivity.this, LoginActivity.class);
             }
 
             startActivity(intent);
 
-            // Finish SplashActivity to prevent back navigation to it
+            // Finish SplashActivity to prevent back navigation
             finish();
-        }, 2000); // 2 seconds delay
+        }, 2000); // 2 seconds splash screen duration
     }
 }

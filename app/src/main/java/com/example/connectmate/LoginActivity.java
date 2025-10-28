@@ -58,19 +58,8 @@ public class LoginActivity extends AppCompatActivity {
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
 
-        // Initialize Kakao SDK
-        if (isValidApiKey(BuildConfig.KAKAO_APP_KEY)) {
-            KakaoSdk.init(this, BuildConfig.KAKAO_APP_KEY);
-        } else {
-            Log.w(TAG, "Kakao App Key not found in local.properties");
-        }
-
-        // Initialize Naver SDK
-        if (isValidApiKey(BuildConfig.NAVER_CLIENT_ID) && isValidApiKey(BuildConfig.NAVER_CLIENT_SECRET)) {
-            NaverIdLoginSDK.INSTANCE.initialize(this, BuildConfig.NAVER_CLIENT_ID, BuildConfig.NAVER_CLIENT_SECRET, "ConnectMate");
-        } else {
-            Log.w(TAG, "Naver credentials not found in local.properties");
-        }
+        // Note: Kakao and Naver SDKs are initialized in ConnectMateApplication.onCreate()
+        // per official documentation requirements
 
         initViews();
         configureGoogleSignIn();
@@ -86,14 +75,26 @@ public class LoginActivity extends AppCompatActivity {
         googleSignInButton = findViewById(R.id.googleSignInButton);
         kakaoSignInButton = findViewById(R.id.kakaoSignInButton);
         naverSignInButton = findViewById(R.id.naverSignInButton);
+
+        // Debug: Verify all buttons are found
+        Log.d(TAG, "Google button found: " + (googleSignInButton != null));
+        Log.d(TAG, "Kakao button found: " + (kakaoSignInButton != null));
+        Log.d(TAG, "Naver button found: " + (naverSignInButton != null));
     }
 
     private void configureSocialLoginButtons() {
+        // Debug: Log API key status
+        Log.d(TAG, "Kakao key configured: " + isValidApiKey(BuildConfig.KAKAO_APP_KEY));
+        Log.d(TAG, "Naver credentials configured: " +
+              (isValidApiKey(BuildConfig.NAVER_CLIENT_ID) && isValidApiKey(BuildConfig.NAVER_CLIENT_SECRET)));
+
         // Disable Kakao button if not configured
         if (!isValidApiKey(BuildConfig.KAKAO_APP_KEY)) {
             kakaoSignInButton.setEnabled(false);
             kakaoSignInButton.setAlpha(0.5f);
             Log.w(TAG, "Kakao button disabled - API key not configured");
+        } else {
+            Log.d(TAG, "Kakao button enabled");
         }
 
         // Disable Naver button if not configured
@@ -101,6 +102,8 @@ public class LoginActivity extends AppCompatActivity {
             naverSignInButton.setEnabled(false);
             naverSignInButton.setAlpha(0.5f);
             Log.w(TAG, "Naver button disabled - credentials not configured");
+        } else {
+            Log.d(TAG, "Naver button enabled");
         }
     }
 
@@ -142,9 +145,21 @@ public class LoginActivity extends AppCompatActivity {
     private void setupClickListeners() {
         loginButton.setOnClickListener(v -> performLogin());
         signUpTextView.setOnClickListener(v -> navigateToSignUp());
-        googleSignInButton.setOnClickListener(v -> signInWithGoogle());
-        kakaoSignInButton.setOnClickListener(v -> signInWithKakao());
-        naverSignInButton.setOnClickListener(v -> signInWithNaver());
+
+        googleSignInButton.setOnClickListener(v -> {
+            Log.d(TAG, "Google button clicked");
+            signInWithGoogle();
+        });
+
+        kakaoSignInButton.setOnClickListener(v -> {
+            Log.d(TAG, "Kakao button clicked");
+            signInWithKakao();
+        });
+
+        naverSignInButton.setOnClickListener(v -> {
+            Log.d(TAG, "Naver button clicked");
+            signInWithNaver();
+        });
     }
 
     private void performLogin() {

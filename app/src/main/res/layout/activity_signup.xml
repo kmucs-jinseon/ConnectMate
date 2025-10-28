@@ -1,57 +1,217 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-
-
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical"
-        android:padding="24dp"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="24dp"
+    android:background="@color/white"
+    tools:context=".SignUpActivity">
+
+    <!-- App Logo -->
+    <ImageView
+        android:id="@+id/logoImageView"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="30dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/main_logo"
+        android:contentDescription="@string/app_logo" />
+
+    <!-- App Name -->
+    <TextView
+        android:id="@+id/appNameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connect Mate"
+        android:textColor="#4479CE"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="8dp"
+        tools:ignore="HardcodedText" />
+
+    <!-- Sign Up Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create Account"
+        android:textColor="#666666"
+        android:textSize="16sp"
+        android:layout_marginBottom="32dp"
+        tools:ignore="HardcodedText" />
+
+    <!-- Email Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/emailInputLayout"
+        style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center">
+        android:layout_height="wrap_content"
+        android:hint="Email"
+        tools:ignore="HardcodedText">
 
-        <!-- 타이틀 -->
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/emailEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Password Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/passwordInputLayout"
+        style="@style/InputLayoutStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Password"
+        app:endIconMode="password_toggle"
+        tools:ignore="HardcodedText">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/passwordEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Confirm Password Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/confirmPasswordInputLayout"
+        style="@style/InputLayoutStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Confirm Password"
+        app:endIconMode="password_toggle"
+        tools:ignore="HardcodedText">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/confirmPasswordEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:imeOptions="actionDone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Sign Up Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/signUpButton"
+        style="@style/PrimaryButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign Up"
+        android:backgroundTint="@color/primary_blue"
+        android:layout_marginTop="32dp"
+        android:elevation="2dp"
+        tools:ignore="HardcodedText" />
+
+    <!-- Login Link -->
+    <TextView
+        android:id="@+id/loginTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Already have an account? Login"
+        android:textColor="@color/primary_blue"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-medium"
+        tools:ignore="HardcodedText" />
+
+    <!-- Divider with "OR" text -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="소셜 회원가입"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="32dp"
-            android:textColor="@color/black"/>
-
-        <!-- 카카오톡 로그인 버튼 -->
-        <Button
-            android:id="@+id/kakaoSignUpButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="카카오로 시작하기"
-            android:backgroundTint="#FEE500"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="16dp"/>
-
-        <!-- 네이버 로그인 버튼 -->
-        <Button
-            android:id="@+id/naverSignUpButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="네이버로 시작하기"
-            android:backgroundTint="#03C75A"
-            android:textColor="@android:color/white"/>
-
-        <!-- 하단 문구 -->
-        <TextView
-            android:id="@+id/loginTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="이미 회원이신가요? 로그인"
+            android:text="OR"
+            android:textColor="#666666"
             android:textSize="14sp"
-            android:textColorLink="@color/black"
-            android:layout_marginTop="32dp" />
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            tools:ignore="HardcodedText" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="#CCCCCC" />
     </LinearLayout>
 
+    <!-- Social Sign Up Text -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sign up with"
+        android:textColor="#666666"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp"
+        tools:ignore="HardcodedText" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Circular Social Login Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <!-- Google Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/googleSignUpButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_google_bg"
+            android:src="@drawable/ic_google"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign up with Google"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+        <!-- Kakao Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/kakaoSignUpButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_kakao_bg"
+            android:src="@drawable/ic_kakao"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign up with Kakao"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+        <!-- Naver Sign-In Button (Circle) -->
+        <ImageButton
+            android:id="@+id/naverSignUpButton"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_naver_bg"
+            android:src="@drawable/ic_naver"
+            android:scaleType="fitCenter"
+            android:padding="16dp"
+            android:contentDescription="Sign up with Naver"
+            android:elevation="2dp"
+            tools:ignore="HardcodedText" />
+
+    </LinearLayout>
+
+</LinearLayout>
 
