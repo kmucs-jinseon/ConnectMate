@@ -27,7 +27,7 @@
                 android:id="@+id/ivAvatar"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:src="@mipmap/ic_launcher_round"
+                android:src="@drawable/main_logo"
                 android:scaleType="centerCrop" />
 
             <LinearLayout
@@ -42,7 +42,7 @@
                     android:id="@+id/tvName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="홍길동"
+                    android:text="@string/your_name"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
@@ -50,7 +50,7 @@
                     android:id="@+id/tvEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="gildong@example.com"
+                    android:text="@string/nick_name"
                     android:textSize="14sp"
                     android:textColor="#666666"
                     android:layout_marginTop="4dp" />

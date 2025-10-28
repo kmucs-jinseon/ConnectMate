@@ -1,10 +1,12 @@
 package com.example.connectmate;
 
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends AppCompatActivity {
     private Fragment mapFragment, chatFragment, profileFragment, settingFragment, active;
@@ -50,5 +52,12 @@ public class MainActivity extends AppCompatActivity {
 
         // 기본 탭 선택
         nav.setSelectedItemId(R.id.nav_map);
+
+        // Floating Action Button setup
+        FloatingActionButton fab = findViewById(R.id.fabCreateActivity);
+        fab.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CreateActivityActivity.class);
+            startActivity(intent);
+        });
     }
 }

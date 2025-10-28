@@ -51,14 +51,14 @@
                 android:id="@+id/profile_avatar"
                 android:layout_width="96dp"
                 android:layout_height="96dp"
-                android:src="@mipmap/ic_launcher_round" />
+                android:src="@drawable/main_logo" />
 
             <TextView
                 android:id="@+id/profile_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="홍길동"
+                android:text="@string/your_name"
                 android:textSize="20sp"
                 android:textColor="#212121" />
 
@@ -67,7 +67,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="johndoe"
+                android:text="@string/nick_name"
                 android:textSize="14sp"
                 android:textColor="#757575" />
 
@@ -76,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="자기소개가 여기에 들어갑니다."
+                android:text="@string/self_intro"
                 android:textSize="14sp"
                 android:textColor="#616161" />
 

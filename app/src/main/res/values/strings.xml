@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">MeetUp</string>
+    <string name="app_name">Connect Mate</string>
     <string name="connect_mate">Connect Mate</string>
     <string name="tagline">Connect. Together. Grow.</string>
 
@@ -89,7 +89,27 @@
         <item>only_me</item>
     </string-array>
 
+    <!-- Category Options -->
+    <string-array name="category_options">
+        <item>식사</item>
+        <item>카페</item>
+        <item>노래방</item>
+        <item>운동</item>
+        <item>산책</item>
+        <item>방탈출</item>
+        <item>보드게임</item>
+        <item>친목</item>
+        <item>쇼핑</item>
+        <item>영화</item>
+        <item>전시회</item>
+        <item>뮤지컬</item>
+        <item>그 외 (직접 입력)</item>
+    </string-array>
+
     <!-- Firebase Google Sign-In -->
     <!-- TODO: Replace with actual client_id from google-services.json after enabling Google Sign-In in Firebase Console -->
     <string name="default_web_client_id">697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
+    <string name="your_name">이름</string>
+    <string name="nick_name">닉네임</string>
+    <string name="self_intro">자기소개가 여기에 들어갑니다.</string>
 </resources>

@@ -12,7 +12,12 @@
           "package_name": "com.example.connectmate"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCsbHWm9HfZccYxGXhHfdWrYJ0W-faAoYE"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

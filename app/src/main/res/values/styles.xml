@@ -63,4 +63,46 @@
         <item name="cornerRadius">12dp</item>
     </style>
 
+    <!-- =============================== -->
+    <!--    Bottom Navigation Styles     -->
+    <!-- =============================== -->
+    <style name="BottomNavTextActive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="BottomNavTextInactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- =============================== -->
+    <!--    Date & Time Picker Styles    -->
+    <!-- =============================== -->
+    <style name="DatePickerTheme" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="colorPrimary">@color/primary_blue</item>
+        <item name="colorAccent">@color/primary_blue</item>
+        <item name="colorControlActivated">@color/primary_blue</item>
+        <item name="android:colorControlActivated">@color/primary_blue</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+    </style>
+
+    <style name="TimePickerTheme" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="colorPrimary">@color/primary_blue</item>
+        <item name="colorAccent">@color/primary_blue</item>
+        <item name="colorControlActivated">@color/primary_blue</item>
+        <item name="android:colorControlActivated">@color/primary_blue</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+    </style>
+
+    <style name="PositiveButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/primary_blue</item>
+    </style>
+
+    <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gray_600</item>
+    </style>
+
 </resources>

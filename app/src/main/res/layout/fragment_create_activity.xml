@@ -9,7 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/gradient_mint_pink"
+        android:background="@color/primary_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="@dimen/spacing_medium">
@@ -20,7 +20,8 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/back"
-            android:src="@drawable/ic_arrow_left" />
+            android:src="@drawable/ic_arrow_left"
+            app:tint="@color/white" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -33,13 +34,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/create_activity"
+                android:textColor="@color/white"
                 android:textSize="20sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/share_your_idea"
-                android:textColor="@color/gray_700"
+                android:textColor="@color/gray_200"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -49,7 +51,8 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/close"
-            android:src="@drawable/ic_close" />
+            android:src="@drawable/ic_close"
+            app:tint="@color/white" />
     </LinearLayout>
 
     <!-- Scrollable Content -->
@@ -99,26 +102,33 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Category -->
-            <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/spacing_small"
+                android:text="@string/category"
+                android:textColor="@color/gray_700"
+                android:textSize="16sp" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/category_chip_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="@string/category">
-
-                <AutoCompleteTextView
-                    android:id="@+id/category_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none" />
-            </com.google.android.material.textfield.TextInputLayout>
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp"
+                app:singleSelection="true"
+                app:selectionRequired="false">
+                <!-- Chips will be added programmatically -->
+            </com.google.android.material.chip.ChipGroup>
 
             <!-- Date & Time Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:baselineAligned="false">
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/InputLayoutStyle"
@@ -249,7 +259,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_margin="@dimen/spacing_medium"
-        android:background="@drawable/gradient_mint_pink_button"
+        android:background="@drawable/gradient_blue"
         android:text="@string/create_activity"
         android:textColor="@color/white"
         android:textSize="18sp" />
