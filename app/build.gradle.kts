@@ -107,9 +107,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth")
 
-    // Kakao SDK (Correct and latest version based on user's guide)
-    implementation("com.kakao.sdk:v2-user:2.19.0")
-    implementation("com.kakao.maps.open:android:2.9.5")
+    // Kakao SDK (Latest versions from official documentation)
+    implementation("com.kakao.sdk:v2-user:2.22.0")
+    implementation("com.kakao.maps.open:android:2.12.18")
 
     // Naver Login SDK
     implementation("com.navercorp.nid:oauth:5.9.1")

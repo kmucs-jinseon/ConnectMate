@@ -4,28 +4,22 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
-import com.kakao.vectormap.KakaoMap;
-import com.kakao.vectormap.KakaoMapReadyCallback;
-import com.kakao.vectormap.MapLifeCycleCallback;
-import com.kakao.vectormap.MapView;
-import com.kakao.vectormap.LatLng;
-import com.kakao.vectormap.camera.CameraUpdateFactory;
-import com.kakao.vectormap.label.LabelOptions;
-import com.kakao.vectormap.label.LabelStyle;
-import com.kakao.vectormap.label.LabelStyles;
 
 public class MapActivity extends AppCompatActivity {
 
-    private MapView mapView;
+    private MapFragment mapFragment;
     private FloatingActionButton fabCreateActivity;
     private ImageButton searchButton;
     private TextInputLayout searchInputLayout;
+    private RecyclerView locationsRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,49 +27,36 @@ public class MapActivity extends AppCompatActivity {
         // Set the content view to our restored complex layout
         setContentView(R.layout.activity_map);
 
-        // Initialize other UI components from the original layout
+        // Initialize UI components
         fabCreateActivity = findViewById(R.id.fab_create_activity);
         searchButton = findViewById(R.id.search_button);
         searchInputLayout = findViewById(R.id.search_input_layout);
+        locationsRecyclerView = findViewById(R.id.locations_recycler_view);
 
-        // Set up listeners for the original UI components
+        // Set up RecyclerView
+        setupRecyclerView();
+
+        // Set up listeners for UI components
         setupFabClickListener();
         setupSearchButtonClickListener();
 
-        // Initialize the bottom sheet behavior from the original layout
+        // Initialize the bottom sheet behavior
         CardView bottomSheet = findViewById(R.id.bottom_sheet);
         BottomSheetBehavior<CardView> bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
         bottomSheetBehavior.setPeekHeight(200);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
 
-        // Dynamically create and add the MapView
-        mapView = new MapView(this);
-        LinearLayout mapContainer = findViewById(R.id.map_container);
-        mapContainer.addView(mapView);
-
-        // Start the map with its lifecycle and ready callbacks
-        mapView.start(new MapLifeCycleCallback() {
-            @Override
-            public void onMapDestroy() {
-                // Map Destroy
-            }
-
-            @Override
-            public void onMapError(Exception error) {
-                // Map Error
-            }
-        }, new KakaoMapReadyCallback() {
-            @Override
-            public void onMapReady(KakaoMap kakaoMap) {
-                // API Authentication is complete, and the map is ready.
-                kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(LatLng.from(37.5665, 126.9780)));
-                LabelStyles styles = LabelStyles.from(MapActivity.this, R.drawable.main_logo);
-                LabelOptions options = LabelOptions.from(LatLng.from(37.5665, 126.9780))
-                                                   .setStyles(styles)
-                                                   .setTexts("서울");
-                kakaoMap.getLabelManager().getLayer().addLabel(options);
-            }
-        });
+        // Initialize and add MapFragment if not already added
+        if (savedInstanceState == null) {
+            mapFragment = new MapFragment();
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.map_container, mapFragment);
+            transaction.commit();
+        } else {
+            // Retrieve the fragment if it already exists
+            mapFragment = (MapFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.map_container);
+        }
     }
 
     private void setupFabClickListener() {
@@ -95,19 +76,12 @@ public class MapActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mapView != null) {
-            mapView.resume();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (mapView != null) {
-            mapView.pause();
+    private void setupRecyclerView() {
+        if (locationsRecyclerView != null) {
+            locationsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+            locationsRecyclerView.setHasFixedSize(true);
+            // TODO: Set adapter when location data is available
+            // locationsRecyclerView.setAdapter(new LocationAdapter(locationsList));
         }
     }
 }

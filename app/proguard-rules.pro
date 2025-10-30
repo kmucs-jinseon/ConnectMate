@@ -19,3 +19,24 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# OkHttp platform-specific rules
+# These are optional dependencies for different security providers
+-dontwarn org.bouncycastle.jsse.BCSSLParameters
+-dontwarn org.bouncycastle.jsse.BCSSLSocket
+-dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider
+-dontwarn org.conscrypt.Conscrypt$Version
+-dontwarn org.conscrypt.Conscrypt
+-dontwarn org.conscrypt.ConscryptHostnameVerifier
+-dontwarn org.openjsse.javax.net.ssl.SSLParameters
+-dontwarn org.openjsse.javax.net.ssl.SSLSocket
+-dontwarn org.openjsse.net.ssl.OpenJSSE
+
+# Kakao Maps SDK rules (v2 - uses vectormap package)
+-keep class com.kakao.vectormap.** { *; }
+-keep interface com.kakao.vectormap.**
+-dontwarn com.kakao.vectormap.**
+
+# Firebase and Google Services
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
