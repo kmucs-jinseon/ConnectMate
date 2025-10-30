@@ -57,11 +57,12 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- Map View -->
-        <com.google.android.gms.maps.MapView
-            android:id="@+id/map_view"
+        <!-- This is the container where MapActivity will dynamically add the Kakao Map -->
+        <LinearLayout
+            android:id="@+id/map_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:orientation="vertical" />
 
         <!-- Search bar -->
         <com.google.android.material.textfield.TextInputLayout
