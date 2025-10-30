@@ -49,7 +49,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/search"
                     android:src="@drawable/ic_search"
-                    android:tint="@color/white" />
+                    app:tint="@color/white" />
 
                 <!-- Add Chat Button -->
                 <ImageButton
@@ -60,7 +60,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/add_chat"
                     android:src="@android:drawable/ic_input_add"
-                    android:tint="@color/white" />
+                    app:tint="@color/white" />
 
                 <!-- More Options Button -->
                 <ImageButton
@@ -70,7 +70,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/more_options"
                     android:src="@android:drawable/ic_menu_more"
-                    android:tint="@color/white" />
+                    app:tint="@color/white" />
             </LinearLayout>
 
             <!-- Search Input (Initially Hidden) -->
@@ -201,7 +201,7 @@
                         android:alpha="0.3"
                         android:contentDescription="@string/no_chats"
                         android:src="@drawable/ic_chat"
-                        android:tint="@color/gray_400" />
+                        app:tint="@color/gray_400" />
 
                     <TextView
                         android:layout_width="wrap_content"

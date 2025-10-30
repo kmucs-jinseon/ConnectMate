@@ -9,9 +9,9 @@
         android:icon="@drawable/ic_chat"
         android:title="@string/chat" />
     <item
-        android:id="@+id/nav_profile"
-        android:icon="@drawable/ic_profile"
-        android:title="@string/profile" />
+        android:id="@+id/nav_activity"
+        android:icon="@drawable/ic_calendar"
+        android:title="@string/activity" />
     <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/ic_settings"

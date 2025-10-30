@@ -121,4 +121,25 @@
     <string name="self_intro">자기소개가 여기에 들어갑니다.</string>
     <string name="계정">계정</string>
     <string name="채팅">채팅</string>
+
+    <!-- Map Fragment -->
+    <string name="search_activities_or_places">Search activities or places…</string>
+    <string name="filter">Filter</string>
+    <string name="all">All</string>
+    <string name="sports">Sports</string>
+    <string name="study">Study</string>
+    <string name="social">Social</string>
+    <string name="current_location">Current Location</string>
+    <string name="location">Location</string>
+    <string name="map_type">Map Type</string>
+    <string name="zoom_in">Zoom In</string>
+    <string name="zoom_out">Zoom Out</string>
+    <string name="view_details">View Details</string>
+
+    <!-- Activity List -->
+    <string name="activities">Activities</string>
+    <string name="no_activities">No activities</string>
+    <string name="no_activities_yet">No activities yet</string>
+    <string name="create_activity_to_get_started">Create an activity to get started</string>
+    <string name="participants">Participants</string>
 </resources>

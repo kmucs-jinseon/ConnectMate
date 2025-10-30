@@ -6,19 +6,33 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Background Map View (Always visible) -->
+    <FrameLayout
+        android:id="@+id/map_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.kakao.vectormap.MapView
+            android:id="@+id/main_map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- 프래그먼트가 꽂히는 자리 -->
+        <!-- Fragment Container (Overlays map for other tabs) -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/main_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:background="@android:color/transparent" />
 
-        <!-- 하단 네비게이션 (현재 파일명 그대로 사용: bottom_navbar.xml) -->
+        <!-- Bottom Navigation -->
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottomNavigationView"
             android:layout_width="match_parent"
@@ -35,7 +49,174 @@
             app:menu="@menu/bottom_navbar" />
     </LinearLayout>
 
-    <!-- Floating Action Button -->
+    <!-- Map UI Overlay (shown when Map tab is active) -->
+    <LinearLayout
+        android:id="@+id/map_ui_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:visibility="visible">
+
+        <!-- Search Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/search_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="4dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/search_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="@string/search"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/gray_600" />
+
+                <EditText
+                    android:id="@+id/search_input"
+                    android:layout_width="0dp"
+                    android:layout_height="37dp"
+                    android:layout_weight="1"
+                    android:autofillHints="true"
+                    android:background="@null"
+                    android:hint="@string/search_activities_or_places"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/gray_900"
+                    android:textColorHint="@color/gray_500"
+                    android:textSize="16sp" />
+
+                <ImageButton
+                    android:id="@+id/filter_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/filter"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_more_vertical"
+                    app:tint="@color/gray_600" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Filter Chips -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/filter_chips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:singleSelection="false">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_all"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/all" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_sports"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sports" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_study"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/study" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_social"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/social" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+    </LinearLayout>
+
+    <!-- Map Controls (Right Side) -->
+    <LinearLayout
+        android:id="@+id/map_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_current_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="@string/current_location"
+            android:src="@drawable/ic_map_pin"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabSize="normal"
+            app:tint="@color/primary_blue" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_map_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="@string/map_type"
+            android:src="@drawable/ic_map"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabSize="normal"
+            app:tint="@color/gray_700" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_zoom_in"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="@string/zoom_in"
+            android:src="@drawable/ic_plus"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabSize="mini"
+            app:tint="@color/gray_700" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btn_zoom_out"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/zoom_out"
+            android:src="@drawable/ic_close"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabSize="mini"
+            app:tint="@color/gray_700" />
+
+    </LinearLayout>
+
+    <!-- Floating Action Button for Create Activity -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabCreateActivity"
         android:layout_width="wrap_content"
@@ -49,5 +230,13 @@
         app:tint="@color/white"
         app:elevation="40dp"
         app:borderWidth="0dp" />
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/loading_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

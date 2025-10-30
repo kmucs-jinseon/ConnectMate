@@ -58,15 +58,33 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="false"
+            android:exported="true"
             android:hardwareAccelerated="true"
             android:launchMode="singleTop" />
 
         <activity
             android:name=".MapActivity"
-            android:exported="false"
+            android:exported="true"
             android:hardwareAccelerated="true"
-            android:label="Map" />
+            android:label="Map">
+            <!-- Intent filter for direct access and deep linking -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Deep link: connectmate://map -->
+                <data
+                    android:scheme="connectmate"
+                    android:host="map" />
+            </intent-filter>
+
+            <!-- Alternative intent filter for custom action -->
+            <intent-filter>
+                <action android:name="com.example.connectmate.action.VIEW_MAP" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".CreateActivityActivity"
