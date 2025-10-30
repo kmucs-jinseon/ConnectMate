@@ -16,8 +16,8 @@
             android:id="@+id/ivAvatar"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:src="@mipmap/ic_launcher_round"
-            android:scaleType="centerCrop" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/circle_logo" />
 
         <TextView
             android:id="@+id/chat_unread_badge"
@@ -43,7 +43,7 @@
             android:id="@+id/chat_user_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sarah Johnson"
+            android:text="이름"
             android:textColor="@color/gray_700"
             android:textSize="14sp" />
 
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="See you at the workout!"
+            android:text="한 줄 소개"
             android:textColor="@color/gray_500"
             android:textSize="12sp" />
     </LinearLayout>

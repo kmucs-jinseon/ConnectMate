@@ -1,48 +1,241 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gray_50"
-    android:orientation="vertical">
+    android:background="@color/white">
 
-    <!-- Header -->
-    <LinearLayout
+    <!-- App Bar with Header -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
-        android:elevation="2dp"
-        android:orientation="vertical"
-        android:padding="@dimen/spacing_medium">
+        android:elevation="0dp"
+        app:elevation="0dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/messages"
-            android:textSize="20sp" />
-
-        <!-- Search Bar -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Header Section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/spacing_small"
-            app:boxBackgroundMode="outline"
-            app:startIconDrawable="@drawable/ic_search">
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/primary_blue">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/search_input"
+            <!-- Title and Action Buttons Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/search_messages"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-    <!-- Chat List -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/chat_recycler_view"
+                <!-- Chat Title -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/채팅"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <!-- Search Button -->
+                <ImageButton
+                    android:id="@+id/btn_search"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/search"
+                    android:src="@drawable/ic_search"
+                    android:tint="@color/white" />
+
+                <!-- Add Chat Button -->
+                <ImageButton
+                    android:id="@+id/btn_add_chat"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/add_chat"
+                    android:src="@android:drawable/ic_input_add"
+                    android:tint="@color/white" />
+
+                <!-- More Options Button -->
+                <ImageButton
+                    android:id="@+id/btn_more_options"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/more_options"
+                    android:src="@android:drawable/ic_menu_more"
+                    android:tint="@color/white" />
+            </LinearLayout>
+
+            <!-- Search Input (Initially Hidden) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/search_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:boxBackgroundColor="@color/gray_50"
+                app:boxStrokeColor="@color/primary_blue"
+                app:boxStrokeWidth="1dp"
+                app:hintEnabled="false"
+                app:startIconDrawable="@drawable/ic_search"
+                app:startIconTint="@color/gray_500">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/search_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search_messages"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/gray_200" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Chat List Content -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/white" />
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Favorites Section (Optional) -->
+            <LinearLayout
+                android:id="@+id/favorites_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/gray_50"
+                android:orientation="vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/favorites"
+                    android:textColor="@color/gray_600"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/favorites_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:itemCount="5"
+                    tools:listitem="@layout/item_chat_favorite" />
+
+            </LinearLayout>
+
+            <!-- Divider after favorites -->
+            <View
+                android:id="@+id/favorites_divider"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:background="@color/gray_100"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- Main Chat List -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- Chat List RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/chat_recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/white"
+                    android:clipToPadding="false"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:scrollbars="vertical"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:listitem="@layout/item_chat_room" />
+
+                <!-- Empty State View -->
+                <LinearLayout
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="32dp"
+                    android:visibility="gone"
+                    tools:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:alpha="0.3"
+                        android:contentDescription="@string/no_chats"
+                        android:src="@drawable/ic_chat"
+                        android:tint="@color/gray_400" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/no_chats_yet"
+                        android:textColor="@color/gray_500"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/start_conversation"
+                        android:textColor="@color/gray_400"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_start_chat"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:text="@string/start_chat"
+                        app:icon="@android:drawable/ic_input_add"
+                        app:strokeColor="@color/primary_blue"
+                        app:strokeWidth="2dp" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
