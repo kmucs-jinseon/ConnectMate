@@ -164,22 +164,36 @@ public class MainActivity extends AppCompatActivity {
             public void onMapError(Exception error) {
                 showLoading(false);
                 if (error != null) {
-                    Log.e(TAG, "Map error occurred", error);
-                    Toast.makeText(MainActivity.this,
-                        "Map initialization failed. Please check your Kakao API key.",
-                        Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "═══════════════════════════════════════════");
+                    Log.e(TAG, "MAP INITIALIZATION ERROR:");
+                    Log.e(TAG, "Error message: " + error.getMessage());
+                    Log.e(TAG, "Error type: " + error.getClass().getSimpleName());
+                    Log.e(TAG, "═══════════════════════════════════════════");
+                    error.printStackTrace();
+
+                    String errorMsg = "Map failed: " + error.getMessage();
+                    if (error.getMessage() != null && error.getMessage().contains("auth")) {
+                        errorMsg = "Map authentication failed. Check Logcat for key hash.";
+                    }
+                    Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
         }, new KakaoMapReadyCallback() {
             @Override
             public void onMapReady(KakaoMap map) {
-                Log.d(TAG, "✓ Background map ready!");
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "✓ MAP READY - Map initialized successfully!");
+                Log.d(TAG, "MapView is visible: " + (mainMapView.getVisibility() == View.VISIBLE));
+                Log.d(TAG, "MapView dimensions: " + mainMapView.getWidth() + "x" + mainMapView.getHeight());
+                Log.d(TAG, "═══════════════════════════════════════════");
+
                 MainActivity.this.kakaoMap = map;
                 showLoading(false);
 
                 // Center on Seoul
                 map.moveCamera(CameraUpdateFactory.newCenterPosition(
                     LatLng.from(37.5665, 126.9780), 13));
+                Log.d(TAG, "✓ Camera moved to Seoul");
 
                 // Add sample activity markers
                 addSampleActivityMarkers();
