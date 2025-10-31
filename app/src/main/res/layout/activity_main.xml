@@ -39,12 +39,12 @@
             android:layout_height="wrap_content"
             android:background="@color/primary_blue"
             app:elevation="8dp"
-            app:itemBackground="@drawable/bottom_nav_item_background"
+            app:itemActiveIndicatorStyle="@style/BottomNavActiveIndicator"
             app:itemIconSize="26dp"
-            app:itemIconTint="@color/bottom_nav_color"
+            app:itemIconTint="@color/bottom_nav_icon_color"
             app:itemTextAppearanceActive="@style/BottomNavTextActive"
             app:itemTextAppearanceInactive="@style/BottomNavTextInactive"
-            app:itemTextColor="@color/bottom_nav_color"
+            app:itemTextColor="@color/white"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_navbar" />
     </LinearLayout>
@@ -189,7 +189,7 @@
             app:backgroundTint="@color/white"
             app:elevation="4dp"
             app:fabSize="normal"
-            app:tint="@color/gray_700" />
+            app:tint="@color/primary_blue" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_zoom_in"
@@ -201,18 +201,18 @@
             app:backgroundTint="@color/white"
             app:elevation="4dp"
             app:fabSize="mini"
-            app:tint="@color/gray_700" />
+            app:tint="@color/primary_blue" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_zoom_out"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/zoom_out"
-            android:src="@drawable/ic_close"
+            android:src="@drawable/ic_minus"
             app:backgroundTint="@color/white"
             app:elevation="4dp"
             app:fabSize="mini"
-            app:tint="@color/gray_700" />
+            app:tint="@color/primary_blue" />
 
     </LinearLayout>
 

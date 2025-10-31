@@ -24,6 +24,7 @@
 
     <!-- Neutral Colors -->
     <color name="white">#FFFFFF</color>
+    <color name="white_muted">#CCCCCC</color>
     <color name="black">#000000</color>
     <color name="gray_50">#F9FAFB</color>
     <color name="gray_100">#F3F4F6</color>
