@@ -98,19 +98,17 @@
 
     <!-- Category Options -->
     <string-array name="category_options">
-        <item>식사</item>
-        <item>카페</item>
-        <item>노래방</item>
         <item>운동</item>
-        <item>산책</item>
-        <item>방탈출</item>
-        <item>보드게임</item>
-        <item>친목</item>
-        <item>쇼핑</item>
-        <item>영화</item>
-        <item>전시회</item>
-        <item>뮤지컬</item>
-        <item>그 외 (직접 입력)</item>
+        <item>야외활동</item>
+        <item>스터디</item>
+        <item>문화</item>
+        <item>소셜</item>
+        <item>맛집</item>
+        <item>여행</item>
+        <item>게임</item>
+        <item>취미</item>
+        <item>봉사</item>
+        <item>기타</item>
     </string-array>
 
     <!-- Firebase Google Sign-In -->
@@ -144,4 +142,5 @@
     <string name="participants">Participants</string>
     <string name="app_info">앱 정보</string>
     <string name="notification">알림</string>
+    <string name="last_message">last_message</string>
 </resources>

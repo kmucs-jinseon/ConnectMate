@@ -115,45 +115,315 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Filter Chips -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/filter_chips"
+        <!-- Filter Chips (Horizontally Scrollable) -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:visibility="gone"
-            app:singleSelection="false">
+            android:scrollbars="none"
+            android:visibility="gone">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_all"
-                style="@style/Widget.MaterialComponents.Chip.Filter"
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/filter_chips"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/all" />
+                app:singleLine="true"
+                app:singleSelection="false">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_sports"
-                style="@style/Widget.MaterialComponents.Chip.Filter"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_all"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/all" />
+
+                <!-- Active Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_vertical"
+                    android:text="활동적"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sports"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sports" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_outdoor"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="야외활동" />
+
+                <!-- Learning Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_vertical"
+                    android:text="학습"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_study"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/study" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_culture"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="문화" />
+
+                <!-- Social & Food Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_vertical"
+                    android:text="소셜/음식"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_social"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/social" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_food"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="맛집" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_travel"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="여행" />
+
+                <!-- Entertainment Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_vertical"
+                    android:text="여가"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_game"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="게임" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_hobby"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="취미" />
+
+                <!-- Community Section -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center_vertical"
+                    android:text="커뮤니티"
+                    android:textColor="@color/gray_600"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_volunteer"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="봉사" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_other"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="기타" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- Activity UI Overlay (shown when Activity tab is active) -->
+    <LinearLayout
+        android:id="@+id/activity_ui_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:elevation="4dp"
+        android:visibility="gone">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/primary_blue">
+
+            <!-- Title -->
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/sports" />
+                android:text="@string/activities"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_study"
-                style="@style/Widget.MaterialComponents.Chip.Filter"
+        </LinearLayout>
+
+        <!-- Filter Chips (Horizontally Scrollable) -->
+        <HorizontalScrollView
+            android:id="@+id/activity_filter_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:background="@color/white">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/activity_filter_chips"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/study" />
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp"
+                app:singleLine="true"
+                app:singleSelection="false">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_social"
-                style="@style/Widget.MaterialComponents.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/social" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_all"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="전체" />
 
-        </com.google.android.material.chip.ChipGroup>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_sports"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="운동" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_outdoor"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="야외활동" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_study"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="스터디" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_culture"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="문화" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_social"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="소셜" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_food"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="맛집" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_travel"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="여행" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_game"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="게임" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_hobby"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="취미" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_volunteer"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="봉사" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/activity_chip_other"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="기타" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/gray_200" />
 
     </LinearLayout>
 

@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.util.ArrayList;
@@ -24,10 +25,11 @@ public class ChatListFragment extends Fragment {
 
     // UI Components
     private ImageButton btnSearch;
-    private ImageButton btnAddChat;
-    private ImageButton btnMoreOptions;
+    private ImageButton btnFilter;
     private TextInputLayout searchLayout;
     private TextInputEditText searchInput;
+    private View filterScrollView;
+    private ChipGroup filterChips;
 
     private LinearLayout favoritesSection;
     private View favoritesDivider;
@@ -70,12 +72,15 @@ public class ChatListFragment extends Fragment {
     private void initializeViews(View view) {
         // Header buttons
         btnSearch = view.findViewById(R.id.btn_search);
-        btnAddChat = view.findViewById(R.id.btn_add_chat);
-        btnMoreOptions = view.findViewById(R.id.btn_more_options);
+        btnFilter = view.findViewById(R.id.btn_filter);
 
         // Search
         searchLayout = view.findViewById(R.id.search_layout);
         searchInput = view.findViewById(R.id.search_input);
+
+        // Filter chips
+        filterScrollView = view.findViewById(R.id.filter_scroll_view);
+        filterChips = view.findViewById(R.id.filter_chips);
 
         // Favorites section
         favoritesSection = view.findViewById(R.id.favorites_section);
@@ -110,16 +115,12 @@ public class ChatListFragment extends Fragment {
         // Search button - toggle search input visibility
         btnSearch.setOnClickListener(v -> toggleSearch());
 
-        // Add chat button
-        btnAddChat.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Add new chat", Toast.LENGTH_SHORT).show();
-            // TODO: Implement add chat functionality
-        });
+        // Filter button - toggle filter chips
+        btnFilter.setOnClickListener(v -> toggleFilter());
 
-        // More options button
-        btnMoreOptions.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "More options", Toast.LENGTH_SHORT).show();
-            // TODO: Implement options menu
+        // Filter chips
+        filterChips.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            filterChatsByCategory();
         });
 
         // Start chat button (in empty state)
@@ -154,6 +155,32 @@ public class ChatListFragment extends Fragment {
             searchLayout.setVisibility(View.VISIBLE);
             searchInput.requestFocus();
         }
+    }
+
+    private void toggleFilter() {
+        if (filterScrollView.getVisibility() == View.VISIBLE) {
+            filterScrollView.setVisibility(View.GONE);
+        } else {
+            filterScrollView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void filterChatsByCategory() {
+        // Get selected categories from chips
+        if (filterChips.findViewById(R.id.chip_all).isSelected() ||
+            filterChips.getCheckedChipIds().isEmpty()) {
+            // Show all
+            filteredChatRooms.clear();
+            filteredChatRooms.addAll(allChatRooms);
+        } else {
+            filteredChatRooms.clear();
+            // Filter by selected categories
+            // TODO: Implement actual filtering logic based on chat room categories
+            filteredChatRooms.addAll(allChatRooms);
+        }
+
+        chatRoomAdapter.notifyDataSetChanged();
+        updateUI();
     }
 
     private void filterChats(String query) {

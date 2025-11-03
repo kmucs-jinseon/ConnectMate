@@ -1,26 +1,26 @@
 package com.example.connectmate;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.connectmate.models.Activity;
+import com.example.connectmate.utils.ActivityManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Calendar;
 
@@ -73,19 +73,17 @@ public class CreateActivityActivity extends AppCompatActivity {
         }
 
         for (String category : categories) {
-            // Create chip with proper style
-            Chip chip = new Chip(this, null, com.google.android.material.R.attr.chipStyle);
+            // Create chip with FilterChipStyle
+            Chip chip = new Chip(this);
+            chip.setChipBackgroundColorResource(R.color.filter_chip_background);
+            chip.setTextColor(getResources().getColorStateList(R.color.filter_chip_text, null));
+            chip.setCheckedIconVisible(false);
+            chip.setChipStrokeWidth(0f);
+            chip.setChipCornerRadius(getResources().getDimension(R.dimen.chip_corner_radius));
             chip.setText(category);
             chip.setCheckable(true);
             chip.setClickable(true);
             Log.d(TAG, "Created chip: " + category);
-
-            // Handle "그 외 (직접 입력)" separately
-            if (category.contains("그 외")) {
-                chip.setOnClickListener(v -> {
-                    showCustomCategoryDialog();
-                });
-            }
 
             categoryChipGroup.addView(chip);
         }
@@ -145,78 +143,87 @@ public class CreateActivityActivity extends AppCompatActivity {
         closeButton.setOnClickListener(v -> finish());
 
         createButton.setOnClickListener(v -> {
-            String title = (titleInput.getText() != null) ? titleInput.getText().toString() : "";
-            String description = (descriptionInput.getText() != null) ? descriptionInput.getText().toString() : "";
+            String title = (titleInput.getText() != null) ? titleInput.getText().toString().trim() : "";
+            String description = (descriptionInput.getText() != null) ? descriptionInput.getText().toString().trim() : "";
             String category = selectedCategory;
-            String date = (dateInput.getText() != null) ? dateInput.getText().toString() : "";
-            String time = (timeInput.getText() != null) ? timeInput.getText().toString() : "";
-            String location = (locationInput.getText() != null) ? locationInput.getText().toString() : "";
-            String participants = (participantLimitInput.getText() != null) ? participantLimitInput.getText().toString() : "";
-            String hashtags = (hashtagsInput.getText() != null) ? hashtagsInput.getText().toString() : "";
+            String date = (dateInput.getText() != null) ? dateInput.getText().toString().trim() : "";
+            String time = (timeInput.getText() != null) ? timeInput.getText().toString().trim() : "";
+            String location = (locationInput.getText() != null) ? locationInput.getText().toString().trim() : "";
+            String participantsStr = (participantLimitInput.getText() != null) ? participantLimitInput.getText().toString().trim() : "";
+            String hashtags = (hashtagsInput.getText() != null) ? hashtagsInput.getText().toString().trim() : "";
 
+            // Validate required fields
             if (title.isEmpty()) {
                 Toast.makeText(this, "제목을 입력하세요.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
+            if (category.isEmpty()) {
+                Toast.makeText(this, "카테고리를 선택하세요.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Parse participant limit
+            int maxParticipants = 0;
+            if (!participantsStr.isEmpty()) {
+                try {
+                    maxParticipants = Integer.parseInt(participantsStr);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(this, "올바른 인원 수를 입력하세요.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            // Get visibility
             int checkedId = visibilityToggle.getCheckedButtonId();
-            String visibility = (checkedId == R.id.visibility_public)
-                    ? "공개" : "비공개";
+            String visibility = (checkedId == R.id.visibility_public) ? "공개" : "비공개";
 
-            String summary = "제목: " + title + "\n"
-                    + "설명: " + description + "\n"
-                    + "카테고리: " + category + "\n"
-                    + "날짜: " + date + " " + time + "\n"
-                    + "장소: " + location + "\n"
-                    + "인원 제한: " + participants + "\n"
-                    + "공개 여부: " + visibility + "\n"
-                    + "해시태그: " + hashtags;
+            // Get current user info
+            String creatorId = "";
+            String creatorName = "Anonymous";
 
-            Toast.makeText(this, "활동 생성 완료!\n" + summary, Toast.LENGTH_LONG).show();
+            // Try Firebase Auth
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                creatorId = firebaseUser.getUid();
+                creatorName = (firebaseUser.getDisplayName() != null) ?
+                    firebaseUser.getDisplayName() : firebaseUser.getEmail();
+            } else {
+                // Try SharedPreferences for social login
+                SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                creatorId = prefs.getString("user_id", "");
+                creatorName = prefs.getString("user_name", "Anonymous");
+            }
 
-            // TODO: 실제 저장 로직 추가
+            // Create Activity object
+            Activity activity = new Activity(
+                title,
+                description,
+                category,
+                date,
+                time,
+                location,
+                maxParticipants,
+                visibility,
+                hashtags,
+                creatorId,
+                creatorName
+            );
+
+            // Save activity using ActivityManager
+            ActivityManager activityManager = ActivityManager.getInstance(this);
+            boolean saved = activityManager.saveActivity(activity);
+
+            if (saved) {
+                Toast.makeText(this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Activity created: " + activity.getTitle());
+
+                // Close activity and return to previous screen
+                finish();
+            } else {
+                Toast.makeText(this, "활동 생성에 실패했습니다.", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Failed to save activity");
+            }
         });
-    }
-
-    private void showCustomCategoryDialog() {
-        // Create an EditText for custom input
-        final EditText input = new EditText(this);
-        input.setHint("카테고리를 입력하세요");
-        input.setPadding(50, 40, 50, 40);
-
-        // Create the dialog
-        new AlertDialog.Builder(this)
-                .setTitle("직접 입력")
-                .setMessage("원하는 카테고리를 입력하세요")
-                .setView(input)
-                .setPositiveButton("확인", (dialog, which) -> {
-                    String customCategory = input.getText().toString().trim();
-                    if (!TextUtils.isEmpty(customCategory)) {
-                        selectedCategory = customCategory;
-
-                        // Create a new chip for the custom category
-                        Chip customChip = new Chip(this, null, com.google.android.material.R.attr.chipStyle);
-                        customChip.setText(customCategory);
-                        customChip.setCheckable(true);
-                        customChip.setClickable(true);
-                        customChip.setChecked(true);
-
-                        // Remove the "그 외 (직접 입력)" chip and add the custom one before it
-                        int customInputChipIndex = categoryChipGroup.getChildCount() - 1;
-                        categoryChipGroup.addView(customChip, customInputChipIndex);
-
-                        Toast.makeText(this, "카테고리: " + customCategory, Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "Custom category entered: " + customCategory);
-                    } else {
-                        Toast.makeText(this, "카테고리를 입력해주세요", Toast.LENGTH_SHORT).show();
-                        categoryChipGroup.clearCheck();
-                    }
-                })
-                .setNegativeButton("취소", (dialog, which) -> {
-                    dialog.cancel();
-                    // Uncheck the chip
-                    categoryChipGroup.clearCheck();
-                })
-                .show();
     }
 }

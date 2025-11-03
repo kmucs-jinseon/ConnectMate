@@ -78,6 +78,10 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton btnZoomIn;
     private FloatingActionButton btnZoomOut;
 
+    // Activity UI components
+    private LinearLayout activityUiOverlay;
+    private ChipGroup activityFilterChips;
+
     // Navigation & FAB
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
@@ -120,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         // Set up map controls
         setupMapControls();
 
+        // Set up activity controls
+        setupActivityControls();
+
         // Set up bottom navigation
         setupBottomNavigation();
 
@@ -151,6 +158,10 @@ public class MainActivity extends AppCompatActivity {
         btnMapType = findViewById(R.id.btn_map_type);
         btnZoomIn = findViewById(R.id.btn_zoom_in);
         btnZoomOut = findViewById(R.id.btn_zoom_out);
+
+        // Activity UI components
+        activityUiOverlay = findViewById(R.id.activity_ui_overlay);
+        activityFilterChips = findViewById(R.id.activity_filter_chips);
 
         if (bottomNavigationView == null) {
             Log.e(TAG, "BottomNavigationView not found in layout");
@@ -268,6 +279,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Setup activity controls and listeners
+     */
+    private void setupActivityControls() {
+        // Activity filter chips
+        if (activityFilterChips != null) {
+            activityFilterChips.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                // Notify ActivityListFragment about filter change
+                if (activityFragment instanceof ActivityListFragment) {
+                    // The fragment will handle its own filtering
+                    // This is just for MainActivity-level coordination
+                    Log.d(TAG, "Activity filter changed, checkedIds: " + checkedIds.size());
+                }
+            });
+        }
+    }
+
     private void addSampleActivityMarkers() {
         if (kakaoMap == null) return;
 
@@ -378,55 +406,38 @@ public class MainActivity extends AppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
 
         if (savedInstanceState == null) {
-            // First time - create all fragments
-            Log.d(TAG, "Creating fragments for the first time");
+            // First time - create MapFragment as default
+            Log.d(TAG, "Creating MapFragment as default");
 
-            // Create fragment instances
             mapFragment = new MapFragment();
-            chatFragment = new ChatListFragment();
-            activityFragment = new ActivityListFragment();
-            settingFragment = new SettingsFragment();
 
-            // Add all fragments to container
-            // MapFragment is added without hide(), so it's visible by default
+            // Use replace to ensure only one fragment is active at a time
             FragmentTransaction transaction = fm.beginTransaction();
-            transaction.add(R.id.main_container, mapFragment, TAG_MAP);
-            transaction.add(R.id.main_container, chatFragment, TAG_CHAT);
-            transaction.add(R.id.main_container, activityFragment, TAG_ACTIVITY);
-            transaction.add(R.id.main_container, settingFragment, TAG_SETTING);
-
-            // Hide all except map
-            transaction.hide(chatFragment);
-            transaction.hide(activityFragment);
-            transaction.hide(settingFragment);
-
-            // Commit immediately
-            transaction.commitNow();
+            transaction.replace(R.id.main_container, mapFragment, TAG_MAP);
+            transaction.commit();
 
             // Set MapFragment as active
             activeFragment = mapFragment;
 
             Log.d(TAG, "MapFragment set as default - Kakao Map initialized");
         } else {
-            // Restore fragments after configuration change
+            // Restore active fragment after configuration change
             Log.d(TAG, "Restoring fragments after configuration change");
 
-            mapFragment = fm.findFragmentByTag(TAG_MAP);
-            chatFragment = fm.findFragmentByTag(TAG_CHAT);
-            activityFragment = fm.findFragmentByTag(TAG_ACTIVITY);
-            settingFragment = fm.findFragmentByTag(TAG_SETTING);
+            Fragment currentFragment = fm.findFragmentById(R.id.main_container);
+            if (currentFragment != null) {
+                activeFragment = currentFragment;
 
-            // Find which fragment is currently visible
-            if (mapFragment != null && mapFragment.isVisible()) {
-                activeFragment = mapFragment;
-            } else if (chatFragment != null && chatFragment.isVisible()) {
-                activeFragment = chatFragment;
-            } else if (activityFragment != null && activityFragment.isVisible()) {
-                activeFragment = activityFragment;
-            } else if (settingFragment != null && settingFragment.isVisible()) {
-                activeFragment = settingFragment;
-            } else {
-                activeFragment = mapFragment;
+                // Restore fragment references based on tag
+                if (TAG_MAP.equals(currentFragment.getTag())) {
+                    mapFragment = currentFragment;
+                } else if (TAG_CHAT.equals(currentFragment.getTag())) {
+                    chatFragment = currentFragment;
+                } else if (TAG_ACTIVITY.equals(currentFragment.getTag())) {
+                    activityFragment = currentFragment;
+                } else if (TAG_SETTING.equals(currentFragment.getTag())) {
+                    settingFragment = currentFragment;
+                }
             }
         }
     }
@@ -442,28 +453,26 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            Fragment targetFragment = null;
-            String fragmentName = "";
+            String targetTag = null;
 
-            // Determine which fragment to show
+            // Determine which fragment to show based on tag
             if (itemId == R.id.nav_map) {
-                targetFragment = mapFragment;
-                fragmentName = "Map (Kakao Map)";
+                targetTag = TAG_MAP;
             } else if (itemId == R.id.nav_chat) {
-                targetFragment = chatFragment;
-                fragmentName = "Chat";
+                targetTag = TAG_CHAT;
             } else if (itemId == R.id.nav_activity) {
-                targetFragment = activityFragment;
-                fragmentName = "Activity";
+                targetTag = TAG_ACTIVITY;
             } else if (itemId == R.id.nav_settings) {
-                targetFragment = settingFragment;
-                fragmentName = "Settings";
+                targetTag = TAG_SETTING;
             }
 
             // Switch fragments if target is different from active
-            if (targetFragment != null && targetFragment != activeFragment) {
-                Log.d(TAG, "Switching to " + fragmentName + " fragment");
-                switchFragment(targetFragment);
+            if (targetTag != null) {
+                String currentTag = (activeFragment != null) ? activeFragment.getTag() : null;
+                if (!targetTag.equals(currentTag)) {
+                    Log.d(TAG, "Switching from " + currentTag + " to " + targetTag);
+                    switchFragmentByTag(targetTag);
+                }
             }
 
             return true;
@@ -475,35 +484,68 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Switch from active fragment to target fragment
+     * Switch to fragment by tag
+     * Uses replace() to ensure complete isolation between fragments
      */
-    private void switchFragment(@NonNull Fragment targetFragment) {
+    private void switchFragmentByTag(String tag) {
         FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction transaction = fm.beginTransaction();
+        Fragment targetFragment = null;
 
-        // Hide current active fragment
-        if (activeFragment != null) {
-            transaction.hide(activeFragment);
+        // Create or get the target fragment based on tag
+        if (TAG_MAP.equals(tag)) {
+            if (mapFragment == null) mapFragment = new MapFragment();
+            targetFragment = mapFragment;
+        } else if (TAG_CHAT.equals(tag)) {
+            if (chatFragment == null) chatFragment = new ChatListFragment();
+            targetFragment = chatFragment;
+        } else if (TAG_ACTIVITY.equals(tag)) {
+            if (activityFragment == null) activityFragment = new ActivityListFragment();
+            targetFragment = activityFragment;
+        } else if (TAG_SETTING.equals(tag)) {
+            if (settingFragment == null) settingFragment = new SettingsFragment();
+            targetFragment = settingFragment;
         }
 
-        // Show target fragment
-        transaction.show(targetFragment);
+        if (targetFragment == null) {
+            Log.e(TAG, "Failed to create fragment for tag: " + tag);
+            return;
+        }
+
+        // Use replace to completely swap fragments for better isolation
+        FragmentTransaction transaction = fm.beginTransaction();
+        transaction.replace(R.id.main_container, targetFragment, tag);
         transaction.commit();
 
         // Update active fragment reference
         activeFragment = targetFragment;
 
-        // Show/hide map UI overlay based on selected fragment
+        // Show/hide UI overlays based on selected fragment
         updateMapUIVisibility(targetFragment);
+
+        Log.d(TAG, "Switched to fragment with tag: " + tag);
     }
 
     /**
-     * Update map UI overlay visibility based on active fragment
+     * Get the tag of a fragment
+     */
+    private String getFragmentTag(Fragment fragment) {
+        if (fragment == null) return null;
+        return fragment.getTag();
+    }
+
+    /**
+     * Update UI overlay visibility based on active fragment
+     * This ensures each tab has its own distinct appearance without overlapping
      */
     private void updateMapUIVisibility(Fragment fragment) {
-        boolean isMapTab = (fragment == mapFragment);
+        // Determine which tab is active based on fragment tag
+        String fragmentTag = (fragment != null) ? fragment.getTag() : null;
+        boolean isMapTab = TAG_MAP.equals(fragmentTag);
+        boolean isActivityTab = TAG_ACTIVITY.equals(fragmentTag);
+        boolean isChatTab = TAG_CHAT.equals(fragmentTag);
+        boolean isSettingTab = TAG_SETTING.equals(fragmentTag);
 
-        // Show map UI overlay only when Map tab is active
+        // Show map UI overlay ONLY when Map tab is active
         if (mapUiOverlay != null) {
             mapUiOverlay.setVisibility(isMapTab ? View.VISIBLE : View.GONE);
         }
@@ -511,16 +553,54 @@ public class MainActivity extends AppCompatActivity {
             mapControls.setVisibility(isMapTab ? View.VISIBLE : View.GONE);
         }
 
-        // Update fragment container background
+        // Show activity UI overlay ONLY when Activity tab is active
+        if (activityUiOverlay != null) {
+            activityUiOverlay.setVisibility(isActivityTab ? View.VISIBLE : View.GONE);
+        }
+
+        // Update fragment container background and padding for each tab
         View fragmentContainer = findViewById(R.id.main_container);
         if (fragmentContainer != null) {
+            // Reset to default state first
+            fragmentContainer.setPadding(0, 0, 0, 0);
+
             if (isMapTab) {
                 // Transparent background to show map
                 fragmentContainer.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-            } else {
-                // White background for other fragments
+                Log.d(TAG, "Map tab active - transparent background, no padding");
+            } else if (isActivityTab) {
+                // White background for Activity tab
                 fragmentContainer.setBackgroundColor(getResources().getColor(android.R.color.white));
+
+                // Add top padding to push content below the activity overlay
+                if (activityUiOverlay != null) {
+                    activityUiOverlay.post(() -> {
+                        int overlayHeight = activityUiOverlay.getHeight();
+                        if (overlayHeight > 0) {
+                            fragmentContainer.setPadding(0, overlayHeight, 0, 0);
+                            Log.d(TAG, "Activity tab active - white background, top padding: " + overlayHeight + "px");
+                        } else {
+                            // Fallback if height not measured yet
+                            int fallbackPadding = (int) (150 * getResources().getDisplayMetrics().density);
+                            fragmentContainer.setPadding(0, fallbackPadding, 0, 0);
+                            Log.d(TAG, "Activity tab active - using fallback padding: " + fallbackPadding + "px");
+                        }
+                    });
+                }
+            } else if (isChatTab) {
+                // White background for Chat tab, no padding
+                fragmentContainer.setBackgroundColor(getResources().getColor(android.R.color.white));
+                Log.d(TAG, "Chat tab active - white background, no padding");
+            } else if (isSettingTab) {
+                // White background for Settings tab, no padding
+                fragmentContainer.setBackgroundColor(getResources().getColor(android.R.color.white));
+                Log.d(TAG, "Settings tab active - white background, no padding");
             }
+        }
+
+        // Hide FAB on Settings tab, show on others
+        if (fabCreateActivity != null) {
+            fabCreateActivity.setVisibility(isSettingTab ? View.GONE : View.VISIBLE);
         }
     }
 
@@ -546,6 +626,12 @@ public class MainActivity extends AppCompatActivity {
         if (mainMapView != null) {
             mainMapView.resume();
         }
+
+        // Ensure UI visibility is correct when resuming (e.g., after creating an activity)
+        if (activeFragment != null) {
+            updateMapUIVisibility(activeFragment);
+        }
+
         Log.d(TAG, "MainActivity resumed");
     }
 

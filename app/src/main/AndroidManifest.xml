@@ -92,6 +92,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ActivityDetailActivity"
+            android:exported="false"
+            android:label="Activity Details"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
             <intent-filter>

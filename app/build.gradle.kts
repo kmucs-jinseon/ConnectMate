@@ -107,6 +107,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth")
 
+    // JSON Serialization
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // Kakao SDK (Latest versions from official documentation)
     implementation("com.kakao.sdk:v2-user:2.22.0")
     implementation("com.kakao.maps.open:android:2.12.18")

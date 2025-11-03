@@ -51,25 +51,14 @@
                     android:src="@drawable/ic_search"
                     app:tint="@color/white" />
 
-                <!-- Add Chat Button -->
+                <!-- Filter Button -->
                 <ImageButton
-                    android:id="@+id/btn_add_chat"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="4dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/add_chat"
-                    android:src="@android:drawable/ic_input_add"
-                    app:tint="@color/white" />
-
-                <!-- More Options Button -->
-                <ImageButton
-                    android:id="@+id/btn_more_options"
+                    android:id="@+id/btn_filter"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/more_options"
-                    android:src="@android:drawable/ic_menu_more"
+                    android:contentDescription="@string/filter"
+                    android:src="@drawable/ic_more_vertical"
                     app:tint="@color/white" />
             </LinearLayout>
 
@@ -82,7 +71,7 @@
                 android:layout_marginTop="8dp"
                 android:visibility="gone"
                 app:boxBackgroundColor="@color/gray_50"
-                app:boxStrokeColor="@color/primary_blue"
+                app:boxStrokeColor="@color/white"
                 app:boxStrokeWidth="1dp"
                 app:hintEnabled="false"
                 app:startIconDrawable="@drawable/ic_search"
@@ -100,6 +89,119 @@
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
+
+        <!-- Filter Chips (Horizontally Scrollable) -->
+        <HorizontalScrollView
+            android:id="@+id/filter_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/filter_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                app:singleLine="true"
+                app:singleSelection="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_all"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:checked="true"
+                    android:text="전체" />
+
+                <!-- Active Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sports"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="운동" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_outdoor"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="야외활동" />
+
+                <!-- Learning Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_study"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="스터디" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_culture"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="문화" />
+
+                <!-- Social & Food Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_social"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="소셜" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_food"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="맛집" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_travel"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="여행" />
+
+                <!-- Entertainment Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_game"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="게임" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_hobby"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="취미" />
+
+                <!-- Community Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_volunteer"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="봉사" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_other"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="기타" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
 
         <!-- Divider -->
         <View
