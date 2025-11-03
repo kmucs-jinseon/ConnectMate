@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <!-- App Bar with Header -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="0dp"
+        app:elevation="0dp">
+
+        <!-- Header Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:background="@color/primary_blue">
+
+            <!-- Title and Filter Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Title -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/activities"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <!-- Search Button -->
+                <ImageButton
+                    android:id="@+id/btn_search"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/search"
+                    android:src="@drawable/ic_search"
+                    android:tint="@color/white" />
+
+                <!-- Filter Button -->
+                <ImageButton
+                    android:id="@+id/btn_filter"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/filter"
+                    android:src="@drawable/ic_more_vertical"
+                    android:tint="@color/white" />
+
+            </LinearLayout>
+
+            <!-- Search Input (Initially Hidden) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/search_layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                app:boxBackgroundColor="@color/gray_50"
+                app:boxStrokeColor="@color/white"
+                app:boxStrokeWidth="1dp"
+                app:hintEnabled="false"
+                app:startIconDrawable="@drawable/ic_search"
+                app:startIconTint="@color/gray_500">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/search_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/search_activities_or_places"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <!-- Filter Chips (Horizontally Scrollable) -->
+        <HorizontalScrollView
+            android:id="@+id/filter_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/filter_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                app:singleLine="true"
+                app:singleSelection="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_all"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:checked="true"
+                    android:text="전체" />
+
+                <!-- Active Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sports"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="운동" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_outdoor"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="야외활동" />
+
+                <!-- Learning Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_study"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="스터디" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_culture"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="문화" />
+
+                <!-- Social & Food Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_social"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="소셜" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_food"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="맛집" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_travel"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="여행" />
+
+                <!-- Entertainment Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_game"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="게임" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_hobby"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="취미" />
+
+                <!-- Community Section -->
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_volunteer"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="봉사" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_other"
+                    style="@style/FilterChipStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="기타" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/gray_200" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Activity List Content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Activity List RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/activity_recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/white"
+                android:clipToPadding="false"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:scrollbars="vertical"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_activity" />
+
+            <!-- Empty State View -->
+            <LinearLayout
+                android:id="@+id/empty_state"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone"
+                tools:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:alpha="0.3"
+                    android:contentDescription="@string/no_activities"
+                    android:src="@drawable/ic_calendar"
+                    android:tint="@color/gray_400" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/no_activities_yet"
+                    android:textColor="@color/gray_500"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/create_activity_to_get_started"
+                    android:textColor="@color/gray_400"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_create_activity"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/create_activity"
+                    app:icon="@android:drawable/ic_input_add"
+                    app:strokeColor="@color/primary_blue"
+                    app:strokeWidth="2dp" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
