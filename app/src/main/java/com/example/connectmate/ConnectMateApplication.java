@@ -25,6 +25,9 @@ public class ConnectMateApplication extends Application {
         Log.d(TAG, "ConnectMate Application Starting...");
         Log.d(TAG, "═══════════════════════════════════════════");
 
+        // Print configuration status
+        printConfigurationStatus();
+
         // Print key hash for Kakao registration
         printKeyHash();
 
@@ -71,6 +74,35 @@ public class ConnectMateApplication extends Application {
 
     private boolean isValidApiKey(String apiKey) {
         return apiKey != null && !apiKey.trim().isEmpty();
+    }
+
+    /**
+     * Print configuration status for all social login providers
+     */
+    private void printConfigurationStatus() {
+        Log.d(TAG, "═══════════════════════════════════════════");
+        Log.d(TAG, "SOCIAL LOGIN CONFIGURATION STATUS");
+        Log.d(TAG, "═══════════════════════════════════════════");
+
+        // Kakao
+        boolean kakaoConfigured = isValidApiKey(BuildConfig.KAKAO_APP_KEY);
+        Log.d(TAG, "✓ Kakao: " + (kakaoConfigured ? "CONFIGURED" : "NOT CONFIGURED"));
+        if (kakaoConfigured) {
+            Log.d(TAG, "  - App Key: " + BuildConfig.KAKAO_APP_KEY.substring(0, 8) + "...");
+            Log.d(TAG, "  - Package: " + getPackageName());
+            Log.d(TAG, "  - Next: Register key hash in Kakao Console");
+        }
+
+        // Naver
+        boolean naverConfigured = isValidApiKey(BuildConfig.NAVER_CLIENT_ID) &&
+                                  isValidApiKey(BuildConfig.NAVER_CLIENT_SECRET);
+        Log.d(TAG, "✓ Naver: " + (naverConfigured ? "CONFIGURED" : "NOT CONFIGURED"));
+        if (naverConfigured) {
+            Log.d(TAG, "  - Client ID: " + BuildConfig.NAVER_CLIENT_ID);
+            Log.d(TAG, "  - Package: " + getPackageName());
+        }
+
+        Log.d(TAG, "═══════════════════════════════════════════");
     }
 
     /**

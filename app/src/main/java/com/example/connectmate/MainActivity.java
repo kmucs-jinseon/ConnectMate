@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -20,7 +22,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.kakao.sdk.user.UserApiClient;
 import com.kakao.vectormap.KakaoMap;
+import com.navercorp.nid.NaverIdLoginSDK;
 import com.kakao.vectormap.KakaoMapReadyCallback;
 import com.kakao.vectormap.MapLifeCycleCallback;
 import com.kakao.vectormap.MapView;
@@ -83,6 +89,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Check if user is authenticated (Firebase, Kakao, or Naver)
+        if (!isUserAuthenticated()) {
+            Log.d(TAG, "User not authenticated, redirecting to LoginActivity");
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        Log.d(TAG, "User authenticated successfully");
+
         setContentView(R.layout.activity_main);
 
         Log.d(TAG, "MainActivity onCreate started");
@@ -550,5 +568,31 @@ public class MainActivity extends AppCompatActivity {
         mainMapView = null;
         kakaoMap = null;
         Log.d(TAG, "MainActivity destroyed");
+    }
+
+    /**
+     * Check if user is authenticated via any login method (Firebase, Kakao, or Naver)
+     */
+    private boolean isUserAuthenticated() {
+        // Check Firebase Auth
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+        if (firebaseUser != null) {
+            Log.d(TAG, "Firebase user found: " + firebaseUser.getEmail());
+            return true;
+        }
+
+        // Check SharedPreferences for social login state
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        boolean isSocialLoggedIn = prefs.getBoolean("is_logged_in", false);
+        String loginMethod = prefs.getString("login_method", "");
+
+        if (isSocialLoggedIn) {
+            Log.d(TAG, "Social login session found: " + loginMethod);
+            return true;
+        }
+
+        Log.d(TAG, "No valid user session found");
+        return false;
     }
 }

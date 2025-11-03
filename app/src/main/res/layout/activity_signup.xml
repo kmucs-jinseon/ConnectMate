@@ -1,23 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/white">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     android:gravity="center_horizontal"
     android:padding="24dp"
-    android:background="@color/white"
     tools:context=".SignUpActivity">
 
     <!-- App Logo -->
     <ImageView
         android:id="@+id/logoImageView"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="16dp"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"
         android:src="@drawable/main_logo"
         android:contentDescription="@string/app_logo" />
 
@@ -28,10 +33,10 @@
         android:layout_height="wrap_content"
         android:text="Connect Mate"
         android:textColor="#4479CE"
-        android:textSize="28sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif-medium"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="4dp"
         tools:ignore="HardcodedText" />
 
     <!-- Sign Up Title -->
@@ -40,8 +45,8 @@
         android:layout_height="wrap_content"
         android:text="Create Account"
         android:textColor="#666666"
-        android:textSize="16sp"
-        android:layout_marginBottom="32dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp"
         tools:ignore="HardcodedText" />
 
     <!-- Email Input -->
@@ -215,4 +220,5 @@
     </LinearLayout>
 
 </LinearLayout>
+</ScrollView>
 

@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -253,6 +255,10 @@ public class SignUpActivity extends AppCompatActivity {
                 firebaseAuthWithGoogle(idToken);
             } else {
                 Log.w(TAG, "Google Sign-In succeeded but ID token is null");
+
+                // Save login state
+                saveLoginState("google");
+
                 Toast.makeText(this, "Google sign up successful!\\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
                 navigateToMain();
             }
@@ -336,6 +342,10 @@ public class SignUpActivity extends AppCompatActivity {
                 Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
             } else if (user != null) {
                 Log.d(TAG, "Kakao user info: " + user.getId());
+
+                // Save login state
+                saveLoginState("kakao");
+
                 Toast.makeText(SignUpActivity.this, "Kakao signup successful!", Toast.LENGTH_SHORT).show();
                 navigateToMain();
             }
@@ -389,6 +399,10 @@ public class SignUpActivity extends AppCompatActivity {
 
         if (accessToken != null && !accessToken.isEmpty()) {
             Log.d(TAG, "Naver access token: " + accessToken);
+
+            // Save login state
+            saveLoginState("naver");
+
             Toast.makeText(SignUpActivity.this, "Naver signup successful!", Toast.LENGTH_SHORT).show();
             navigateToMain();
         } else {
@@ -399,5 +413,18 @@ public class SignUpActivity extends AppCompatActivity {
 
     private boolean isValidApiKey(String apiKey) {
         return apiKey != null && !apiKey.trim().isEmpty();
+    }
+
+    /**
+     * Save login state to SharedPreferences
+     * @param loginMethod The login method used (google, kakao, naver, firebase)
+     */
+    private void saveLoginState(String loginMethod) {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("is_logged_in", true);
+        editor.putString("login_method", loginMethod);
+        editor.apply();
+        Log.d(TAG, "Login state saved: " + loginMethod);
     }
 }

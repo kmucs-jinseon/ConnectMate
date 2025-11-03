@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -253,6 +255,10 @@ public class LoginActivity extends AppCompatActivity {
             } else {
                 // Google Sign-In succeeded but no ID token (web client ID not configured)
                 Log.w(TAG, "Google Sign-In succeeded but ID token is null. Configure Web Client ID in Firebase Console.");
+
+                // Save login state
+                saveLoginState("google");
+
                 Toast.makeText(this, "Google sign in successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
                 // For now, just navigate to main since Google auth succeeded
                 // In production, you might want to create a user profile or link to Firebase differently
@@ -305,6 +311,11 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        Log.d(TAG, "═══════════════════════════════════════════");
+        Log.d(TAG, "Starting Kakao Login");
+        Log.d(TAG, "Kakao App Key configured: " + BuildConfig.KAKAO_APP_KEY.substring(0, 8) + "...");
+        Log.d(TAG, "═══════════════════════════════════════════");
+
         // Disable button during sign-in
         kakaoSignInButton.setEnabled(false);
 
@@ -313,10 +324,33 @@ public class LoginActivity extends AppCompatActivity {
             runOnUiThread(() -> kakaoSignInButton.setEnabled(true));
 
             if (error != null) {
-                Log.e(TAG, "Kakao login failed", error);
-                runOnUiThread(() -> Toast.makeText(LoginActivity.this, "Kakao login failed: " + error.getMessage(), Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "═══════════════════════════════════════════");
+                Log.e(TAG, "Kakao login failed");
+                Log.e(TAG, "Error type: " + error.getClass().getName());
+                Log.e(TAG, "Error message: " + error.getMessage());
+                Log.e(TAG, "═══════════════════════════════════════════");
+                error.printStackTrace();
+
+                String errorMsg = "Kakao login failed: " + error.getMessage();
+
+                // Provide helpful error messages
+                if (error.getMessage() != null) {
+                    if (error.getMessage().contains("KOE320")) {
+                        errorMsg = "Kakao login cancelled by user";
+                    } else if (error.getMessage().contains("platform")) {
+                        errorMsg = "App not registered in Kakao Console. Check package name and key hash.";
+                    } else if (error.getMessage().contains("consent")) {
+                        errorMsg = "Required permissions not configured in Kakao Console";
+                    }
+                }
+
+                String finalErrorMsg = errorMsg;
+                runOnUiThread(() -> Toast.makeText(LoginActivity.this, finalErrorMsg, Toast.LENGTH_LONG).show());
             } else if (token != null) {
-                Log.d(TAG, "Kakao login success: " + token.getAccessToken());
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "Kakao login success!");
+                Log.d(TAG, "Access Token: " + token.getAccessToken().substring(0, 20) + "...");
+                Log.d(TAG, "═══════════════════════════════════════════");
                 getUserInfoFromKakao();
             }
             return Unit.INSTANCE;
@@ -324,29 +358,73 @@ public class LoginActivity extends AppCompatActivity {
 
         // Check if KakaoTalk app is installed
         try {
-            if (UserApiClient.getInstance().isKakaoTalkLoginAvailable(this)) {
+            boolean isTalkAvailable = UserApiClient.getInstance().isKakaoTalkLoginAvailable(this);
+            Log.d(TAG, "KakaoTalk app installed: " + isTalkAvailable);
+
+            if (isTalkAvailable) {
+                Log.d(TAG, "Using KakaoTalk login");
                 UserApiClient.getInstance().loginWithKakaoTalk(this, callback);
             } else {
+                Log.d(TAG, "Using Kakao Account login (web)");
                 UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Kakao login exception", e);
+            Log.e(TAG, "═══════════════════════════════════════════");
+            Log.e(TAG, "Kakao login exception");
+            Log.e(TAG, "Exception type: " + e.getClass().getName());
+            Log.e(TAG, "Exception message: " + e.getMessage());
+            Log.e(TAG, "═══════════════════════════════════════════");
+            e.printStackTrace();
             kakaoSignInButton.setEnabled(true);
-            Toast.makeText(this, "Kakao login error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Kakao login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void getUserInfoFromKakao() {
+        Log.d(TAG, "Fetching Kakao user info...");
         UserApiClient.getInstance().me((user, error) -> {
             if (error != null) {
-                Log.e(TAG, "Failed to get Kakao user info", error);
-                Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "═══════════════════════════════════════════");
+                Log.e(TAG, "Failed to get Kakao user info");
+                Log.e(TAG, "Error: " + error.getMessage());
+                Log.e(TAG, "═══════════════════════════════════════════");
+                error.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(LoginActivity.this, "Failed to get user info: " + error.getMessage(), Toast.LENGTH_LONG).show());
             } else if (user != null) {
-                Log.d(TAG, "Kakao user info: " + user.getId());
-                String email = user.getKakaoAccount() != null && user.getKakaoAccount().getEmail() != null
-                        ? user.getKakaoAccount().getEmail() : "";
-                Toast.makeText(LoginActivity.this, "Kakao login successful!", Toast.LENGTH_SHORT).show();
-                navigateToMain();
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "Kakao user info retrieved successfully");
+                Log.d(TAG, "User ID: " + user.getId());
+
+                final String email;
+                final String nickname;
+
+                if (user.getKakaoAccount() != null) {
+                    if (user.getKakaoAccount().getEmail() != null) {
+                        email = user.getKakaoAccount().getEmail();
+                        Log.d(TAG, "Email: " + email);
+                    } else {
+                        email = "";
+                    }
+                    if (user.getKakaoAccount().getProfile() != null && user.getKakaoAccount().getProfile().getNickname() != null) {
+                        nickname = user.getKakaoAccount().getProfile().getNickname();
+                        Log.d(TAG, "Nickname: " + nickname);
+                    } else {
+                        nickname = "";
+                    }
+                } else {
+                    email = "";
+                    nickname = "";
+                }
+
+                Log.d(TAG, "═══════════════════════════════════════════");
+
+                runOnUiThread(() -> {
+                    // Save login state
+                    saveLoginState("kakao");
+
+                    Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + (nickname.isEmpty() ? "User" : nickname), Toast.LENGTH_SHORT).show();
+                    navigateToMain();
+                });
             }
             return Unit.INSTANCE;
         });
@@ -403,6 +481,10 @@ public class LoginActivity extends AppCompatActivity {
 
         if (accessToken != null && !accessToken.isEmpty()) {
             Log.d(TAG, "Naver access token: " + accessToken);
+
+            // Save login state
+            saveLoginState("naver");
+
             Toast.makeText(LoginActivity.this, "Naver login successful!", Toast.LENGTH_SHORT).show();
             navigateToMain();
         } else {
@@ -420,5 +502,18 @@ public class LoginActivity extends AppCompatActivity {
      */
     private boolean isValidApiKey(String apiKey) {
         return apiKey != null && !apiKey.trim().isEmpty();
+    }
+
+    /**
+     * Save login state to SharedPreferences
+     * @param loginMethod The login method used (google, kakao, naver, firebase)
+     */
+    private void saveLoginState(String loginMethod) {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("is_logged_in", true);
+        editor.putString("login_method", loginMethod);
+        editor.apply();
+        Log.d(TAG, "Login state saved: " + loginMethod);
     }
 }
