@@ -143,4 +143,5 @@
     <string name="app_info">앱 정보</string>
     <string name="notification">알림</string>
     <string name="last_message">last_message</string>
+    <string name="system_message">System message</string>
 </resources>

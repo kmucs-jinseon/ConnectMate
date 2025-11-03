@@ -98,6 +98,20 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".ChatRoomActivity"
+            android:exported="false"
+            android:label="Chat Room"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".EditProfileActivity"
+            android:exported="false"
+            android:label="Edit Profile"
+            android:windowSoftInputMode="adjustResize"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
             <intent-filter>

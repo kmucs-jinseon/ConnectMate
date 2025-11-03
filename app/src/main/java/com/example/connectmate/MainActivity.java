@@ -526,14 +526,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Get the tag of a fragment
-     */
-    private String getFragmentTag(Fragment fragment) {
-        if (fragment == null) return null;
-        return fragment.getTag();
-    }
-
-    /**
      * Update UI overlay visibility based on active fragment
      * This ensures each tab has its own distinct appearance without overlapping
      */

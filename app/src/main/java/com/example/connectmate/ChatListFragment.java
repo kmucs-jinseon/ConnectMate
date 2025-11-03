@@ -1,8 +1,10 @@
 package com.example.connectmate;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +16,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.connectmate.models.ChatRoom;
+import com.example.connectmate.utils.ChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
@@ -223,13 +227,12 @@ public class ChatListFragment extends Fragment {
     }
 
     private void loadSampleData() {
-        // Sample chat rooms
-        allChatRooms.add(new ChatRoom("1", "John Doe", "Hey, how are you doing today?", "오후 2:30", 3));
-        allChatRooms.add(new ChatRoom("2", "Jane Smith", "See you tomorrow!", "오전 11:20", 0));
-        allChatRooms.add(new ChatRoom("3", "Study Group", "Anyone finished the assignment?", "어제", 5));
-        allChatRooms.add(new ChatRoom("4", "Family", "Don't forget dinner tonight", "일요일", 0));
+        // Load chat rooms from ChatManager
+        ChatManager chatManager = ChatManager.getInstance(requireContext());
+        allChatRooms.clear();
+        allChatRooms.addAll(chatManager.getAllChatRooms());
 
-        // Sample favorites
+        // Sample favorites (keeping this for now)
         favoriteChatList.add(new FavoriteChat("1", "John", null));
         favoriteChatList.add(new FavoriteChat("2", "Jane", null));
         favoriteChatList.add(new FavoriteChat("5", "Mom", null));
@@ -241,8 +244,11 @@ public class ChatListFragment extends Fragment {
     }
 
     private void onChatRoomClick(ChatRoom chatRoom) {
-        Toast.makeText(requireContext(), "Clicked: " + chatRoom.getName(), Toast.LENGTH_SHORT).show();
-        // TODO: Open chat detail activity
+        // Open chat room activity
+        Intent intent = new Intent(requireContext(), ChatRoomActivity.class);
+        intent.putExtra("chat_room_id", chatRoom.getId());
+        intent.putExtra("chat_room", chatRoom);
+        startActivity(intent);
     }
 
     private void onFavoriteChatClick(FavoriteChat favorite) {
@@ -250,27 +256,12 @@ public class ChatListFragment extends Fragment {
         // TODO: Open chat with favorite
     }
 
-    // Inner class for ChatRoom data
-    public static class ChatRoom {
-        private final String id;
-        private final String name;
-        private final String lastMessage;
-        private final String timestamp;
-        private final int unreadCount;
-
-        public ChatRoom(String id, String name, String lastMessage, String timestamp, int unreadCount) {
-            this.id = id;
-            this.name = name;
-            this.lastMessage = lastMessage;
-            this.timestamp = timestamp;
-            this.unreadCount = unreadCount;
-        }
-
-        public String getId() { return id; }
-        public String getName() { return name; }
-        public String getLastMessage() { return lastMessage; }
-        public String getTimestamp() { return timestamp; }
-        public int getUnreadCount() { return unreadCount; }
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload chat rooms when fragment becomes visible
+        loadSampleData();
+        updateUI();
     }
 
     // Inner class for FavoriteChat data
