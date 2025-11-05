@@ -579,9 +579,6 @@
             app:cornerRadius="12dp"
             app:backgroundTint="@color/gray_400"
             android:textColor="@color/white"
-            app:icon="@drawable/ic_minus"
-            app:iconTint="@color/white"
-            app:iconGravity="textStart"
             android:paddingTop="14dp"
             android:paddingBottom="14dp" />
 

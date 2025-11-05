@@ -62,8 +62,15 @@ public class FavoriteChatAdapter extends RecyclerView.Adapter<FavoriteChatAdapte
                 }
             });
 
-            // Set default profile image (you can later add image loading with Glide/Picasso)
-            profileImage.setImageResource(R.drawable.ic_profile);
+            // Set profile image: use user's profile image if available, otherwise use circle_logo
+            if (favorite.getProfileImageUrl() != null && !favorite.getProfileImageUrl().isEmpty()) {
+                // TODO: Load user's profile image using Glide/Picasso
+                // For now, use default circle_logo
+                profileImage.setImageResource(R.drawable.circle_logo);
+            } else {
+                // Use default circle_logo
+                profileImage.setImageResource(R.drawable.circle_logo);
+            }
         }
     }
 }

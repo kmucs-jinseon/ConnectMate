@@ -1,9 +1,12 @@
 package com.example.connectmate;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.util.Base64;
 import android.util.Log;
 
@@ -36,6 +39,9 @@ public class ConnectMateApplication extends Application {
 
         // Initialize Naver SDK (Restoring original functionality)
         initializeNaverSdk();
+
+        // Check network connectivity
+        checkNetworkConnectivity();
     }
 
     private void initializeKakaoSdks() {
@@ -161,6 +167,44 @@ public class ConnectMateApplication extends Application {
             Log.d(TAG, "═══════════════════════════════════════════");
         } catch (Exception e) {
             Log.e(TAG, "Failed to generate hash from signature", e);
+        }
+    }
+
+    /**
+     * Check network connectivity for debugging
+     * This helps identify if the device can reach Kakao servers
+     */
+    private void checkNetworkConnectivity() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                NetworkCapabilities caps = cm.getNetworkCapabilities(cm.getActiveNetwork());
+                boolean hasInternet = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+                boolean hasValidated = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "NETWORK CONNECTIVITY STATUS");
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "Connected to network: " + (caps != null));
+                Log.d(TAG, "Has internet capability: " + hasInternet);
+                Log.d(TAG, "Internet validated: " + hasValidated);
+
+                if (caps != null) {
+                    Log.d(TAG, "WiFi: " + caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI));
+                    Log.d(TAG, "Cellular: " + caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+                    Log.d(TAG, "Ethernet: " + caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+                }
+
+                if (!hasInternet || !hasValidated) {
+                    Log.w(TAG, "⚠️ WARNING: Device may not have working internet!");
+                    Log.w(TAG, "Map tiles will fail to load without internet access");
+                }
+                Log.d(TAG, "═══════════════════════════════════════════");
+            } else {
+                Log.e(TAG, "❌ ConnectivityManager is null!");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to check network connectivity", e);
         }
     }
 }

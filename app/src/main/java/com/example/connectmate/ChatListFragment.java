@@ -232,11 +232,14 @@ public class ChatListFragment extends Fragment {
         allChatRooms.clear();
         allChatRooms.addAll(chatManager.getAllChatRooms());
 
-        // Sample favorites (keeping this for now)
-        favoriteChatList.add(new FavoriteChat("1", "John", null));
-        favoriteChatList.add(new FavoriteChat("2", "Jane", null));
-        favoriteChatList.add(new FavoriteChat("5", "Mom", null));
+        // Clear and reload favorites to prevent duplicates
+        favoriteChatList.clear();
+        // Sample favorites - using circle_logo as default profile image
+        favoriteChatList.add(new FavoriteChat("1", "Jane", null));
+        favoriteChatList.add(new FavoriteChat("2", "Mom", null));
+        // Note: Users can customize these with their own profile images
 
+        filteredChatRooms.clear(); // Also clear filtered list before adding
         filteredChatRooms.addAll(allChatRooms);
 
         chatRoomAdapter.notifyDataSetChanged();

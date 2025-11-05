@@ -21,6 +21,8 @@ public class Activity implements Serializable {
     private String creatorId;
     private String creatorName;
     private long createdTimestamp;
+    private double latitude;  // GPS latitude for map display
+    private double longitude; // GPS longitude for map display
 
     // Default constructor
     public Activity() {
@@ -45,6 +47,9 @@ public class Activity implements Serializable {
         this.hashtags = hashtags;
         this.creatorId = creatorId;
         this.creatorName = creatorName;
+        // Default to Seoul City Hall coordinates
+        this.latitude = 37.5665;
+        this.longitude = 126.9780;
     }
 
     // Constructor for compatibility with existing code
@@ -173,6 +178,22 @@ public class Activity implements Serializable {
 
     public void setCreatedTimestamp(long createdTimestamp) {
         this.createdTimestamp = createdTimestamp;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
     }
 
     /**

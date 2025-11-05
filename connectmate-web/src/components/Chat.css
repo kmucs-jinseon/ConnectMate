@@ -1,0 +1,257 @@
+.chat-container {
+  display: flex;
+  height: calc(100vh - 60px);
+  background: #f5f5f5;
+}
+
+/* Chat List Sidebar */
+.chat-list {
+  width: 300px;
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.chat-list-header {
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.chat-list-header h2 {
+  font-size: 24px;
+  color: #333;
+}
+
+.chat-room-item {
+  display: flex;
+  padding: 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.2s;
+}
+
+.chat-room-item:hover {
+  background: #f9f9f9;
+}
+
+.chat-room-item.active {
+  background: #E3F2FD;
+}
+
+.chat-room-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.chat-room-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-room-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.chat-room-last-message {
+  font-size: 14px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-room-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 8px;
+}
+
+.chat-room-time {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.chat-room-unread {
+  background: #2196F3;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Chat Messages Area */
+.chat-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+}
+
+.chat-header-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.chat-header-info h3 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.chat-header-info p {
+  font-size: 14px;
+  color: #888;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #fafafa;
+}
+
+.message {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-mine {
+  align-items: flex-end;
+}
+
+.message-other {
+  align-items: flex-start;
+}
+
+.message-sender {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  margin-left: 12px;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  position: relative;
+}
+
+.message-mine .message-bubble {
+  background: #2196F3;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.message-other .message-bubble {
+  background: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Chat Input */
+.chat-input-container {
+  display: flex;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  background: white;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.chat-input:focus {
+  border-color: #2196F3;
+}
+
+.send-button {
+  width: 48px;
+  height: 48px;
+  margin-left: 8px;
+  background: #2196F3;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-button:hover {
+  background: #1976D2;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .chat-list {
+    width: 100%;
+  }
+
+  .chat-messages {
+    display: none;
+  }
+
+  .chat-list.hidden {
+    display: none;
+  }
+
+  .chat-messages.visible {
+    display: flex;
+  }
+}

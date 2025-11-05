@@ -88,6 +88,9 @@ android {
     }
 }
 
+// Note: Kakao Maps SDK does not provide source JARs
+// Android Studio may show warnings about missing sources - this is normal and doesn't affect builds
+
 dependencies {
     // AndroidX Core
     implementation(libs.appcompat)

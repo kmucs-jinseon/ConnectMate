@@ -43,6 +43,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private TextView detailHashtags;
     private TextView detailCreator;
     private MaterialButton btnJoinActivity;
+    private MaterialButton btnDeleteActivity;
 
     // Cards (for visibility control)
     private MaterialCardView locationCard;
@@ -90,6 +91,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         detailHashtags = findViewById(R.id.detail_hashtags);
         detailCreator = findViewById(R.id.detail_creator);
         btnJoinActivity = findViewById(R.id.btn_join_activity);
+        btnDeleteActivity = findViewById(R.id.btn_delete_activity);
 
         locationCard = findViewById(R.id.location_card);
         participantsCard = findViewById(R.id.participants_card);
@@ -185,6 +187,60 @@ public class ActivityDetailActivity extends AppCompatActivity {
         btnJoinActivity.setOnClickListener(v -> {
             joinActivity();
         });
+
+        // Only show delete button if current user is the creator
+        String currentUserId = getCurrentUserId();
+        if (activity.getCreatorId() != null && activity.getCreatorId().equals(currentUserId)) {
+            btnDeleteActivity.setVisibility(View.VISIBLE);
+            btnDeleteActivity.setOnClickListener(v -> {
+                deleteActivity();
+            });
+        } else {
+            btnDeleteActivity.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Get current user ID from Firebase Auth or SharedPreferences
+     */
+    private String getCurrentUserId() {
+        // Try Firebase Auth
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            return firebaseUser.getUid();
+        }
+
+        // Try SharedPreferences for social login
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        return prefs.getString("user_id", "");
+    }
+
+    /**
+     * Delete the activity
+     */
+    private void deleteActivity() {
+        if (activity == null) {
+            Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show confirmation dialog
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Delete Activity")
+            .setMessage("Are you sure you want to delete this activity?")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                ActivityManager activityManager = ActivityManager.getInstance(this);
+                boolean deleted = activityManager.deleteActivity(activity.getId());
+
+                if (deleted) {
+                    Toast.makeText(this, "Activity deleted", Toast.LENGTH_SHORT).show();
+                    finish();  // Close the activity detail page
+                } else {
+                    Toast.makeText(this, "Failed to delete activity", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     /**

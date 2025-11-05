@@ -306,6 +306,20 @@
                 app:cornerRadius="12dp"
                 app:backgroundTint="@color/primary_blue"
                 android:textColor="@color/white"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Delete Button (Only visible to creator) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_delete_activity"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="Delete Activity"
+                android:textSize="16sp"
+                android:textAllCaps="false"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@android:color/holo_red_dark"
+                android:textColor="@color/white"
+                android:visibility="gone"
                 android:layout_marginBottom="80dp" />
 
         </LinearLayout>
