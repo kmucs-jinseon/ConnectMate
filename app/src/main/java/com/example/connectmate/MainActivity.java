@@ -1,13 +1,18 @@
 package com.example.connectmate;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -15,29 +20,17 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.kakao.sdk.user.UserApiClient;
-import com.kakao.vectormap.KakaoMap;
-import com.navercorp.nid.NaverIdLoginSDK;
-import com.kakao.vectormap.KakaoMapReadyCallback;
-import com.kakao.vectormap.MapLifeCycleCallback;
-import com.kakao.vectormap.MapView;
-import com.kakao.vectormap.LatLng;
-import com.kakao.vectormap.camera.CameraUpdateFactory;
-import com.kakao.vectormap.camera.CameraUpdate;
-import com.kakao.vectormap.label.LabelOptions;
-import com.kakao.vectormap.label.LabelStyles;
-import com.kakao.vectormap.label.LabelStyle;
-import com.kakao.vectormap.label.LabelLayer;
-import com.kakao.vectormap.label.Label;
+// Map imports removed - MapFragment now handles all map logic
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,12 +55,9 @@ public class MainActivity extends AppCompatActivity {
     private Fragment settingFragment;
     private Fragment activeFragment;
 
-    // Map components
-    private MapView mainMapView;
-    private KakaoMap kakaoMap;
+    // UI Overlays
     private LinearLayout mapUiOverlay;
     private LinearLayout mapControls;
-    private ProgressBar loadingIndicator;
 
     // Map UI components
     private EditText searchInput;
@@ -85,10 +75,6 @@ public class MainActivity extends AppCompatActivity {
     // Navigation & FAB
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
-
-    // Data
-    private List<MapFragment.ActivityMarker> activityMarkers;
-    private boolean isNormalMapType = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,14 +95,8 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "MainActivity onCreate started");
 
-        // Initialize data
-        activityMarkers = new ArrayList<>();
-
         // Initialize UI components
         initializeViews();
-
-        // Initialize map
-        initializeMap();
 
         // Initialize all fragments
         initializeFragments(savedInstanceState);
@@ -144,11 +124,9 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         fabCreateActivity = findViewById(R.id.fabCreateActivity);
 
-        // Map components
-        mainMapView = findViewById(R.id.main_map_view);
+        // UI Overlays
         mapUiOverlay = findViewById(R.id.map_ui_overlay);
         mapControls = findViewById(R.id.map_controls);
-        loadingIndicator = findViewById(R.id.loading_indicator);
 
         // Map UI controls
         searchInput = findViewById(R.id.search_input);
@@ -166,69 +144,9 @@ public class MainActivity extends AppCompatActivity {
         if (bottomNavigationView == null) {
             Log.e(TAG, "BottomNavigationView not found in layout");
         }
-        if (mainMapView == null) {
-            Log.e(TAG, "Main MapView not found in layout");
-        }
     }
 
-    /**
-     * Initialize Kakao Map
-     */
-    private void initializeMap() {
-        if (mainMapView == null) {
-            Log.e(TAG, "Cannot initialize map - MapView is null");
-            return;
-        }
-
-        Log.d(TAG, "Initializing background Kakao Map...");
-        showLoading(true);
-
-        mainMapView.start(new MapLifeCycleCallback() {
-            @Override
-            public void onMapDestroy() {
-                Log.d(TAG, "Background map destroyed");
-            }
-
-            @Override
-            public void onMapError(Exception error) {
-                showLoading(false);
-                if (error != null) {
-                    Log.e(TAG, "═══════════════════════════════════════════");
-                    Log.e(TAG, "MAP INITIALIZATION ERROR:");
-                    Log.e(TAG, "Error message: " + error.getMessage());
-                    Log.e(TAG, "Error type: " + error.getClass().getSimpleName());
-                    Log.e(TAG, "═══════════════════════════════════════════");
-                    error.printStackTrace();
-
-                    String errorMsg = "Map failed: " + error.getMessage();
-                    if (error.getMessage() != null && error.getMessage().contains("auth")) {
-                        errorMsg = "Map authentication failed. Check Logcat for key hash.";
-                    }
-                    Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
-                }
-            }
-        }, new KakaoMapReadyCallback() {
-            @Override
-            public void onMapReady(KakaoMap map) {
-                Log.d(TAG, "═══════════════════════════════════════════");
-                Log.d(TAG, "✓ MAP READY - Map initialized successfully!");
-                Log.d(TAG, "MapView is visible: " + (mainMapView.getVisibility() == View.VISIBLE));
-                Log.d(TAG, "MapView dimensions: " + mainMapView.getWidth() + "x" + mainMapView.getHeight());
-                Log.d(TAG, "═══════════════════════════════════════════");
-
-                MainActivity.this.kakaoMap = map;
-                showLoading(false);
-
-                // Center on Seoul
-                map.moveCamera(CameraUpdateFactory.newCenterPosition(
-                    LatLng.from(37.5665, 126.9780), 13));
-                Log.d(TAG, "✓ Camera moved to Seoul");
-
-                // Add sample activity markers
-                addSampleActivityMarkers();
-            }
-        });
-    }
+    // Map initialization methods removed - MapFragment now handles all map logic
 
     /**
      * Setup map controls and listeners
@@ -264,18 +182,34 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Map control buttons
+        // Map control buttons - Call MapFragment methods
         if (btnCurrentLocation != null) {
-            btnCurrentLocation.setOnClickListener(v -> moveToCurrentLocation());
+            btnCurrentLocation.setOnClickListener(v -> {
+                if (mapFragment instanceof MapFragment) {
+                    ((MapFragment) mapFragment).moveToCurrent();
+                }
+            });
         }
         if (btnMapType != null) {
-            btnMapType.setOnClickListener(v -> toggleMapType());
+            btnMapType.setOnClickListener(v -> {
+                if (mapFragment instanceof MapFragment) {
+                    ((MapFragment) mapFragment).toggleMapType();
+                }
+            });
         }
         if (btnZoomIn != null) {
-            btnZoomIn.setOnClickListener(v -> zoomIn());
+            btnZoomIn.setOnClickListener(v -> {
+                if (mapFragment instanceof MapFragment) {
+                    ((MapFragment) mapFragment).zoomIn();
+                }
+            });
         }
         if (btnZoomOut != null) {
-            btnZoomOut.setOnClickListener(v -> zoomOut());
+            btnZoomOut.setOnClickListener(v -> {
+                if (mapFragment instanceof MapFragment) {
+                    ((MapFragment) mapFragment).zoomOut();
+                }
+            });
         }
     }
 
@@ -296,59 +230,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void addSampleActivityMarkers() {
-        if (kakaoMap == null) return;
-
-        // Sample activities
-        activityMarkers.add(new MapFragment.ActivityMarker(
-            "1", "Weekly Soccer Match", "Seoul National Park",
-            "Today, 3:00 PM", "Join us for a friendly soccer match!",
-            5, 10, 37.5665, 126.9780, "Sports"
-        ));
-        activityMarkers.add(new MapFragment.ActivityMarker(
-            "2", "Study Group - Java", "Gangnam Library",
-            "Tomorrow, 2:00 PM", "Let's study Java together",
-            3, 8, 37.5700, 126.9850, "Study"
-        ));
-        activityMarkers.add(new MapFragment.ActivityMarker(
-            "3", "Coffee Meetup", "Hongdae Cafe",
-            "Saturday, 4:00 PM", "Casual coffee and chat",
-            6, 12, 37.5550, 126.9200, "Social"
-        ));
-
-        try {
-            if (kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-
-                for (MapFragment.ActivityMarker activity : activityMarkers) {
-                    LabelStyles styles = kakaoMap.getLabelManager()
-                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
-
-                    LabelOptions options = LabelOptions.from(
-                        activity.getId(),
-                        LatLng.from(activity.getLatitude(), activity.getLongitude())
-                    ).setStyles(styles);
-
-                    if (labelLayer != null) {
-                        Label label = labelLayer.addLabel(options);
-                        label.setClickable(true);
-                    }
-                }
-
-                kakaoMap.setOnLabelClickListener((kakaoMap, layer, label) -> {
-                    String labelId = label.getLabelId();
-                    Toast.makeText(MainActivity.this,
-                        "Activity: " + labelId,
-                        Toast.LENGTH_SHORT).show();
-                    return true;
-                });
-
-                Log.d(TAG, "✓ Added " + activityMarkers.size() + " activity markers");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to add markers", e);
-        }
-    }
+    // addSampleActivityMarkers removed - MapFragment now handles markers
 
     private void toggleFilterChips() {
         if (filterChips.getVisibility() == View.VISIBLE) {
@@ -358,46 +240,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void moveToCurrentLocation() {
-        if (kakaoMap == null) return;
-        Toast.makeText(this, "Moving to current location...", Toast.LENGTH_SHORT).show();
-        kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(
-            LatLng.from(37.5665, 126.9780), 15));
-    }
-
-    private void toggleMapType() {
-        if (kakaoMap == null) return;
-        isNormalMapType = !isNormalMapType;
-        Toast.makeText(this,
-            "Map type: " + (isNormalMapType ? "Normal" : "Satellite"),
-            Toast.LENGTH_SHORT).show();
-    }
-
-    private void zoomIn() {
-        if (kakaoMap == null) return;
-        try {
-            CameraUpdate update = CameraUpdateFactory.zoomIn();
-            kakaoMap.moveCamera(update);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to zoom in", e);
-        }
-    }
-
-    private void zoomOut() {
-        if (kakaoMap == null) return;
-        try {
-            CameraUpdate update = CameraUpdateFactory.zoomOut();
-            kakaoMap.moveCamera(update);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to zoom out", e);
-        }
-    }
-
-    private void showLoading(boolean show) {
-        if (loadingIndicator != null) {
-            loadingIndicator.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
-    }
+    // Map control methods removed - MapFragment now handles all map operations
 
     /**
      * Initialize all fragments and set MapFragment as default
@@ -557,9 +400,9 @@ public class MainActivity extends AppCompatActivity {
             fragmentContainer.setPadding(0, 0, 0, 0);
 
             if (isMapTab) {
-                // Transparent background to show map
+                // MapFragment now contains its own map, no special background needed
                 fragmentContainer.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-                Log.d(TAG, "Map tab active - transparent background, no padding");
+                Log.d(TAG, "Map tab active - showing MapFragment");
             } else if (isActivityTab) {
                 // White background for Activity tab
                 fragmentContainer.setBackgroundColor(getResources().getColor(android.R.color.white));
@@ -615,9 +458,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (mainMapView != null) {
-            mainMapView.resume();
-        }
 
         // Ensure UI visibility is correct when resuming (e.g., after creating an activity)
         if (activeFragment != null) {
@@ -630,23 +470,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mainMapView != null) {
-            mainMapView.pause();
-        }
         Log.d(TAG, "MainActivity paused");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Properly finish the map to prevent crashes
-        if (mainMapView != null) {
-            mainMapView.finish();
-        }
-        mainMapView = null;
-        kakaoMap = null;
         Log.d(TAG, "MainActivity destroyed");
     }
+
+    // Location methods removed - MapFragment now handles all location logic
 
     /**
      * Check if user is authenticated via any login method (Firebase, Kakao, or Naver)

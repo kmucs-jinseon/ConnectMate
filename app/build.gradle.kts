@@ -116,7 +116,6 @@ dependencies {
 
     // Naver Login SDK
     implementation("com.navercorp.nid:oauth:5.9.1")
-    implementation(libs.play.services.maps)
 
     // Testing
     testImplementation(libs.junit)

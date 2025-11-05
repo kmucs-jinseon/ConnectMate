@@ -32,6 +32,7 @@ public class ProfileFragment extends Fragment {
     private CircleImageView profileAvatar;
     private TextView profileName;
     private TextView profileUsername;
+    private TextView profileEmail;
     private Chip mbtiChip;
     private TextView profileBio;
     private TextView ratingText;
@@ -83,6 +84,7 @@ public class ProfileFragment extends Fragment {
         profileAvatar = view.findViewById(R.id.profile_avatar);
         profileName = view.findViewById(R.id.profile_name);
         profileUsername = view.findViewById(R.id.profile_username);
+        profileEmail = view.findViewById(R.id.profile_email);
         mbtiChip = view.findViewById(R.id.mbti_chip);
         profileBio = view.findViewById(R.id.profile_bio);
         ratingText = view.findViewById(R.id.rating_text);
@@ -169,6 +171,17 @@ public class ProfileFragment extends Fragment {
         }
         if (profileUsername != null) {
             profileUsername.setText("@" + username);
+        }
+
+        // Load email from Firebase Auth or SharedPreferences
+        String userEmail = "";
+        if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
+            userEmail = mAuth.getCurrentUser().getEmail();
+        } else {
+            userEmail = prefs.getString("user_email", "user@example.com");
+        }
+        if (profileEmail != null) {
+            profileEmail.setText(userEmail);
         }
 
         // Load or set default bio
