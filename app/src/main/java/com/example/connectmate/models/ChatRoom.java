@@ -3,43 +3,38 @@ package com.example.connectmate.models;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * ChatRoom model representing a group chat linked to an activity or location.
+ * ChatRoom model representing a group chat linked to an activity
  */
 public class ChatRoom implements Serializable {
     private String id;
     private String name;
+    private String activityId;
     private String lastMessage;
-    private long lastMessageTimestamp;
-    private long createdTimestamp;
-    private String creatorId; // ID of the user who created the room
-
-    // Location fields
-    private double latitude;
-    private double longitude;
-
-    // Member info
+    private long lastMessageTime;
     private List<String> memberIds;
+    private List<String> memberNames;
+    private int unreadCount;
+    private String profileImageUrl;
+    private long createdTimestamp;
 
-    // Default constructor for Firebase
+    // Default constructor
     public ChatRoom() {
+        this.id = UUID.randomUUID().toString();
         this.memberIds = new ArrayList<>();
+        this.memberNames = new ArrayList<>();
+        this.createdTimestamp = System.currentTimeMillis();
+        this.lastMessageTime = System.currentTimeMillis();
+        this.unreadCount = 0;
     }
 
-    // Constructor for creating a new room with location
-    public ChatRoom(String id, String name, String creatorId, String lastMessage, long timestamp, double latitude, double longitude) {
-        this.id = id;
+    // Constructor with essential fields
+    public ChatRoom(String name, String activityId) {
+        this();
         this.name = name;
-        this.creatorId = creatorId;
-        this.lastMessage = lastMessage;
-        this.lastMessageTimestamp = timestamp;
-        this.createdTimestamp = timestamp;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.memberIds = new ArrayList<>();
-        // The creator is also a member
-        this.memberIds.add(creatorId);
+        this.activityId = activityId;
     }
 
     // Getters and setters
@@ -59,6 +54,14 @@ public class ChatRoom implements Serializable {
         this.name = name;
     }
 
+    public String getActivityId() {
+        return activityId;
+    }
+
+    public void setActivityId(String activityId) {
+        this.activityId = activityId;
+    }
+
     public String getLastMessage() {
         return lastMessage;
     }
@@ -67,12 +70,44 @@ public class ChatRoom implements Serializable {
         this.lastMessage = lastMessage;
     }
 
-    public long getLastMessageTimestamp() {
-        return lastMessageTimestamp;
+    public long getLastMessageTime() {
+        return lastMessageTime;
     }
 
-    public void setLastMessageTimestamp(long lastMessageTimestamp) {
-        this.lastMessageTimestamp = lastMessageTimestamp;
+    public void setLastMessageTime(long lastMessageTime) {
+        this.lastMessageTime = lastMessageTime;
+    }
+
+    public List<String> getMemberIds() {
+        return memberIds;
+    }
+
+    public void setMemberIds(List<String> memberIds) {
+        this.memberIds = memberIds;
+    }
+
+    public List<String> getMemberNames() {
+        return memberNames;
+    }
+
+    public void setMemberNames(List<String> memberNames) {
+        this.memberNames = memberNames;
+    }
+
+    public int getUnreadCount() {
+        return unreadCount;
+    }
+
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public long getCreatedTimestamp() {
@@ -82,56 +117,34 @@ public class ChatRoom implements Serializable {
     public void setCreatedTimestamp(long createdTimestamp) {
         this.createdTimestamp = createdTimestamp;
     }
-    
-    public String getCreatorId() {
-        return creatorId;
-    }
 
-    public void setCreatorId(String creatorId) {
-        this.creatorId = creatorId;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
-
-    public List<String> getMemberIds() {
-        // Ensure memberIds is never null
-        if (memberIds == null) {
-            memberIds = new ArrayList<>();
-        }
-        return memberIds;
-    }
-
-    public void setMemberIds(List<String> memberIds) {
-        this.memberIds = memberIds;
-    }
-
-    // Helper methods
-    public void addMember(String userId) {
-        if (memberIds == null) {
-            memberIds = new ArrayList<>();
-        }
-        if (!memberIds.contains(userId)) {
-            memberIds.add(userId);
+    /**
+     * Add a member to the chat room
+     */
+    public void addMember(String memberId, String memberName) {
+        if (!memberIds.contains(memberId)) {
+            memberIds.add(memberId);
+            memberNames.add(memberName);
         }
     }
 
-    public void removeMember(String userId) {
-        if (memberIds != null) {
-            memberIds.remove(userId);
+    /**
+     * Remove a member from the chat room
+     */
+    public void removeMember(String memberId) {
+        int index = memberIds.indexOf(memberId);
+        if (index >= 0) {
+            memberIds.remove(index);
+            if (index < memberNames.size()) {
+                memberNames.remove(index);
+            }
         }
+    }
+
+    /**
+     * Get member count
+     */
+    public int getMemberCount() {
+        return memberIds.size();
     }
 }
