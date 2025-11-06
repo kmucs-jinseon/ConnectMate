@@ -78,6 +78,7 @@ import java.util.List;
 public class MapFragment extends Fragment {
 
     private static final String TAG = "MapFragment";
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     // Map components
     private MapView mapView;
@@ -99,6 +100,17 @@ public class MapFragment extends Fragment {
     // Data
     private List<Activity> activities;
     private LocationManager locationManager;
+    private LatLng initialCameraPosition = null; // Store initial position before map loads
+
+    // Pending navigation (for when map is not ready yet)
+    private Double pendingNavigationLat = null;
+    private Double pendingNavigationLng = null;
+    private String pendingNavigationTitle = null;
+
+    // Pending route display (for when map is not ready yet)
+    private Double pendingRouteLat = null;
+    private Double pendingRouteLng = null;
+    private String pendingRouteTitle = null;
 
     @Nullable
     @Override
@@ -134,6 +146,9 @@ public class MapFragment extends Fragment {
         // Initialize data
         activities = new ArrayList<>();
         locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+
+        // Request location permissions if not granted
+        requestLocationPermissionsIfNeeded();
 
         // Set up search functionality
         setupSearchBar();
@@ -174,6 +189,11 @@ public class MapFragment extends Fragment {
         Log.d(TAG, "MapView dimensions: " + mapView.getWidth() + "x" + mapView.getHeight());
         Log.d(TAG, "Package name: " + requireContext().getPackageName());
         Log.d(TAG, "═══════════════════════════════════");
+
+        // Determine initial camera position BEFORE map loads
+        // This prevents the "jump" from default location to current location
+        determineInitialLocation();
+
         showLoading(true);
 
         mapView.start(new MapLifeCycleCallback() {
@@ -510,8 +530,8 @@ public class MapFragment extends Fragment {
                     Toast.makeText(getContext(), "✓ Map loaded! Can you see it?", Toast.LENGTH_LONG).show();
                 }
 
-                // Center on current location or default
-                moveToCurrentLocation();
+                // Set initial camera position (determined before map loaded)
+                setInitialCameraPosition();
 
                 // Add sample activity markers
                 addSampleActivityMarkers();
@@ -611,6 +631,18 @@ public class MapFragment extends Fragment {
             });
 
             Log.d(TAG, "Added " + activities.size() + " activity markers");
+
+            // Execute pending navigation if there is one
+            if (pendingNavigationLat != null && pendingNavigationLng != null) {
+                Log.d(TAG, "Executing pending navigation: " + pendingNavigationTitle);
+                navigateToLocation(pendingNavigationLat, pendingNavigationLng, pendingNavigationTitle);
+            }
+
+            // Execute pending route display if there is one
+            if (pendingRouteLat != null && pendingRouteLng != null) {
+                Log.d(TAG, "Executing pending route display: " + pendingRouteTitle);
+                showRouteToLocation(pendingRouteLat, pendingRouteLng, pendingRouteTitle);
+            }
         } catch (RuntimeException e) {
             // Catch any exceptions from the KakaoMap library's internal delegate issues
             Log.e(TAG, "RuntimeException while adding markers (possible KakaoMap delegate issue)", e);
@@ -695,6 +727,73 @@ public class MapFragment extends Fragment {
     }
 
     /**
+     * Determine initial camera location BEFORE map loads
+     * This prevents the "jump" from default to current location
+     */
+    private void determineInitialLocation() {
+        if (!hasLocationPermission()) {
+            Log.d(TAG, "Location permission not granted, will use default Seoul location");
+            initialCameraPosition = LatLng.from(37.5665, 126.9780); // Seoul
+            return;
+        }
+
+        try {
+            Location location = null;
+
+            // Try GPS first
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+
+            // If GPS location is null, try network provider
+            if (location == null && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (location != null) {
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                initialCameraPosition = LatLng.from(latitude, longitude);
+                Log.d(TAG, "Initial location determined: " + latitude + ", " + longitude);
+            } else {
+                Log.d(TAG, "Location is null, will use default Seoul location");
+                initialCameraPosition = LatLng.from(37.5665, 126.9780); // Seoul
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Location permission error", e);
+            initialCameraPosition = LatLng.from(37.5665, 126.9780); // Seoul
+        } catch (Exception e) {
+            Log.e(TAG, "Error determining initial location", e);
+            initialCameraPosition = LatLng.from(37.5665, 126.9780); // Seoul
+        }
+    }
+
+    /**
+     * Set initial camera position when map becomes ready
+     * Uses the location determined before map initialization
+     */
+    private void setInitialCameraPosition() {
+        if (kakaoMap == null) {
+            Log.e(TAG, "KakaoMap is null, cannot set initial camera position");
+            return;
+        }
+
+        if (initialCameraPosition == null) {
+            Log.w(TAG, "Initial camera position is null, using default");
+            initialCameraPosition = LatLng.from(37.5665, 126.9780); // Seoul
+        }
+
+        try {
+            // Set camera position without animation for immediate display
+            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(initialCameraPosition, 17));
+            Log.d(TAG, "Initial camera position set to: " + initialCameraPosition.getLatitude() +
+                  ", " + initialCameraPosition.getLongitude() + " at zoom level 17");
+        } catch (RuntimeException e) {
+            Log.e(TAG, "RuntimeException setting initial camera position", e);
+        }
+    }
+
+    /**
      * Check if location permissions are granted
      */
     private boolean hasLocationPermission() {
@@ -704,6 +803,59 @@ public class MapFragment extends Fragment {
             ContextCompat.checkSelfPermission(getContext(),
                 Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         );
+    }
+
+    /**
+     * Request location permissions if not already granted
+     */
+    private void requestLocationPermissionsIfNeeded() {
+        if (!hasLocationPermission()) {
+            Log.d(TAG, "Location permissions not granted, requesting...");
+            requestPermissions(
+                new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                },
+                LOCATION_PERMISSION_REQUEST_CODE
+            );
+        } else {
+            Log.d(TAG, "Location permissions already granted");
+        }
+    }
+
+    /**
+     * Handle permission request result
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                          @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            boolean granted = false;
+            for (int result : grantResults) {
+                if (result == PackageManager.PERMISSION_GRANTED) {
+                    granted = true;
+                    break;
+                }
+            }
+
+            if (granted) {
+                Log.d(TAG, "Location permission granted by user");
+                Toast.makeText(requireContext(), "위치 권한이 허용되었습니다", Toast.LENGTH_SHORT).show();
+
+                // Re-initialize map with current location if map is already ready
+                if (isMapViewReady && kakaoMap != null) {
+                    determineInitialLocation();
+                    setInitialCameraPosition();
+                }
+            } else {
+                Log.d(TAG, "Location permission denied by user");
+                Toast.makeText(requireContext(),
+                    "위치 권한이 거부되었습니다. 서울 위치로 표시됩니다.",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     /**
@@ -794,15 +946,21 @@ public class MapFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Search icon button click listener - acts as Enter/Submit button
+        // Search icon button click listener
         searchIconButton.setOnClickListener(v -> {
             String query = searchEditText.getText().toString().trim();
             if (!query.isEmpty()) {
+                // If there's text, perform search
                 Log.d(TAG, "Search icon clicked, performing search...");
                 performSearch(query);
                 hideKeyboard();
             } else {
-                Toast.makeText(getContext(), "검색어를 입력하세요", Toast.LENGTH_SHORT).show();
+                // If empty, focus on EditText and show keyboard
+                searchEditText.requestFocus();
+                InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(searchEditText, InputMethodManager.SHOW_IMPLICIT);
+                }
             }
         });
 
@@ -840,10 +998,19 @@ public class MapFragment extends Fragment {
                 String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
                 String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + encodedQuery;
 
-                // Get API key from BuildConfig
-                String apiKey = BuildConfig.KAKAO_APP_KEY;
+                // Get REST API key from BuildConfig (different from Native App key used for Maps)
+                String apiKey = BuildConfig.KAKAO_REST_API_KEY;
+                if (apiKey == null || apiKey.isEmpty()) {
+                    Log.e(TAG, "KAKAO_REST_API_KEY not configured!");
+                    mainHandler.post(() -> {
+                        Toast.makeText(getContext(),
+                            "검색 기능을 사용하려면 KAKAO_REST_API_KEY를 local.properties에 추가하세요",
+                            Toast.LENGTH_LONG).show();
+                    });
+                    return;
+                }
                 Log.d(TAG, "API URL: " + apiUrl);
-                Log.d(TAG, "API Key length: " + (apiKey != null ? apiKey.length() : "NULL"));
+                Log.d(TAG, "API Key length: " + apiKey.length());
 
                 URL url = new URL(apiUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -1129,6 +1296,307 @@ public class MapFragment extends Fragment {
             if (getContext() != null) {
                 Toast.makeText(getContext(), "Map type toggle", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    /**
+     * Navigate to specific coordinates and show a marker
+     * @param latitude Target latitude
+     * @param longitude Target longitude
+     * @param title Optional title for the marker
+     */
+    public void navigateToLocation(double latitude, double longitude, String title) {
+        if (kakaoMap == null || !isMapViewReady) {
+            Log.d(TAG, "Map not ready yet, storing pending navigation: " + title + " at (" + latitude + ", " + longitude + ")");
+            // Store for later when map is ready
+            pendingNavigationLat = latitude;
+            pendingNavigationLng = longitude;
+            pendingNavigationTitle = title;
+            return;
+        }
+
+        try {
+            LatLng targetLocation = LatLng.from(latitude, longitude);
+
+            // Move camera to target location with animation
+            CameraAnimation animation = CameraAnimation.from(1000, true, true);
+            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(targetLocation, 17), animation);
+
+            Log.d(TAG, "Navigated to location: " + latitude + ", " + longitude);
+
+            if (getContext() != null && title != null) {
+                Toast.makeText(getContext(), title + " 위치로 이동", Toast.LENGTH_SHORT).show();
+            }
+
+            // Clear pending navigation
+            pendingNavigationLat = null;
+            pendingNavigationLng = null;
+            pendingNavigationTitle = null;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to navigate to location", e);
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "위치로 이동할 수 없습니다", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Show route from current location to destination
+     * @param destinationLat Destination latitude
+     * @param destinationLng Destination longitude
+     * @param title Optional title for the destination
+     */
+    public void showRouteToLocation(double destinationLat, double destinationLng, String title) {
+        if (kakaoMap == null || !isMapViewReady) {
+            Log.d(TAG, "Map not ready yet, storing pending route request: " + title);
+            // Store for later when map is ready
+            pendingRouteLat = destinationLat;
+            pendingRouteLng = destinationLng;
+            pendingRouteTitle = title;
+            return;
+        }
+
+        // Check location permission
+        if (!hasLocationPermission()) {
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "위치 권한이 필요합니다", Toast.LENGTH_SHORT).show();
+            }
+            Log.w(TAG, "Location permission not granted, cannot show route");
+            return;
+        }
+
+        // Get current location
+        try {
+            Location location = null;
+
+            // Try GPS first
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+
+            // If GPS location is null, try network provider
+            if (location == null && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (location != null) {
+                double currentLat = location.getLatitude();
+                double currentLng = location.getLongitude();
+
+                Log.d(TAG, "Fetching route from (" + currentLat + ", " + currentLng + ") to (" + destinationLat + ", " + destinationLng + ")");
+
+                // Fetch route from Kakao Mobility API in background thread
+                fetchAndDisplayRoute(currentLng, currentLat, destinationLng, destinationLat, title);
+
+                // Clear pending route
+                pendingRouteLat = null;
+                pendingRouteLng = null;
+                pendingRouteTitle = null;
+            } else {
+                Log.w(TAG, "Current location is null, cannot show route");
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "현재 위치를 가져올 수 없습니다", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Location permission error while getting route", e);
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "위치 권한 오류", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to show route", e);
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "경로를 표시할 수 없습니다", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Fetch route from Kakao Mobility API and display it on the map
+     */
+    private void fetchAndDisplayRoute(double originLng, double originLat, double destLng, double destLat, String destTitle) {
+        searchExecutor.execute(() -> {
+            HttpURLConnection conn = null;
+            BufferedReader reader = null;
+
+            try {
+                // Build API URL
+                String apiUrl = String.format(java.util.Locale.US,
+                    "https://apis-navi.kakaomobility.com/v1/directions?origin=%f,%f&destination=%f,%f&priority=RECOMMEND",
+                    originLng, originLat, destLng, destLat);
+
+                Log.d(TAG, "Fetching route from Kakao Mobility API: " + apiUrl);
+
+                URL url = new URL(apiUrl);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                int responseCode = conn.getResponseCode();
+                Log.d(TAG, "Kakao Mobility API response code: " + responseCode);
+
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+
+                    Log.d(TAG, "Route API response received, length: " + response.length());
+
+                    // Parse and display route
+                    parseAndDisplayRoute(response.toString(), destTitle);
+                } else {
+                    // Read error response
+                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+                    StringBuilder errorResponse = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        errorResponse.append(line);
+                    }
+                    Log.e(TAG, "Kakao Mobility API error " + responseCode + ": " + errorResponse.toString());
+
+                    mainHandler.post(() -> {
+                        if (getContext() != null) {
+                            Toast.makeText(getContext(), "경로 조회 실패 (" + responseCode + ")", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching route from Kakao Mobility API", e);
+                mainHandler.post(() -> {
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "경로 조회 중 오류 발생", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } finally {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error closing reader", e);
+                    }
+                }
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        });
+    }
+
+    /**
+     * Parse route response and display on map
+     */
+    private void parseAndDisplayRoute(String jsonResponse, String destTitle) {
+        try {
+            JSONObject root = new JSONObject(jsonResponse);
+            JSONArray routes = root.getJSONArray("routes");
+
+            if (routes.length() == 0) {
+                Log.w(TAG, "No routes found in response");
+                mainHandler.post(() -> {
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "경로를 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return;
+            }
+
+            // Get first route
+            JSONObject route = routes.getJSONObject(0);
+            JSONArray sections = route.getJSONArray("sections");
+
+            // Collect all route coordinates
+            List<LatLng> routePoints = new ArrayList<>();
+
+            for (int i = 0; i < sections.length(); i++) {
+                JSONObject section = sections.getJSONObject(i);
+                JSONArray roads = section.getJSONArray("roads");
+
+                for (int j = 0; j < roads.length(); j++) {
+                    JSONObject road = roads.getJSONObject(j);
+                    JSONArray vertexes = road.getJSONArray("vertexes");
+
+                    // Vertexes array contains [lng1, lat1, lng2, lat2, ...]
+                    for (int k = 0; k < vertexes.length(); k += 2) {
+                        double lng = vertexes.getDouble(k);
+                        double lat = vertexes.getDouble(k + 1);
+                        routePoints.add(LatLng.from(lat, lng));
+                    }
+                }
+            }
+
+            Log.d(TAG, "Parsed " + routePoints.size() + " route points");
+
+            // Get route summary
+            JSONObject summary = route.getJSONObject("summary");
+            int distance = summary.getInt("distance"); // meters
+            int duration = summary.getInt("duration"); // seconds
+
+            String summaryText = String.format(java.util.Locale.getDefault(),
+                "%s까지: %.1fkm, 약 %d분",
+                destTitle != null ? destTitle : "목적지",
+                distance / 1000.0,
+                duration / 60);
+
+            // Display route on map (on UI thread)
+            mainHandler.post(() -> displayRouteOnMap(routePoints, summaryText));
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing route response", e);
+            mainHandler.post(() -> {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "경로 파싱 오류", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    /**
+     * Display route polyline on the map (must be called on UI thread)
+     */
+    private void displayRouteOnMap(List<LatLng> routePoints, String summaryText) {
+        if (kakaoMap == null || routePoints == null || routePoints.size() < 2) {
+            Log.w(TAG, "Cannot display route - invalid state");
+            return;
+        }
+
+        try {
+            // TODO: Draw polyline on map using Kakao Map SDK's route/polyline layer
+            // For now, just move camera to show the route bounds and show message
+
+            // Calculate bounds to fit all route points
+            double minLat = Double.MAX_VALUE, maxLat = -Double.MAX_VALUE;
+            double minLng = Double.MAX_VALUE, maxLng = -Double.MAX_VALUE;
+
+            for (LatLng point : routePoints) {
+                minLat = Math.min(minLat, point.getLatitude());
+                maxLat = Math.max(maxLat, point.getLatitude());
+                minLng = Math.min(minLng, point.getLongitude());
+                maxLng = Math.max(maxLng, point.getLongitude());
+            }
+
+            // Center of bounding box
+            double centerLat = (minLat + maxLat) / 2;
+            double centerLng = (minLng + maxLng) / 2;
+
+            // Move camera to show route
+            LatLng center = LatLng.from(centerLat, centerLng);
+            CameraAnimation animation = CameraAnimation.from(1000, true, true);
+            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(center, 14), animation);
+
+            Log.d(TAG, "Route displayed on map: " + routePoints.size() + " points");
+
+            if (getContext() != null) {
+                Toast.makeText(getContext(), summaryText, Toast.LENGTH_LONG).show();
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying route on map", e);
         }
     }
 

@@ -17,10 +17,15 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.kakao.sdk.user.UserApiClient;
+import com.navercorp.nid.NaverIdLoginSDK;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -357,15 +362,35 @@ public class ProfileFragment extends Fragment {
         // Sign out from Firebase
         mAuth.signOut();
 
-        // Clear login state from SharedPreferences
+        // Get login method before clearing
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String loginMethod = prefs.getString("login_method", "");
+
+        // Sign out from social login providers based on login method
+        if ("google".equals(loginMethod)) {
+            GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                    .requestEmail()
+                    .build();
+            GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(requireContext(), gso);
+            googleSignInClient.signOut();
+        } else if ("kakao".equals(loginMethod)) {
+            UserApiClient.getInstance().logout(error -> {
+                if (error != null) {
+                    android.util.Log.e("ProfileFragment", "Kakao logout failed", error);
+                }
+                return null;
+            });
+        } else if ("naver".equals(loginMethod)) {
+            NaverIdLoginSDK.INSTANCE.logout();
+        }
+
+        // Clear login state from SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean("is_logged_in", false);
+        editor.putBoolean("auto_login", false);  // Clear auto-login preference
         editor.remove("login_method");
+        editor.remove("user_id");  // Also clear user ID
         editor.apply();
-
-        // Also sign out from Google if needed
-        // GoogleSignIn.getClient(requireContext(), GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
 
         Toast.makeText(requireContext(), "로그아웃 되었습니다", Toast.LENGTH_SHORT).show();
 

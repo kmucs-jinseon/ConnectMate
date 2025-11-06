@@ -1,10 +1,14 @@
 package com.example.connectmate;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -12,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -34,8 +39,11 @@ public class EditProfileActivity extends AppCompatActivity {
     private Uri selectedImageUri;
     private SharedPreferences prefs;
 
-    // Image picker launcher
-    private ActivityResultLauncher<String> imagePickerLauncher;
+    // Image picker launcher using Intent to allow both gallery and files app
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+
+    // Permission launcher for storage access
+    private ActivityResultLauncher<String> permissionLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -83,16 +91,43 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void setupImagePicker() {
-        // Register the image picker launcher
-        imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
-            uri -> {
-                if (uri != null) {
-                    selectedImageUri = uri;
-                    profileImage.setImageURI(uri);
+        // Register permission launcher
+        permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    // Permission granted, launch image picker
+                    launchImagePicker();
+                } else {
+                    // Permission denied, show message
+                    Toast.makeText(this, "사진을 선택하려면 저장소 접근 권한이 필요합니다", Toast.LENGTH_LONG).show();
+                }
+            }
+        );
 
-                    // Save the image URI to preferences
-                    prefs.edit().putString("profile_image_uri", uri.toString()).apply();
+        // Register the image picker launcher with support for both gallery and file manager
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        selectedImageUri = uri;
+                        profileImage.setImageURI(uri);
+
+                        // Take persistable URI permission to access the image later
+                        try {
+                            getContentResolver().takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            );
+                        } catch (SecurityException e) {
+                            // Some apps don't grant persistable permissions, but we can still use the URI
+                        }
+
+                        // Save the image URI to preferences
+                        prefs.edit().putString("profile_image_uri", uri.toString()).apply();
+                    }
                 }
             }
         );
@@ -128,12 +163,65 @@ public class EditProfileActivity extends AppCompatActivity {
     private void setupClickListeners() {
         // Change photo button
         changePhotoButton.setOnClickListener(v -> {
-            // Launch image picker
-            imagePickerLauncher.launch("image/*");
+            // Check and request permission if needed
+            if (checkStoragePermission()) {
+                launchImagePicker();
+            } else {
+                requestStoragePermission();
+            }
         });
 
         // Save button
         saveButton.setOnClickListener(v -> saveProfile());
+    }
+
+    /**
+     * Check if storage permission is granted
+     */
+    private boolean checkStoragePermission() {
+        // For Android 13+ (API 33+), check READ_MEDIA_IMAGES
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                == PackageManager.PERMISSION_GRANTED;
+        } else {
+            // For Android 12 and below, check READ_EXTERNAL_STORAGE
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    /**
+     * Request storage permission based on Android version
+     */
+    private void requestStoragePermission() {
+        String permission;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permission = Manifest.permission.READ_MEDIA_IMAGES;
+        } else {
+            permission = Manifest.permission.READ_EXTERNAL_STORAGE;
+        }
+        permissionLauncher.launch(permission);
+    }
+
+    /**
+     * Launch image picker with chooser for gallery and file manager
+     */
+    private void launchImagePicker() {
+        // Create intent to pick image from gallery
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        galleryIntent.setType("image/*");
+
+        // Create intent to pick image from file manager
+        Intent fileIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        fileIntent.setType("image/*");
+
+        // Create chooser to let user select between gallery and file manager
+        Intent chooserIntent = Intent.createChooser(galleryIntent, "사진 선택");
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{fileIntent});
+
+        // Launch the chooser
+        imagePickerLauncher.launch(chooserIntent);
     }
 
     private void saveProfile() {

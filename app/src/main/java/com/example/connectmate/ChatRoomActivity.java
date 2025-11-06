@@ -111,6 +111,9 @@ public class ChatRoomActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
             getSupportActionBar().setTitle(chatRoom.getName());
+            // Display member count as subtitle
+            int memberCount = chatRoom.getMemberCount();
+            getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
         }
 
         // Set navigation icon tint to white using DrawableCompat for compatibility
@@ -209,6 +212,17 @@ public class ChatRoomActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Reload chat room data to get updated member count
+        ChatManager chatManager = ChatManager.getInstance(this);
+        ChatRoom updatedChatRoom = chatManager.getChatRoomById(chatRoom.getId());
+        if (updatedChatRoom != null) {
+            chatRoom = updatedChatRoom;
+            // Update toolbar with new member count
+            if (getSupportActionBar() != null) {
+                int memberCount = chatRoom.getMemberCount();
+                getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
+            }
+        }
         // Reload messages when returning to chat
         loadMessages();
     }

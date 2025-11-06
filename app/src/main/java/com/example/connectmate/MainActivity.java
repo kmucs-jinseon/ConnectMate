@@ -80,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.d(TAG, "MainActivity onCreate started");
+
         // Check if user is authenticated (Firebase, Kakao, or Naver)
         if (!isUserAuthenticated()) {
             Log.d(TAG, "User not authenticated, redirecting to LoginActivity");
@@ -89,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        Log.d(TAG, "User authenticated successfully");
+        Log.d(TAG, "User authenticated successfully, proceeding with MainActivity setup");
 
         setContentView(R.layout.activity_main);
 
@@ -113,7 +115,45 @@ public class MainActivity extends AppCompatActivity {
         // Set up floating action button
         setupFloatingActionButton();
 
+        // Handle map navigation intent
+        handleMapNavigationIntent();
+
         Log.d(TAG, "MainActivity initialized with background map");
+    }
+
+    /**
+     * Handle intent to navigate to specific location on map
+     */
+    private void handleMapNavigationIntent() {
+        Intent intent = getIntent();
+        if (intent != null && intent.getBooleanExtra("navigate_to_map", false)) {
+            double latitude = intent.getDoubleExtra("map_latitude", 0.0);
+            double longitude = intent.getDoubleExtra("map_longitude", 0.0);
+            String title = intent.getStringExtra("map_title");
+            boolean showDirections = intent.getBooleanExtra("show_directions", false);
+
+            if (latitude != 0.0 && longitude != 0.0) {
+                if (showDirections) {
+                    Log.d(TAG, "Route directions requested to: " + title + " at (" + latitude + ", " + longitude + ")");
+                } else {
+                    Log.d(TAG, "Map navigation requested: " + title + " at (" + latitude + ", " + longitude + ")");
+                }
+
+                // Switch to map tab
+                if (bottomNavigationView != null) {
+                    bottomNavigationView.setSelectedItemId(R.id.nav_map);
+                }
+
+                // Navigate to location or show route on map (MapFragment will handle timing)
+                if (mapFragment instanceof MapFragment) {
+                    if (showDirections) {
+                        ((MapFragment) mapFragment).showRouteToLocation(latitude, longitude, title);
+                    } else {
+                        ((MapFragment) mapFragment).navigateToLocation(latitude, longitude, title);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -468,6 +508,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);  // Update the intent
+        Log.d(TAG, "MainActivity onNewIntent called");
+        handleMapNavigationIntent();
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "MainActivity paused");
@@ -483,8 +531,15 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Check if user is authenticated via any login method (Firebase, Kakao, or Naver)
+     * Only check auto-login if this is a fresh app start (not from LoginActivity)
      */
     private boolean isUserAuthenticated() {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+
+        // Check if user is coming from a fresh login (skip auto-login check in this case)
+        boolean justLoggedIn = getIntent().getBooleanExtra("just_logged_in", false);
+        Log.d(TAG, "isUserAuthenticated - justLoggedIn flag: " + justLoggedIn);
+
         // Check Firebase Auth
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
         FirebaseUser firebaseUser = mAuth.getCurrentUser();
@@ -494,12 +549,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Check SharedPreferences for social login state
-        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         boolean isSocialLoggedIn = prefs.getBoolean("is_logged_in", false);
         String loginMethod = prefs.getString("login_method", "");
+        Log.d(TAG, "Social login state - is_logged_in: " + isSocialLoggedIn + ", method: " + loginMethod);
 
         if (isSocialLoggedIn) {
-            Log.d(TAG, "Social login session found: " + loginMethod);
+            // If user just logged in, allow access regardless of auto-login setting
+            if (justLoggedIn) {
+                Log.d(TAG, "User just logged in: " + loginMethod + " - allowing access");
+                return true;
+            }
+
+            // For existing sessions, check auto-login preference
+            boolean autoLoginEnabled = prefs.getBoolean("auto_login", false);
+            Log.d(TAG, "Auto-login preference: " + autoLoginEnabled);
+            if (!autoLoginEnabled) {
+                Log.d(TAG, "Auto-login is disabled - redirecting to login page");
+                return false;
+            }
+
+            Log.d(TAG, "Social login session found with auto-login enabled: " + loginMethod);
             return true;
         }
 

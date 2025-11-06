@@ -6,7 +6,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,6 +55,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText emailEditText;
     private TextInputEditText passwordEditText;
+    private CheckBox autoLoginCheckbox;
     private Button loginButton;
     private TextView signUpTextView;
     private ImageButton googleSignInButton;
@@ -89,6 +92,7 @@ public class LoginActivity extends AppCompatActivity {
     private void initViews() {
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
+        autoLoginCheckbox = findViewById(R.id.autoLoginCheckbox);
         loginButton = findViewById(R.id.loginButton);
         signUpTextView = findViewById(R.id.signUpTextView);
         googleSignInButton = findViewById(R.id.googleSignInButton);
@@ -165,6 +169,11 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(v -> performLogin());
         signUpTextView.setOnClickListener(v -> navigateToSignUp());
 
+        // Hide sign up link when auto-login is checked (user already has account)
+        autoLoginCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            signUpTextView.setVisibility(isChecked ? View.GONE : View.VISIBLE);
+        });
+
         googleSignInButton.setOnClickListener(v -> {
             Log.d(TAG, "Google button clicked");
             signInWithGoogle();
@@ -197,6 +206,14 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "signInWithEmail:success");
                         FirebaseUser user = mAuth.getCurrentUser();
+
+                        // Save login state
+                        saveLoginState("firebase", user != null ? user.getUid() : null);
+
+                        // Save auto-login preference
+                        boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                        saveAutoLoginPreference(autoLogin);
+
                         Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
@@ -233,6 +250,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("just_logged_in", true);  // Flag to indicate fresh login
         startActivity(intent);
         finish();
     }
@@ -255,6 +273,8 @@ public class LoginActivity extends AppCompatActivity {
         // Re-enable button after sign-in attempt
         googleSignInButton.setEnabled(true);
 
+        Log.d(TAG, "handleGoogleSignInResult called");
+
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             if (account == null) {
@@ -263,15 +283,17 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            Log.d(TAG, "Google sign in account retrieved: " + account.getEmail());
             Log.d(TAG, "firebaseAuthWithGoogle:" + account.getId());
 
             String idToken = account.getIdToken();
             if (idToken != null && !idToken.isEmpty()) {
+                Log.d(TAG, "ID token present, using Firebase auth");
                 // Firebase authentication with ID token
                 firebaseAuthWithGoogle(idToken);
             } else {
                 // Google Sign-In succeeded but no ID token (web client ID not configured)
-                Log.w(TAG, "Google Sign-In succeeded but ID token is null. Configure Web Client ID in Firebase Console.");
+                Log.w(TAG, "Google Sign-In succeeded but ID token is null. Using fallback method.");
 
                 // Save user info to Firestore using Google ID
                 String userId = "google_" + account.getId();
@@ -285,6 +307,10 @@ public class LoginActivity extends AppCompatActivity {
 
                 // Save login state with user ID
                 saveLoginState("google", userId);
+
+                // Save auto-login preference
+                boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                saveAutoLoginPreference(autoLogin);
 
                 Toast.makeText(this, "Google sign in successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
                 navigateToMain();
@@ -319,6 +345,8 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
 
                         if (user != null) {
+                            Log.d(TAG, "Google Firebase user authenticated: " + user.getEmail());
+
                             // Save user to Firestore
                             saveUserToFirestore(
                                     user.getUid(),
@@ -327,8 +355,16 @@ public class LoginActivity extends AppCompatActivity {
                                     user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
                                     "google"
                             );
+
+                            // Save login state
+                            saveLoginState("google", user.getUid());
                         }
 
+                        // Save auto-login preference
+                        boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                        saveAutoLoginPreference(autoLogin);
+
+                        Log.d(TAG, "About to navigate to MainActivity from Google sign-in");
                         Toast.makeText(LoginActivity.this, "Google sign in successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
@@ -476,6 +512,10 @@ public class LoginActivity extends AppCompatActivity {
                     // Save login state with user ID
                     saveLoginState("kakao", userId);
 
+                    // Save auto-login preference
+                    boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                    saveAutoLoginPreference(autoLogin);
+
                     Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + nickname, Toast.LENGTH_SHORT).show();
                     navigateToMain();
                 });
@@ -594,6 +634,10 @@ public class LoginActivity extends AppCompatActivity {
 
                             // Save login state with user ID
                             saveLoginState("naver", firestoreUserId);
+
+                            // Save auto-login preference
+                            boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                            saveAutoLoginPreference(autoLogin);
 
                             Toast.makeText(LoginActivity.this, "Naver login successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
                             navigateToMain();
@@ -732,5 +776,17 @@ public class LoginActivity extends AppCompatActivity {
         }
         editor.apply();
         Log.d(TAG, "Login state saved: " + loginMethod + (userId != null ? " (ID: " + userId + ")" : ""));
+    }
+
+    /**
+     * Save auto-login preference to SharedPreferences
+     * @param autoLogin Whether auto-login should be enabled
+     */
+    private void saveAutoLoginPreference(boolean autoLogin) {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("auto_login", autoLogin);
+        editor.apply();
+        Log.d(TAG, "Auto-login preference saved: " + autoLogin);
     }
 }
