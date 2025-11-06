@@ -27,6 +27,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.kakao.sdk.auth.model.OAuthToken;
 import com.kakao.sdk.common.KakaoSdk;
 import com.kakao.sdk.user.UserApiClient;
@@ -35,6 +36,16 @@ import com.navercorp.nid.oauth.OAuthLoginCallback;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
+
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -49,16 +60,22 @@ public class LoginActivity extends AppCompatActivity {
     private ImageButton naverSignInButton;
 
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private GoogleSignInClient mGoogleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
+    private OkHttpClient httpClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth and Firestore
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        // Initialize HTTP client for Naver API calls
+        httpClient = new OkHttpClient();
 
         // Note: Kakao and Naver SDKs are initialized in ConnectMateApplication.onCreate()
         // per official documentation requirements
@@ -256,12 +273,20 @@ public class LoginActivity extends AppCompatActivity {
                 // Google Sign-In succeeded but no ID token (web client ID not configured)
                 Log.w(TAG, "Google Sign-In succeeded but ID token is null. Configure Web Client ID in Firebase Console.");
 
-                // Save login state
-                saveLoginState("google");
+                // Save user info to Firestore using Google ID
+                String userId = "google_" + account.getId();
+                saveUserToFirestore(
+                        userId,
+                        account.getEmail() != null ? account.getEmail() : "",
+                        account.getDisplayName() != null ? account.getDisplayName() : "Google User",
+                        account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : null,
+                        "google"
+                );
+
+                // Save login state with user ID
+                saveLoginState("google", userId);
 
                 Toast.makeText(this, "Google sign in successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
-                // For now, just navigate to main since Google auth succeeded
-                // In production, you might want to create a user profile or link to Firebase differently
                 navigateToMain();
             }
         } catch (ApiException e) {
@@ -292,6 +317,18 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Log.d(TAG, "signInWithCredential:success");
                         FirebaseUser user = mAuth.getCurrentUser();
+
+                        if (user != null) {
+                            // Save user to Firestore
+                            saveUserToFirestore(
+                                    user.getUid(),
+                                    user.getEmail() != null ? user.getEmail() : "",
+                                    user.getDisplayName() != null ? user.getDisplayName() : "Google User",
+                                    user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
+                                    "google"
+                            );
+                        }
+
                         Toast.makeText(LoginActivity.this, "Google sign in successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
@@ -397,6 +434,7 @@ public class LoginActivity extends AppCompatActivity {
 
                 final String email;
                 final String nickname;
+                final String profileImageUrl;
 
                 if (user.getKakaoAccount() != null) {
                     if (user.getKakaoAccount().getEmail() != null) {
@@ -405,24 +443,40 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         email = "";
                     }
-                    if (user.getKakaoAccount().getProfile() != null && user.getKakaoAccount().getProfile().getNickname() != null) {
-                        nickname = user.getKakaoAccount().getProfile().getNickname();
-                        Log.d(TAG, "Nickname: " + nickname);
+                    if (user.getKakaoAccount().getProfile() != null) {
+                        if (user.getKakaoAccount().getProfile().getNickname() != null) {
+                            nickname = user.getKakaoAccount().getProfile().getNickname();
+                            Log.d(TAG, "Nickname: " + nickname);
+                        } else {
+                            nickname = "Kakao User";
+                        }
+                        if (user.getKakaoAccount().getProfile().getProfileImageUrl() != null) {
+                            profileImageUrl = user.getKakaoAccount().getProfile().getProfileImageUrl();
+                            Log.d(TAG, "Profile Image: " + profileImageUrl);
+                        } else {
+                            profileImageUrl = null;
+                        }
                     } else {
-                        nickname = "";
+                        nickname = "Kakao User";
+                        profileImageUrl = null;
                     }
                 } else {
                     email = "";
-                    nickname = "";
+                    nickname = "Kakao User";
+                    profileImageUrl = null;
                 }
 
                 Log.d(TAG, "═══════════════════════════════════════════");
 
                 runOnUiThread(() -> {
-                    // Save login state
-                    saveLoginState("kakao");
+                    // Save user to Firestore
+                    String userId = "kakao_" + user.getId();
+                    saveUserToFirestore(userId, email, nickname, profileImageUrl, "kakao");
 
-                    Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + (nickname.isEmpty() ? "User" : nickname), Toast.LENGTH_SHORT).show();
+                    // Save login state with user ID
+                    saveLoginState("kakao", userId);
+
+                    Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + nickname, Toast.LENGTH_SHORT).show();
                     navigateToMain();
                 });
             }
@@ -476,21 +530,90 @@ public class LoginActivity extends AppCompatActivity {
         // After successful login, you can get the access token
         String accessToken = NaverIdLoginSDK.INSTANCE.getAccessToken();
 
-        // Re-enable button
-        naverSignInButton.setEnabled(true);
-
-        if (accessToken != null && !accessToken.isEmpty()) {
-            Log.d(TAG, "Naver access token: " + accessToken);
-
-            // Save login state
-            saveLoginState("naver");
-
-            Toast.makeText(LoginActivity.this, "Naver login successful!", Toast.LENGTH_SHORT).show();
-            navigateToMain();
-        } else {
+        if (accessToken == null || accessToken.isEmpty()) {
             Log.w(TAG, "Failed to get Naver access token");
+            naverSignInButton.setEnabled(true);
             Toast.makeText(LoginActivity.this, "Failed to get access token", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        Log.d(TAG, "Naver access token: " + accessToken.substring(0, 20) + "...");
+
+        // Fetch user profile from Naver API
+        Request request = new Request.Builder()
+                .url("https://openapi.naver.com/v1/nid/me")
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Failed to fetch Naver user info", e);
+                runOnUiThread(() -> {
+                    naverSignInButton.setEnabled(true);
+                    Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Naver API error: " + response.code());
+                    runOnUiThread(() -> {
+                        naverSignInButton.setEnabled(true);
+                        Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
+                }
+
+                try {
+                    String responseBody = response.body().string();
+                    Log.d(TAG, "Naver API response: " + responseBody);
+
+                    JSONObject json = new JSONObject(responseBody);
+                    String resultCode = json.getString("resultcode");
+
+                    if ("00".equals(resultCode)) {
+                        JSONObject userResponse = json.getJSONObject("response");
+                        String userId = userResponse.optString("id", "");
+                        String email = userResponse.optString("email", "");
+                        String name = userResponse.optString("name", "");
+                        String nickname = userResponse.optString("nickname", "Naver User");
+                        String profileImage = userResponse.optString("profile_image", null);
+
+                        Log.d(TAG, "Naver user info - ID: " + userId + ", Email: " + email + ", Name: " + name);
+
+                        runOnUiThread(() -> {
+                            // Re-enable button
+                            naverSignInButton.setEnabled(true);
+
+                            // Save user to Firestore
+                            String firestoreUserId = "naver_" + userId;
+                            String displayName = !name.isEmpty() ? name : (!nickname.isEmpty() ? nickname : "Naver User");
+                            saveUserToFirestore(firestoreUserId, email, displayName, profileImage, "naver");
+
+                            // Save login state with user ID
+                            saveLoginState("naver", firestoreUserId);
+
+                            Toast.makeText(LoginActivity.this, "Naver login successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
+                            navigateToMain();
+                        });
+                    } else {
+                        Log.e(TAG, "Naver API error: Invalid result code " + resultCode);
+                        runOnUiThread(() -> {
+                            naverSignInButton.setEnabled(true);
+                            Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to parse Naver user info", e);
+                    runOnUiThread(() -> {
+                        naverSignInButton.setEnabled(true);
+                        Toast.makeText(LoginActivity.this, "Failed to parse user info", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            }
+        });
     }
 
     /**
@@ -505,15 +628,109 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
+     * Save or update user information in Firestore
+     * @param userId User ID (Firebase UID or social login ID)
+     * @param email User email
+     * @param displayName User display name
+     * @param profileImageUrl Profile image URL (optional)
+     * @param loginMethod Login method used (google, kakao, naver, firebase)
+     */
+    private void saveUserToFirestore(String userId, String email, String displayName,
+                                     String profileImageUrl, String loginMethod) {
+        Log.d(TAG, "Saving user to Firestore: " + userId);
+
+        // Check if user already exists
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // User exists, update last login time and profile image if available
+                        Log.d(TAG, "User exists, updating lastLoginAt");
+                        db.collection("users").document(userId)
+                                .update("lastLoginAt", System.currentTimeMillis(),
+                                        "profileImageUrl", profileImageUrl != null ? profileImageUrl : documentSnapshot.getString("profileImageUrl"))
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "User updated successfully");
+                                    saveUserToSharedPreferences(documentSnapshot);
+                                })
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to update user", e));
+                    } else {
+                        // New user, create profile
+                        Log.d(TAG, "New user, creating profile");
+                        User user = new User(userId, email, displayName, loginMethod);
+                        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                            user.setProfileImageUrl(profileImageUrl);
+                        }
+
+                        db.collection("users").document(userId)
+                                .set(user)
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "User created successfully");
+                                    // Save to SharedPreferences
+                                    SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = prefs.edit();
+                                    editor.putString("user_name", displayName);
+                                    editor.putString("user_email", email);
+                                    editor.putString("user_username", user.getUsername());
+                                    editor.putString("user_bio", user.getBio());
+                                    editor.putString("user_mbti", user.getMbti());
+                                    if (profileImageUrl != null) {
+                                        editor.putString("profile_image_url", profileImageUrl);
+                                    }
+                                    editor.apply();
+                                })
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to create user", e));
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to check user existence", e));
+    }
+
+    /**
+     * Save user data from Firestore document to SharedPreferences
+     */
+    private void saveUserToSharedPreferences(com.google.firebase.firestore.DocumentSnapshot doc) {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        String displayName = doc.getString("displayName");
+        String email = doc.getString("email");
+        String username = doc.getString("username");
+        String bio = doc.getString("bio");
+        String mbti = doc.getString("mbti");
+        String profileImageUrl = doc.getString("profileImageUrl");
+
+        if (displayName != null) editor.putString("user_name", displayName);
+        if (email != null) editor.putString("user_email", email);
+        if (username != null) editor.putString("user_username", username);
+        if (bio != null) editor.putString("user_bio", bio);
+        if (mbti != null) editor.putString("user_mbti", mbti);
+        if (profileImageUrl != null) editor.putString("profile_image_url", profileImageUrl);
+
+        editor.apply();
+    }
+
+    /**
      * Save login state to SharedPreferences
      * @param loginMethod The login method used (google, kakao, naver, firebase)
      */
     private void saveLoginState(String loginMethod) {
+        saveLoginState(loginMethod, null);
+    }
+
+    /**
+     * Save login state to SharedPreferences with user ID
+     * @param loginMethod The login method used (google, kakao, naver, firebase)
+     * @param userId The user ID to save (optional)
+     */
+    private void saveLoginState(String loginMethod, String userId) {
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean("is_logged_in", true);
         editor.putString("login_method", loginMethod);
+        if (userId != null) {
+            editor.putString("user_id", userId);
+        }
         editor.apply();
-        Log.d(TAG, "Login state saved: " + loginMethod);
+        Log.d(TAG, "Login state saved: " + loginMethod + (userId != null ? " (ID: " + userId + ")" : ""));
     }
 }

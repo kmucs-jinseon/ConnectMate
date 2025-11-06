@@ -20,12 +20,14 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ProfileFragment extends Fragment {
 
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
     // UI elements - Profile Card
     private ImageButton moreButton;
@@ -63,8 +65,9 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth and Firestore
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         // Initialize UI elements
         initializeViews(view);
@@ -155,16 +158,142 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadUserData() {
-        // Get user info from Firebase Auth and SharedPreferences
+        // Get user ID based on login method
+        String userId = getUserId();
+
+        if (userId == null) {
+            // Fallback to SharedPreferences if no user ID found
+            loadUserDataFromSharedPreferences();
+            return;
+        }
+
+        // Load user data from Firestore
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Load data from Firestore
+                        String displayName = documentSnapshot.getString("displayName");
+                        String email = documentSnapshot.getString("email");
+                        String username = documentSnapshot.getString("username");
+                        String bio = documentSnapshot.getString("bio");
+                        String mbti = documentSnapshot.getString("mbti");
+                        String profileImageUrl = documentSnapshot.getString("profileImageUrl");
+                        Double rating = documentSnapshot.getDouble("rating");
+                        Long activitiesCountLong = documentSnapshot.getLong("activitiesCount");
+                        Long connectionsCountLong = documentSnapshot.getLong("connectionsCount");
+                        Long badgesCountLong = documentSnapshot.getLong("badgesCount");
+
+                        // Update UI
+                        if (profileName != null && displayName != null) {
+                            profileName.setText(displayName);
+                        }
+
+                        if (profileUsername != null && username != null) {
+                            profileUsername.setText("@" + username);
+                        }
+
+                        if (profileEmail != null && email != null) {
+                            profileEmail.setText(email);
+                        }
+
+                        if (profileBio != null && bio != null) {
+                            profileBio.setText(bio);
+                        }
+
+                        if (mbtiChip != null && mbti != null) {
+                            mbtiChip.setText(mbti);
+                        }
+
+                        if (ratingText != null && rating != null) {
+                            ratingText.setText(String.format("%.1f", rating));
+                        }
+
+                        if (activitiesCount != null && activitiesCountLong != null) {
+                            activitiesCount.setText(String.valueOf(activitiesCountLong));
+                        }
+
+                        if (connectionsCount != null && connectionsCountLong != null) {
+                            connectionsCount.setText(String.valueOf(connectionsCountLong));
+                        }
+
+                        if (badgesCount != null && badgesCountLong != null) {
+                            badgesCount.setText(String.valueOf(badgesCountLong));
+                        }
+
+                        // Load profile image from URL if available
+                        if (profileImageUrl != null && !profileImageUrl.isEmpty() && profileAvatar != null) {
+                            // For now, just try to load as URI
+                            // In production, use an image loading library like Glide or Picasso
+                            try {
+                                Uri imageUri = Uri.parse(profileImageUrl);
+                                profileAvatar.setImageURI(imageUri);
+                            } catch (Exception e) {
+                                profileAvatar.setImageResource(R.drawable.circle_logo);
+                            }
+                        } else {
+                            // Check if there's a local profile image
+                            SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                            String localImageUri = prefs.getString("profile_image_uri", "");
+                            if (!localImageUri.isEmpty() && profileAvatar != null) {
+                                try {
+                                    Uri imageUri = Uri.parse(localImageUri);
+                                    profileAvatar.setImageURI(imageUri);
+                                } catch (Exception e) {
+                                    profileAvatar.setImageResource(R.drawable.circle_logo);
+                                }
+                            }
+                        }
+                    } else {
+                        // User not found in Firestore, fallback to SharedPreferences
+                        loadUserDataFromSharedPreferences();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Error loading from Firestore, fallback to SharedPreferences
+                    android.util.Log.e("ProfileFragment", "Error loading user data from Firestore", e);
+                    loadUserDataFromSharedPreferences();
+                });
+    }
+
+    /**
+     * Get the user ID based on login method
+     */
+    private String getUserId() {
+        // Check if user is logged in via Firebase Auth
+        if (mAuth.getCurrentUser() != null) {
+            return mAuth.getCurrentUser().getUid();
+        }
+
+        // Check SharedPreferences for social login user ID
+        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String loginMethod = prefs.getString("login_method", "");
+
+        // For social logins, we need to construct the user ID
+        // This is a workaround since we don't store the social user ID in SharedPreferences
+        // In a production app, you should store the user ID when logging in
+        if ("google".equals(loginMethod) || "kakao".equals(loginMethod) || "naver".equals(loginMethod)) {
+            // Try to get from user_id if we added it (we should add this during login)
+            String userId = prefs.getString("user_id", "");
+            if (!userId.isEmpty()) {
+                return userId;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fallback method to load user data from SharedPreferences
+     */
+    private void loadUserDataFromSharedPreferences() {
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
-        // Load user name
         String userName = prefs.getString("user_name", "이름");
         if (profileName != null) {
             profileName.setText(userName);
         }
 
-        // Load username (use saved username or create from name)
         String username = prefs.getString("user_username", "");
         if (username.isEmpty()) {
             username = userName.toLowerCase().replace(" ", "");
@@ -173,7 +302,6 @@ public class ProfileFragment extends Fragment {
             profileUsername.setText("@" + username);
         }
 
-        // Load email from Firebase Auth or SharedPreferences
         String userEmail = "";
         if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
             userEmail = mAuth.getCurrentUser().getEmail();
@@ -184,37 +312,29 @@ public class ProfileFragment extends Fragment {
             profileEmail.setText(userEmail);
         }
 
-        // Load or set default bio
         String bio = prefs.getString("user_bio", "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨");
         if (profileBio != null) {
             profileBio.setText(bio);
         }
 
-        // Load or set default MBTI
         String mbti = prefs.getString("user_mbti", "ENFP");
         if (mbtiChip != null) {
             mbtiChip.setText(mbti);
         }
 
-        // Set default rating
         if (ratingText != null) {
             ratingText.setText("4.8");
         }
 
-        // Load profile image if exists
         String imageUriString = prefs.getString("profile_image_uri", "");
         if (!imageUriString.isEmpty() && profileAvatar != null) {
             try {
                 Uri imageUri = Uri.parse(imageUriString);
                 profileAvatar.setImageURI(imageUri);
             } catch (Exception e) {
-                // If loading fails, keep the default image
                 profileAvatar.setImageResource(R.drawable.circle_logo);
             }
         }
-
-        // TODO: Load actual stats from database
-        // For now, using placeholder values from layout
     }
 
     @Override

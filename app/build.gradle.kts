@@ -109,9 +109,13 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 
     // JSON Serialization
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // HTTP Client for Naver API calls
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Kakao SDK (Latest versions from official documentation)
     implementation("com.kakao.sdk:v2-user:2.22.0")
