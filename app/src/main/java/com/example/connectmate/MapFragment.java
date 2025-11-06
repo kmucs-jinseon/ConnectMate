@@ -1440,7 +1440,7 @@ public class MapFragment extends Fragment {
     }
 
     /**
-     * Fetch route from Kakao Mobility API and display it on the map
+     * Fetch driving route from Kakao Mobility API and display it on the map
      */
     private void fetchAndDisplayRoute(double originLng, double originLat, double destLng, double destLat, String destTitle) {
         searchExecutor.execute(() -> {
@@ -1448,20 +1448,20 @@ public class MapFragment extends Fragment {
             BufferedReader reader = null;
 
             try {
-                // Build API URL
+                // Kakao Mobility Directions API endpoint
                 String apiUrl = String.format(java.util.Locale.US,
                     "https://apis-navi.kakaomobility.com/v1/directions?origin=%f,%f&destination=%f,%f&priority=RECOMMEND",
                     originLng, originLat, destLng, destLat);
 
-                Log.d(TAG, "Fetching route from Kakao Mobility API: " + apiUrl);
+                Log.d(TAG, "Fetching route from Kakao Mobility API");
+                Log.d(TAG, "Origin: (" + originLng + ", " + originLat + ") -> Destination: (" + destLng + ", " + destLat + ")");
 
                 URL url = new URL(apiUrl);
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
 
                 int responseCode = conn.getResponseCode();
                 Log.d(TAG, "Kakao Mobility API response code: " + responseCode);
@@ -1480,13 +1480,16 @@ public class MapFragment extends Fragment {
                     parseAndDisplayRoute(response.toString(), destTitle);
                 } else {
                     // Read error response
-                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                    StringBuilder errorResponse = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        errorResponse.append(line);
+                    java.io.InputStream errorStream = conn.getErrorStream();
+                    if (errorStream != null) {
+                        reader = new BufferedReader(new InputStreamReader(errorStream, StandardCharsets.UTF_8));
+                        StringBuilder errorResponse = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            errorResponse.append(line);
+                        }
+                        Log.e(TAG, "Kakao Mobility API error " + responseCode + ": " + errorResponse.toString());
                     }
-                    Log.e(TAG, "Kakao Mobility API error " + responseCode + ": " + errorResponse.toString());
 
                     mainHandler.post(() -> {
                         if (getContext() != null) {
@@ -1498,7 +1501,7 @@ public class MapFragment extends Fragment {
                 Log.e(TAG, "Error fetching route from Kakao Mobility API", e);
                 mainHandler.post(() -> {
                     if (getContext() != null) {
-                        Toast.makeText(getContext(), "경로 조회 중 오류 발생", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "경로 조회 중 오류 발생: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
             } finally {
@@ -1620,6 +1623,116 @@ public class MapFragment extends Fragment {
             mainHandler.post(() -> {
                 if (getContext() != null) {
                     Toast.makeText(getContext(), "경로 파싱 오류", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    /**
+     * Parse T Map pedestrian route response (GeoJSON format) and display on map
+     */
+    private void parseTMapRouteAndDisplay(String jsonResponse, String destTitle) {
+        try {
+            JSONObject root = new JSONObject(jsonResponse);
+
+            // T Map returns a FeatureCollection
+            String type = root.optString("type", "");
+            if (!"FeatureCollection".equals(type)) {
+                Log.w(TAG, "Unexpected response type: " + type);
+                mainHandler.post(() -> {
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "잘못된 응답 형식", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return;
+            }
+
+            JSONArray features = root.getJSONArray("features");
+            if (features.length() == 0) {
+                Log.w(TAG, "No features found in response");
+                mainHandler.post(() -> {
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "경로를 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return;
+            }
+
+            // Get totalDistance and totalTime from first feature's properties
+            JSONObject firstFeature = features.getJSONObject(0);
+            JSONObject firstProperties = firstFeature.getJSONObject("properties");
+            int totalDistance = firstProperties.optInt("totalDistance", 0); // meters
+            int totalTime = firstProperties.optInt("totalTime", 0); // seconds
+
+            // Collect all route coordinates from LineString features
+            List<LatLng> routePoints = new ArrayList<>();
+            List<String> directions = new ArrayList<>();
+
+            for (int i = 0; i < features.length(); i++) {
+                JSONObject feature = features.getJSONObject(i);
+                JSONObject geometry = feature.getJSONObject("geometry");
+                JSONObject properties = feature.getJSONObject("properties");
+                String geometryType = geometry.getString("type");
+
+                if ("LineString".equals(geometryType)) {
+                    // Extract coordinates from LineString
+                    JSONArray coordinates = geometry.getJSONArray("coordinates");
+                    for (int j = 0; j < coordinates.length(); j++) {
+                        JSONArray coord = coordinates.getJSONArray(j);
+                        double lng = coord.getDouble(0);
+                        double lat = coord.getDouble(1);
+                        routePoints.add(LatLng.from(lat, lng));
+                    }
+
+                    // Extract turn direction if available
+                    String description = properties.optString("description", "");
+                    String turnType = properties.optString("turnType", "");
+                    int distance = properties.optInt("distance", 0);
+                    int time = properties.optInt("time", 0);
+
+                    if (!description.isEmpty()) {
+                        String direction;
+                        if (distance > 0) {
+                            direction = String.format(java.util.Locale.getDefault(),
+                                "%s (%dm, %d초)",
+                                description,
+                                distance,
+                                time);
+                        } else {
+                            direction = description;
+                        }
+                        directions.add(direction);
+                    }
+                }
+            }
+
+            Log.d(TAG, "Parsed " + routePoints.size() + " route points and " + directions.size() + " directions from T Map");
+
+            // Build summary text
+            String summaryText = String.format(java.util.Locale.getDefault(),
+                "%s까지: %.1fkm, 약 %d분 (도보)",
+                destTitle != null ? destTitle : "목적지",
+                totalDistance / 1000.0,
+                totalTime / 60);
+
+            // Display route on map (on UI thread)
+            mainHandler.post(() -> {
+                displayRouteOnMap(routePoints, summaryText);
+                if (!directions.isEmpty()) {
+                    showDirectionsDialog(directions, summaryText);
+                } else {
+                    // If no turn-by-turn directions, just show summary
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), summaryText, Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing T Map route response", e);
+            mainHandler.post(() -> {
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "경로 파싱 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }

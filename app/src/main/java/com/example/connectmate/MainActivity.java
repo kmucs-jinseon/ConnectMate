@@ -135,9 +135,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (latitude != 0.0 && longitude != 0.0) {
                 if (showDirections) {
-                    String modeText = "car".equals(transportMode) ? "자동차" :
-                                     "walk".equals(transportMode) ? "도보" : "자동차";
-                    Log.d(TAG, "Route directions requested (" + modeText + ") to: " + title + " at (" + latitude + ", " + longitude + ")");
+                    Log.d(TAG, "Walking route directions requested to: " + title + " at (" + latitude + ", " + longitude + ")");
                 } else {
                     Log.d(TAG, "Map navigation requested: " + title + " at (" + latitude + ", " + longitude + ")");
                 }
@@ -147,11 +145,13 @@ public class MainActivity extends AppCompatActivity {
                     bottomNavigationView.setSelectedItemId(R.id.nav_map);
                 }
 
-                // Navigate to location or show route on map (MapFragment will handle timing)
+                // Navigate to location or show walking route on map (MapFragment will handle timing)
                 if (mapFragment instanceof MapFragment) {
                     if (showDirections) {
-                        ((MapFragment) mapFragment).showRouteToLocation(latitude, longitude, title, transportMode);
+                        // Show walking route using T Map Pedestrian API
+                        ((MapFragment) mapFragment).showRouteToLocation(latitude, longitude, title);
                     } else {
+                        // Just navigate to location without route
                         ((MapFragment) mapFragment).navigateToLocation(latitude, longitude, title);
                     }
                 }

@@ -392,7 +392,35 @@ public class LoginActivity extends AppCompatActivity {
         // Disable button during sign-in
         kakaoSignInButton.setEnabled(false);
 
-        Function2<OAuthToken, Throwable, Unit> callback = (token, error) -> {
+        // Check if KakaoTalk app is installed
+        try {
+            boolean isTalkAvailable = UserApiClient.getInstance().isKakaoTalkLoginAvailable(this);
+            Log.d(TAG, "KakaoTalk app installed: " + isTalkAvailable);
+
+            if (isTalkAvailable) {
+                Log.d(TAG, "Using KakaoTalk login");
+                UserApiClient.getInstance().loginWithKakaoTalk(this, createKakaoLoginCallback());
+            } else {
+                Log.d(TAG, "Using Kakao Account login (web)");
+                UserApiClient.getInstance().loginWithKakaoAccount(this, createKakaoLoginCallback());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "═══════════════════════════════════════════");
+            Log.e(TAG, "Kakao login exception");
+            Log.e(TAG, "Exception type: " + e.getClass().getName());
+            Log.e(TAG, "Exception message: " + e.getMessage());
+            Log.e(TAG, "═══════════════════════════════════════════");
+            e.printStackTrace();
+            kakaoSignInButton.setEnabled(true);
+            Toast.makeText(this, "Kakao login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Create Kakao login callback with fallback support
+     */
+    private Function2<OAuthToken, Throwable, Unit> createKakaoLoginCallback() {
+        return (token, error) -> {
             // Re-enable button after attempt
             runOnUiThread(() -> kakaoSignInButton.setEnabled(true));
 
@@ -406,7 +434,21 @@ public class LoginActivity extends AppCompatActivity {
 
                 String errorMsg = "Kakao login failed: " + error.getMessage();
 
-                // Provide helpful error messages
+                // Check if error is because KakaoTalk is not connected to account
+                if (error.getMessage() != null && error.getMessage().contains("not connected to Kakao account")) {
+                    Log.d(TAG, "KakaoTalk not connected, falling back to web login");
+                    runOnUiThread(() -> {
+                        // Disable button during fallback attempt
+                        kakaoSignInButton.setEnabled(false);
+                        Toast.makeText(LoginActivity.this, "KakaoTalk에 로그인되어 있지 않습니다. 웹 로그인으로 전환합니다.", Toast.LENGTH_SHORT).show();
+                    });
+
+                    // Fallback to web-based Kakao Account login
+                    UserApiClient.getInstance().loginWithKakaoAccount(LoginActivity.this, createKakaoLoginCallback());
+                    return Unit.INSTANCE;
+                }
+
+                // Provide helpful error messages for other errors
                 if (error.getMessage() != null) {
                     if (error.getMessage().contains("KOE320")) {
                         errorMsg = "Kakao login cancelled by user";
@@ -428,29 +470,6 @@ public class LoginActivity extends AppCompatActivity {
             }
             return Unit.INSTANCE;
         };
-
-        // Check if KakaoTalk app is installed
-        try {
-            boolean isTalkAvailable = UserApiClient.getInstance().isKakaoTalkLoginAvailable(this);
-            Log.d(TAG, "KakaoTalk app installed: " + isTalkAvailable);
-
-            if (isTalkAvailable) {
-                Log.d(TAG, "Using KakaoTalk login");
-                UserApiClient.getInstance().loginWithKakaoTalk(this, callback);
-            } else {
-                Log.d(TAG, "Using Kakao Account login (web)");
-                UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "═══════════════════════════════════════════");
-            Log.e(TAG, "Kakao login exception");
-            Log.e(TAG, "Exception type: " + e.getClass().getName());
-            Log.e(TAG, "Exception message: " + e.getMessage());
-            Log.e(TAG, "═══════════════════════════════════════════");
-            e.printStackTrace();
-            kakaoSignInButton.setEnabled(true);
-            Toast.makeText(this, "Kakao login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
     }
 
     private void getUserInfoFromKakao() {
