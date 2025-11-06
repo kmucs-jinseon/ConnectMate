@@ -370,7 +370,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     }
 
     /**
-     * Get directions to the activity location
+     * Get directions to the activity location - show transportation mode selection
      */
     private void getDirections() {
         if (activity == null) return;
@@ -379,17 +379,92 @@ public class ActivityDetailActivity extends AppCompatActivity {
         double lng = activity.getLongitude();
         String placeName = activity.getTitle();
 
-        // Create intent to open MainActivity with map directions
+        // Show transportation mode selection dialog
+        String[] modes = {"🚗 자동차", "🚶 도보", "🚌 대중교통 (카카오맵)"};
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("교통수단 선택")
+            .setItems(modes, (dialog, which) -> {
+                switch (which) {
+                    case 0: // Car
+                        showCarRoute(lat, lng, placeName);
+                        break;
+                    case 1: // Walking
+                        showWalkingRoute(lat, lng, placeName);
+                        break;
+                    case 2: // Public Transit - Open Kakao Map
+                        openKakaoMapForTransit(lat, lng, placeName);
+                        break;
+                }
+            })
+            .setNegativeButton("취소", null)
+            .show();
+
+        Log.d(TAG, "Showing transportation mode selection for: " + placeName);
+    }
+
+    /**
+     * Show car route using Kakao Mobility API
+     */
+    private void showCarRoute(double lat, double lng, String placeName) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra("navigate_to_map", true);
         intent.putExtra("map_latitude", lat);
         intent.putExtra("map_longitude", lng);
         intent.putExtra("map_title", placeName);
-        intent.putExtra("show_directions", true);  // Flag to show route
+        intent.putExtra("show_directions", true);
+        intent.putExtra("transport_mode", "car");
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
 
-        Log.d(TAG, "Getting directions to: " + placeName + " at (" + lat + ", " + lng + ")");
+        Log.d(TAG, "Showing car route to: " + placeName);
+    }
+
+    /**
+     * Show walking route using Kakao Mobility API
+     */
+    private void showWalkingRoute(double lat, double lng, String placeName) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("navigate_to_map", true);
+        intent.putExtra("map_latitude", lat);
+        intent.putExtra("map_longitude", lng);
+        intent.putExtra("map_title", placeName);
+        intent.putExtra("show_directions", true);
+        intent.putExtra("transport_mode", "walk");
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+
+        Log.d(TAG, "Showing walking route to: " + placeName);
+    }
+
+    /**
+     * Open Kakao Map app for public transit directions
+     */
+    private void openKakaoMapForTransit(double lat, double lng, String placeName) {
+        try {
+            // Kakao Map URL scheme for navigation
+            // kakaomap://route?sp=현재위치&ep=위도,경도&by=PUBLICTRANSIT
+            String url = String.format(java.util.Locale.US,
+                "kakaomap://route?ep=%f,%f&by=PUBLICTRANSIT",
+                lat, lng);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+            startActivity(intent);
+
+            Log.d(TAG, "Opening Kakao Map for transit to: " + placeName);
+        } catch (android.content.ActivityNotFoundException e) {
+            // Kakao Map not installed, open in web browser
+            String webUrl = String.format(java.util.Locale.US,
+                "https://map.kakao.com/link/to/%s,%f,%f",
+                placeName != null ? placeName : "목적지",
+                lat, lng);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUrl));
+            startActivity(intent);
+
+            Toast.makeText(this, "카카오맵 앱이 설치되어 있지 않아 웹으로 엽니다", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "Kakao Map app not installed, opening web version");
+        }
     }
 
     /**

@@ -53,6 +53,12 @@ import com.kakao.vectormap.label.LabelStyles;
 import com.kakao.vectormap.label.LabelStyle;
 import com.kakao.vectormap.label.LabelLayer;
 import com.kakao.vectormap.label.Label;
+import com.kakao.vectormap.route.RouteLine;
+import com.kakao.vectormap.route.RouteLineOptions;
+import com.kakao.vectormap.route.RouteLineSegment;
+import com.kakao.vectormap.route.RouteLineStyle;
+import com.kakao.vectormap.route.RouteLineStyles;
+import com.kakao.vectormap.route.RouteLineStylesSet;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.utils.ActivityManager;
 import java.util.ArrayList;
@@ -111,6 +117,9 @@ public class MapFragment extends Fragment {
     private Double pendingRouteLat = null;
     private Double pendingRouteLng = null;
     private String pendingRouteTitle = null;
+
+    // Current route line (to remove when showing new route)
+    private RouteLine currentRouteLine = null;
 
     @Nullable
     @Override
@@ -425,6 +434,25 @@ public class MapFragment extends Fragment {
                     Log.d(TAG, "Kakao logo repositioned to bottom-left (" + paddingPx + "px padding)");
                 } catch (RuntimeException e) {
                     Log.e(TAG, "Failed to reposition logo", e);
+                }
+
+                // Show compass widget at bottom-left corner
+                try {
+                    float density = getResources().getDisplayMetrics().density;
+                    int compassPaddingX = (int) (80 * density);  // 80dp from left (to avoid logo)
+                    int compassPaddingY = (int) (16 * density);  // 16dp from bottom
+
+                    // Position at bottom-left with padding
+                    int compassGravity = MapGravity.BOTTOM | MapGravity.LEFT;
+
+                    // Get compass, show it, and configure it
+                    kakaoMap.getCompass().show();
+                    kakaoMap.getCompass().setPosition(compassGravity, compassPaddingX, compassPaddingY);
+                    kakaoMap.getCompass().setBackToNorthOnClick(true);
+
+                    Log.d(TAG, "Compass widget enabled at bottom-left (" + compassPaddingX + "px, " + compassPaddingY + "px)");
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "Failed to show compass widget", e);
                 }
 
                 // Configure camera zoom levels for optimal map viewing
@@ -1513,6 +1541,9 @@ public class MapFragment extends Fragment {
             // Collect all route coordinates
             List<LatLng> routePoints = new ArrayList<>();
 
+            // Collect turn-by-turn directions
+            List<String> directions = new ArrayList<>();
+
             for (int i = 0; i < sections.length(); i++) {
                 JSONObject section = sections.getJSONObject(i);
                 JSONArray roads = section.getJSONArray("roads");
@@ -1528,9 +1559,42 @@ public class MapFragment extends Fragment {
                         routePoints.add(LatLng.from(lat, lng));
                     }
                 }
+
+                // Extract guidance information from each section
+                if (section.has("guides")) {
+                    JSONArray guides = section.getJSONArray("guides");
+                    for (int j = 0; j < guides.length(); j++) {
+                        JSONObject guide = guides.getJSONObject(j);
+
+                        // Get guidance text
+                        String guidance = guide.optString("guidance", "");
+                        int distance = guide.optInt("distance", 0);
+                        int duration = guide.optInt("duration", 0);
+                        String roadName = guide.optString("road_name", "");
+
+                        if (!guidance.isEmpty()) {
+                            String direction;
+                            if (distance > 0) {
+                                direction = String.format(java.util.Locale.getDefault(),
+                                    "%s (%dm, %d초)",
+                                    guidance,
+                                    distance,
+                                    duration);
+                            } else {
+                                direction = guidance;
+                            }
+
+                            if (!roadName.isEmpty()) {
+                                direction = roadName + " - " + direction;
+                            }
+
+                            directions.add(direction);
+                        }
+                    }
+                }
             }
 
-            Log.d(TAG, "Parsed " + routePoints.size() + " route points");
+            Log.d(TAG, "Parsed " + routePoints.size() + " route points and " + directions.size() + " directions");
 
             // Get route summary
             JSONObject summary = route.getJSONObject("summary");
@@ -1543,8 +1607,13 @@ public class MapFragment extends Fragment {
                 distance / 1000.0,
                 duration / 60);
 
-            // Display route on map (on UI thread)
-            mainHandler.post(() -> displayRouteOnMap(routePoints, summaryText));
+            // Display route on map and show directions (on UI thread)
+            mainHandler.post(() -> {
+                displayRouteOnMap(routePoints, summaryText);
+                if (!directions.isEmpty()) {
+                    showDirectionsDialog(directions, summaryText);
+                }
+            });
 
         } catch (Exception e) {
             Log.e(TAG, "Error parsing route response", e);
@@ -1557,7 +1626,45 @@ public class MapFragment extends Fragment {
     }
 
     /**
-     * Display route polyline on the map (must be called on UI thread)
+     * Show turn-by-turn directions in a dialog
+     */
+    private void showDirectionsDialog(List<String> directions, String summaryText) {
+        if (getContext() == null) return;
+
+        // Build directions text
+        StringBuilder directionsText = new StringBuilder();
+        directionsText.append("📍 ").append(summaryText).append("\n\n");
+        directionsText.append("경로 안내:\n\n");
+
+        for (int i = 0; i < directions.size(); i++) {
+            directionsText.append(String.format(java.util.Locale.getDefault(),
+                "%d. %s\n\n",
+                i + 1,
+                directions.get(i)));
+        }
+
+        // Show dialog with directions
+        new androidx.appcompat.app.AlertDialog.Builder(getContext())
+            .setTitle("길찾기 안내")
+            .setMessage(directionsText.toString())
+            .setPositiveButton("확인", null)
+            .setNeutralButton("복사", (dialog, which) -> {
+                // Copy directions to clipboard
+                android.content.ClipboardManager clipboard =
+                    (android.content.ClipboardManager) requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("경로 안내", directionsText.toString());
+                if (clipboard != null) {
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(getContext(), "경로가 클립보드에 복사되었습니다", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .show();
+
+        Log.d(TAG, "Showing directions dialog with " + directions.size() + " steps");
+    }
+
+    /**
+     * Display route line on the map (must be called on UI thread)
      */
     private void displayRouteOnMap(List<LatLng> routePoints, String summaryText) {
         if (kakaoMap == null || routePoints == null || routePoints.size() < 2) {
@@ -1566,8 +1673,39 @@ public class MapFragment extends Fragment {
         }
 
         try {
-            // TODO: Draw polyline on map using Kakao Map SDK's route/polyline layer
-            // For now, just move camera to show the route bounds and show message
+            // Remove existing route line if present
+            if (currentRouteLine != null) {
+                kakaoMap.getRouteLineManager().getLayer().remove(currentRouteLine);
+                currentRouteLine = null;
+                Log.d(TAG, "Removed previous route line");
+            }
+
+            // Create route line styles
+            // Use blue color (#2196F3) for the route line
+            int routeColor = android.graphics.Color.parseColor("#2196F3");
+
+            RouteLineStyle routeStyle = RouteLineStyle.from(
+                10,           // Line width in pixels
+                routeColor    // Line color
+            );
+
+            RouteLineStyles routeStyles = RouteLineStyles.from(routeStyle);
+
+            // Create route line segment with all coordinates and styles
+            RouteLineSegment segment = RouteLineSegment.from(routePoints)
+                .setStyles(routeStyles);
+
+            // Create styles set with our route style
+            RouteLineStylesSet stylesSet = RouteLineStylesSet.from(routeStyle);
+
+            // Create route line options
+            RouteLineOptions routeLineOptions = RouteLineOptions.from(segment)
+                .setStylesSet(stylesSet);
+
+            // Add route line to map
+            currentRouteLine = kakaoMap.getRouteLineManager().getLayer().addRouteLine(routeLineOptions);
+
+            Log.d(TAG, "Route line drawn on map: " + routePoints.size() + " points");
 
             // Calculate bounds to fit all route points
             double minLat = Double.MAX_VALUE, maxLat = -Double.MAX_VALUE;
@@ -1584,12 +1722,25 @@ public class MapFragment extends Fragment {
             double centerLat = (minLat + maxLat) / 2;
             double centerLng = (minLng + maxLng) / 2;
 
+            // Calculate appropriate zoom level based on bounding box size
+            double latDelta = maxLat - minLat;
+            double lngDelta = maxLng - minLng;
+            double maxDelta = Math.max(latDelta, lngDelta);
+
+            // Determine zoom level (approximate calculation)
+            int zoomLevel = 17; // Default for very small areas
+            if (maxDelta > 0.1) zoomLevel = 11;      // ~10km
+            else if (maxDelta > 0.05) zoomLevel = 12; // ~5km
+            else if (maxDelta > 0.02) zoomLevel = 13; // ~2km
+            else if (maxDelta > 0.01) zoomLevel = 14; // ~1km
+            else if (maxDelta > 0.005) zoomLevel = 15; // ~500m
+
             // Move camera to show route
             LatLng center = LatLng.from(centerLat, centerLng);
             CameraAnimation animation = CameraAnimation.from(1000, true, true);
-            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(center, 14), animation);
+            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(center, zoomLevel), animation);
 
-            Log.d(TAG, "Route displayed on map: " + routePoints.size() + " points");
+            Log.d(TAG, "Camera centered on route at zoom level " + zoomLevel);
 
             if (getContext() != null) {
                 Toast.makeText(getContext(), summaryText, Toast.LENGTH_LONG).show();
@@ -1597,6 +1748,9 @@ public class MapFragment extends Fragment {
 
         } catch (Exception e) {
             Log.e(TAG, "Error displaying route on map", e);
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "경로 표시 중 오류 발생", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

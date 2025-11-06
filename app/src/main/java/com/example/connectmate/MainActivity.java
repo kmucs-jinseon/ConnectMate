@@ -131,10 +131,13 @@ public class MainActivity extends AppCompatActivity {
             double longitude = intent.getDoubleExtra("map_longitude", 0.0);
             String title = intent.getStringExtra("map_title");
             boolean showDirections = intent.getBooleanExtra("show_directions", false);
+            String transportMode = intent.getStringExtra("transport_mode");  // "car" or "walk"
 
             if (latitude != 0.0 && longitude != 0.0) {
                 if (showDirections) {
-                    Log.d(TAG, "Route directions requested to: " + title + " at (" + latitude + ", " + longitude + ")");
+                    String modeText = "car".equals(transportMode) ? "자동차" :
+                                     "walk".equals(transportMode) ? "도보" : "자동차";
+                    Log.d(TAG, "Route directions requested (" + modeText + ") to: " + title + " at (" + latitude + ", " + longitude + ")");
                 } else {
                     Log.d(TAG, "Map navigation requested: " + title + " at (" + latitude + ", " + longitude + ")");
                 }
@@ -147,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                 // Navigate to location or show route on map (MapFragment will handle timing)
                 if (mapFragment instanceof MapFragment) {
                     if (showDirections) {
-                        ((MapFragment) mapFragment).showRouteToLocation(latitude, longitude, title);
+                        ((MapFragment) mapFragment).showRouteToLocation(latitude, longitude, title, transportMode);
                     } else {
                         ((MapFragment) mapFragment).navigateToLocation(latitude, longitude, title);
                     }
