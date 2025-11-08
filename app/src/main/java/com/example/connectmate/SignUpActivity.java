@@ -26,7 +26,9 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
 import com.kakao.sdk.auth.model.OAuthToken;
 import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
@@ -61,7 +63,7 @@ public class SignUpActivity extends AppCompatActivity {
     private ImageButton naverSignUpButton;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private DatabaseReference dbRef;
     private GoogleSignInClient mGoogleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
     private OkHttpClient httpClient;
@@ -71,9 +73,9 @@ public class SignUpActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        // Initialize Firebase Auth and Firestore
+        // Initialize Firebase Auth and Realtime Database
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize HTTP client for Naver API calls
         httpClient = new OkHttpClient();
@@ -192,6 +194,27 @@ public class SignUpActivity extends AppCompatActivity {
                     signUpButton.setEnabled(true);
                     if (task.isSuccessful()) {
                         Log.d(TAG, "createUserWithEmail:success");
+                        FirebaseUser user = mAuth.getCurrentUser();
+
+                        if (user != null) {
+                            // Create user profile in Realtime Database
+                            String userId = user.getUid();
+                            String displayName = user.getDisplayName() != null ? user.getDisplayName() :
+                                    (user.getEmail() != null ? user.getEmail().split("@")[0] : "User");
+
+                            Log.d(TAG, "Creating user profile in database for: " + userId);
+                            saveUserToFirestore(
+                                    userId,
+                                    user.getEmail() != null ? user.getEmail() : email,
+                                    displayName,
+                                    user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
+                                    "firebase"
+                            );
+
+                            // Save login state with user ID
+                            saveLoginState("firebase", userId);
+                        }
+
                         Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain();
                     } else {
@@ -327,6 +350,9 @@ public class SignUpActivity extends AppCompatActivity {
                                     user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
                                     "google"
                             );
+
+                            // Save login state with user ID
+                            saveLoginState("google", user.getUid());
                         }
 
                         Toast.makeText(SignUpActivity.this, "Google sign up successful!", Toast.LENGTH_SHORT).show();
@@ -553,23 +579,26 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
     /**
-     * Save or update user information in Firestore
+     * Save or update user information in Realtime Database
      */
     private void saveUserToFirestore(String userId, String email, String displayName,
                                      String profileImageUrl, String loginMethod) {
-        Log.d(TAG, "Saving user to Firestore: " + userId);
+        Log.d(TAG, "Saving user to Realtime Database: " + userId);
 
-        db.collection("users").document(userId)
+        dbRef.child("users").child(userId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
+                .addOnSuccessListener(dataSnapshot -> {
+                    if (dataSnapshot.exists()) {
                         Log.d(TAG, "User exists, updating lastLoginAt");
-                        db.collection("users").document(userId)
-                                .update("lastLoginAt", System.currentTimeMillis(),
-                                        "profileImageUrl", profileImageUrl != null ? profileImageUrl : documentSnapshot.getString("profileImageUrl"))
+                        dbRef.child("users").child(userId).child("lastLoginAt")
+                                .setValue(System.currentTimeMillis())
                                 .addOnSuccessListener(aVoid -> {
-                                    Log.d(TAG, "User updated successfully");
-                                    saveUserToSharedPreferences(documentSnapshot);
+                                    Log.d(TAG, "User lastLoginAt updated");
+                                    if (profileImageUrl != null) {
+                                        dbRef.child("users").child(userId).child("profileImageUrl")
+                                                .setValue(profileImageUrl);
+                                    }
+                                    saveUserToSharedPreferences(dataSnapshot);
                                 })
                                 .addOnFailureListener(e -> Log.e(TAG, "Failed to update user", e));
                     } else {
@@ -579,8 +608,8 @@ public class SignUpActivity extends AppCompatActivity {
                             user.setProfileImageUrl(profileImageUrl);
                         }
 
-                        db.collection("users").document(userId)
-                                .set(user)
+                        dbRef.child("users").child(userId)
+                                .setValue(user)
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d(TAG, "User created successfully");
                                     SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
@@ -601,23 +630,19 @@ public class SignUpActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to check user existence", e));
     }
 
-    private void saveUserToSharedPreferences(com.google.firebase.firestore.DocumentSnapshot doc) {
+    private void saveUserToSharedPreferences(DataSnapshot dataSnapshot) {
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        String displayName = doc.getString("displayName");
-        String email = doc.getString("email");
-        String username = doc.getString("username");
-        String bio = doc.getString("bio");
-        String mbti = doc.getString("mbti");
-        String profileImageUrl = doc.getString("profileImageUrl");
-
-        if (displayName != null) editor.putString("user_name", displayName);
-        if (email != null) editor.putString("user_email", email);
-        if (username != null) editor.putString("user_username", username);
-        if (bio != null) editor.putString("user_bio", bio);
-        if (mbti != null) editor.putString("user_mbti", mbti);
-        if (profileImageUrl != null) editor.putString("profile_image_url", profileImageUrl);
+        User user = dataSnapshot.getValue(User.class);
+        if (user != null) {
+            if (user.getDisplayName() != null) editor.putString("user_name", user.getDisplayName());
+            if (user.getEmail() != null) editor.putString("user_email", user.getEmail());
+            if (user.getUsername() != null) editor.putString("user_username", user.getUsername());
+            if (user.getBio() != null) editor.putString("user_bio", user.getBio());
+            if (user.getMbti() != null) editor.putString("user_mbti", user.getMbti());
+            if (user.getProfileImageUrl() != null) editor.putString("profile_image_url", user.getProfileImageUrl());
+        }
 
         editor.apply();
     }

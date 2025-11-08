@@ -17,13 +17,16 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
 import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
 
@@ -32,7 +35,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class ProfileFragment extends Fragment {
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private DatabaseReference dbRef;
 
     // UI elements - Profile Card
     private ImageButton moreButton;
@@ -70,9 +73,9 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize Firebase Auth and Firestore
+        // Initialize Firebase Auth and Realtime Database
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize UI elements
         initializeViews(view);
@@ -172,22 +175,28 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        // Load user data from Firestore
-        db.collection("users").document(userId)
+        // Load user data from Realtime Database
+        dbRef.child("users").child(userId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        // Load data from Firestore
-                        String displayName = documentSnapshot.getString("displayName");
-                        String email = documentSnapshot.getString("email");
-                        String username = documentSnapshot.getString("username");
-                        String bio = documentSnapshot.getString("bio");
-                        String mbti = documentSnapshot.getString("mbti");
-                        String profileImageUrl = documentSnapshot.getString("profileImageUrl");
-                        Double rating = documentSnapshot.getDouble("rating");
-                        Long activitiesCountLong = documentSnapshot.getLong("activitiesCount");
-                        Long connectionsCountLong = documentSnapshot.getLong("connectionsCount");
-                        Long badgesCountLong = documentSnapshot.getLong("badgesCount");
+                .addOnSuccessListener(dataSnapshot -> {
+                    if (dataSnapshot.exists()) {
+                        // Load data from Realtime Database
+                        User user = dataSnapshot.getValue(User.class);
+                        if (user == null) {
+                            loadUserDataFromSharedPreferences();
+                            return;
+                        }
+
+                        String displayName = user.getDisplayName();
+                        String email = user.getEmail();
+                        String username = user.getUsername();
+                        String bio = user.getBio();
+                        String mbti = user.getMbti();
+                        String profileImageUrl = user.getProfileImageUrl();
+                        Double rating = user.getRating();
+                        Long activitiesCountLong = (long) user.getActivitiesCount();
+                        Long connectionsCountLong = (long) user.getConnectionsCount();
+                        Long badgesCountLong = (long) user.getBadgesCount();
 
                         // Update UI
                         if (profileName != null && displayName != null) {
@@ -226,39 +235,63 @@ public class ProfileFragment extends Fragment {
                             badgesCount.setText(String.valueOf(badgesCountLong));
                         }
 
+                        // Sync data to SharedPreferences for offline access
+                        syncToSharedPreferences(user);
+
                         // Load profile image from URL if available
                         if (profileImageUrl != null && !profileImageUrl.isEmpty() && profileAvatar != null) {
-                            // For now, just try to load as URI
-                            // In production, use an image loading library like Glide or Picasso
-                            try {
-                                Uri imageUri = Uri.parse(profileImageUrl);
-                                profileAvatar.setImageURI(imageUri);
-                            } catch (Exception e) {
-                                profileAvatar.setImageResource(R.drawable.circle_logo);
-                            }
+                            // Use Glide to load remote or local images
+                            Glide.with(requireContext())
+                                    .load(profileImageUrl)
+                                    .placeholder(R.drawable.circle_logo)
+                                    .error(R.drawable.circle_logo)
+                                    .circleCrop()
+                                    .into(profileAvatar);
                         } else {
                             // Check if there's a local profile image
                             SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                             String localImageUri = prefs.getString("profile_image_uri", "");
                             if (!localImageUri.isEmpty() && profileAvatar != null) {
-                                try {
-                                    Uri imageUri = Uri.parse(localImageUri);
-                                    profileAvatar.setImageURI(imageUri);
-                                } catch (Exception e) {
-                                    profileAvatar.setImageResource(R.drawable.circle_logo);
-                                }
+                                Glide.with(requireContext())
+                                        .load(Uri.parse(localImageUri))
+                                        .placeholder(R.drawable.circle_logo)
+                                        .error(R.drawable.circle_logo)
+                                        .circleCrop()
+                                        .into(profileAvatar);
+                            } else if (profileAvatar != null) {
+                                profileAvatar.setImageResource(R.drawable.circle_logo);
                             }
                         }
                     } else {
-                        // User not found in Firestore, fallback to SharedPreferences
+                        // User not found in Realtime Database, fallback to SharedPreferences
                         loadUserDataFromSharedPreferences();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    // Error loading from Firestore, fallback to SharedPreferences
-                    android.util.Log.e("ProfileFragment", "Error loading user data from Firestore", e);
+                    // Error loading from Realtime Database, fallback to SharedPreferences
+                    android.util.Log.e("ProfileFragment", "Error loading user data from Realtime Database", e);
                     loadUserDataFromSharedPreferences();
                 });
+    }
+
+    /**
+     * Sync user data from database to SharedPreferences
+     */
+    private void syncToSharedPreferences(User user) {
+        if (user == null) return;
+
+        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        if (user.getUserId() != null) editor.putString("user_id", user.getUserId());
+        if (user.getDisplayName() != null) editor.putString("user_name", user.getDisplayName());
+        if (user.getEmail() != null) editor.putString("user_email", user.getEmail());
+        if (user.getUsername() != null) editor.putString("user_username", user.getUsername());
+        if (user.getBio() != null) editor.putString("user_bio", user.getBio());
+        if (user.getMbti() != null) editor.putString("user_mbti", user.getMbti());
+        if (user.getProfileImageUrl() != null) editor.putString("profile_image_url", user.getProfileImageUrl());
+
+        editor.apply();
     }
 
     /**
@@ -294,49 +327,85 @@ public class ProfileFragment extends Fragment {
     private void loadUserDataFromSharedPreferences() {
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
-        String userName = prefs.getString("user_name", "이름");
+        // Load user name with fallbacks
+        String userName = prefs.getString("user_name", "");
+        if (userName.isEmpty()) {
+            // Fallback to Firebase Auth display name
+            if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getDisplayName() != null) {
+                userName = mAuth.getCurrentUser().getDisplayName();
+            } else {
+                userName = "사용자";  // Default name
+            }
+        }
         if (profileName != null) {
             profileName.setText(userName);
         }
 
+        // Load username
         String username = prefs.getString("user_username", "");
         if (username.isEmpty()) {
-            username = userName.toLowerCase().replace(" ", "");
+            username = userName.toLowerCase().replace(" ", "").replaceAll("[^a-z0-9]", "");
+            if (username.isEmpty()) username = "user";
         }
         if (profileUsername != null) {
             profileUsername.setText("@" + username);
         }
 
+        // Load email - Priority: Firebase Auth > SharedPreferences > Default
         String userEmail = "";
         if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
             userEmail = mAuth.getCurrentUser().getEmail();
         } else {
-            userEmail = prefs.getString("user_email", "user@example.com");
+            userEmail = prefs.getString("user_email", "");
         }
+
+        // If still empty, use placeholder
+        if (userEmail.isEmpty()) {
+            userEmail = "이메일 정보 없음";
+        }
+
         if (profileEmail != null) {
             profileEmail.setText(userEmail);
         }
 
+        // Load bio
         String bio = prefs.getString("user_bio", "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨");
         if (profileBio != null) {
             profileBio.setText(bio);
         }
 
+        // Load MBTI
         String mbti = prefs.getString("user_mbti", "ENFP");
         if (mbtiChip != null) {
             mbtiChip.setText(mbti);
         }
 
+        // Load rating
         if (ratingText != null) {
             ratingText.setText("4.8");
         }
 
+        // Load profile image using Glide
         String imageUriString = prefs.getString("profile_image_uri", "");
-        if (!imageUriString.isEmpty() && profileAvatar != null) {
-            try {
-                Uri imageUri = Uri.parse(imageUriString);
-                profileAvatar.setImageURI(imageUri);
-            } catch (Exception e) {
+        String profileImageUrl = prefs.getString("profile_image_url", "");
+
+        if (profileAvatar != null) {
+            // Try to load from URL first (for social logins), then local URI
+            if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                Glide.with(requireContext())
+                        .load(profileImageUrl)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .circleCrop()
+                        .into(profileAvatar);
+            } else if (!imageUriString.isEmpty()) {
+                Glide.with(requireContext())
+                        .load(Uri.parse(imageUriString))
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .circleCrop()
+                        .into(profileAvatar);
+            } else {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
             }
         }

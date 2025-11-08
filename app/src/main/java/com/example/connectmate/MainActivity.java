@@ -400,6 +400,18 @@ public class MainActivity extends AppCompatActivity {
         // Use replace to completely swap fragments for better isolation
         FragmentTransaction transaction = fm.beginTransaction();
         transaction.replace(R.id.main_container, targetFragment, tag);
+
+        // For SettingsFragment, add a callback to refresh data after view is created
+        if (TAG_SETTING.equals(tag) && targetFragment instanceof SettingsFragment) {
+            final SettingsFragment settingsFragment = (SettingsFragment) targetFragment;
+            transaction.runOnCommit(() -> {
+                // Use Handler to post refresh after fragment is fully attached
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    settingsFragment.refreshUserData();
+                });
+            });
+        }
+
         transaction.commit();
 
         // Update active fragment reference

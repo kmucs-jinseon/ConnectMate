@@ -29,7 +29,9 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
 import com.kakao.sdk.auth.model.OAuthToken;
 import com.kakao.sdk.common.KakaoSdk;
 import com.kakao.sdk.user.UserApiClient;
@@ -42,6 +44,8 @@ import kotlin.jvm.functions.Function2;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -63,7 +67,7 @@ public class LoginActivity extends AppCompatActivity {
     private ImageButton naverSignInButton;
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private DatabaseReference dbRef;
     private GoogleSignInClient mGoogleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
     private OkHttpClient httpClient;
@@ -73,9 +77,9 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize Firebase Auth and Firestore
+        // Initialize Firebase Auth and Realtime Database
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize HTTP client for Naver API calls
         httpClient = new OkHttpClient();
@@ -207,15 +211,60 @@ public class LoginActivity extends AppCompatActivity {
                         Log.d(TAG, "signInWithEmail:success");
                         FirebaseUser user = mAuth.getCurrentUser();
 
-                        // Save login state
-                        saveLoginState("firebase", user != null ? user.getUid() : null);
+                        if (user != null) {
+                            // Load user data from Realtime Database and sync to SharedPreferences
+                            String userId = user.getUid();
+                            dbRef.child("users").child(userId)
+                                    .get()
+                                    .addOnSuccessListener(dataSnapshot -> {
+                                        if (dataSnapshot.exists()) {
+                                            // User exists in database, sync to SharedPreferences
+                                            Log.d(TAG, "User data found in database, syncing to SharedPreferences");
+                                            saveUserToSharedPreferences(dataSnapshot);
 
-                        // Save auto-login preference
-                        boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
-                        saveAutoLoginPreference(autoLogin);
+                                            // Update last login time
+                                            dbRef.child("users").child(userId).child("lastLoginAt")
+                                                    .setValue(System.currentTimeMillis());
+                                        } else {
+                                            // User doesn't exist in database, create new user profile
+                                            Log.d(TAG, "User not found in database, creating new profile");
+                                            String displayName = user.getDisplayName() != null ? user.getDisplayName() :
+                                                    (user.getEmail() != null ? user.getEmail().split("@")[0] : "User");
+                                            saveUserToFirestore(
+                                                    userId,
+                                                    user.getEmail() != null ? user.getEmail() : "",
+                                                    displayName,
+                                                    user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
+                                                    "firebase"
+                                            );
+                                        }
 
-                        Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
-                        navigateToMain();
+                                        // Save login state
+                                        saveLoginState("firebase", userId);
+
+                                        // Save auto-login preference
+                                        boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                                        saveAutoLoginPreference(autoLogin);
+
+                                        Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                                        navigateToMain();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e(TAG, "Failed to load user data from database", e);
+                                        // Even if database fails, still log in with basic info
+                                        saveLoginState("firebase", userId);
+
+                                        boolean autoLogin = autoLoginCheckbox != null && autoLoginCheckbox.isChecked();
+                                        saveAutoLoginPreference(autoLogin);
+
+                                        Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                                        navigateToMain();
+                                    });
+                        } else {
+                            // Shouldn't happen, but handle gracefully
+                            Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                            navigateToMain();
+                        }
                     } else {
                         Log.w(TAG, "signInWithEmail:failure", task.getException());
                         Toast.makeText(LoginActivity.this, "Authentication failed: " + task.getException().getMessage(),
@@ -637,10 +686,16 @@ public class LoginActivity extends AppCompatActivity {
                         String userId = userResponse.optString("id", "");
                         String email = userResponse.optString("email", "");
                         String name = userResponse.optString("name", "");
-                        String nickname = userResponse.optString("nickname", "Naver User");
+                        String nickname = userResponse.optString("nickname", "");
                         String profileImage = userResponse.optString("profile_image", null);
 
-                        Log.d(TAG, "Naver user info - ID: " + userId + ", Email: " + email + ", Name: " + name);
+                        Log.d(TAG, "========== NAVER API RESPONSE ==========");
+                        Log.d(TAG, "Naver user ID: " + userId);
+                        Log.d(TAG, "Naver email: " + email);
+                        Log.d(TAG, "Naver name: '" + name + "' (empty: " + name.isEmpty() + ")");
+                        Log.d(TAG, "Naver nickname: '" + nickname + "' (empty: " + nickname.isEmpty() + ")");
+                        Log.d(TAG, "Naver profile_image: " + profileImage);
+                        Log.d(TAG, "========================================");
 
                         runOnUiThread(() -> {
                             // Re-enable button
@@ -648,7 +703,18 @@ public class LoginActivity extends AppCompatActivity {
 
                             // Save user to Firestore
                             String firestoreUserId = "naver_" + userId;
-                            String displayName = !name.isEmpty() ? name : (!nickname.isEmpty() ? nickname : "Naver User");
+
+                            // Determine display name: prefer name > nickname > default
+                            String displayName;
+                            if (name != null && !name.isEmpty()) {
+                                displayName = name;
+                            } else if (nickname != null && !nickname.isEmpty()) {
+                                displayName = nickname;
+                            } else {
+                                displayName = "Naver User";
+                            }
+
+                            Log.d(TAG, "Final displayName for Naver: '" + displayName + "'");
                             saveUserToFirestore(firestoreUserId, email, displayName, profileImage, "naver");
 
                             // Save login state with user ID
@@ -691,7 +757,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Save or update user information in Firestore
+     * Save or update user information in Realtime Database
      * @param userId User ID (Firebase UID or social login ID)
      * @param email User email
      * @param displayName User display name
@@ -700,21 +766,41 @@ public class LoginActivity extends AppCompatActivity {
      */
     private void saveUserToFirestore(String userId, String email, String displayName,
                                      String profileImageUrl, String loginMethod) {
-        Log.d(TAG, "Saving user to Firestore: " + userId);
+        Log.d(TAG, "Saving user to Realtime Database: " + userId);
 
         // Check if user already exists
-        db.collection("users").document(userId)
+        dbRef.child("users").child(userId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        // User exists, update last login time and profile image if available
-                        Log.d(TAG, "User exists, updating lastLoginAt");
-                        db.collection("users").document(userId)
-                                .update("lastLoginAt", System.currentTimeMillis(),
-                                        "profileImageUrl", profileImageUrl != null ? profileImageUrl : documentSnapshot.getString("profileImageUrl"))
+                .addOnSuccessListener(dataSnapshot -> {
+                    if (dataSnapshot.exists()) {
+                        // User exists, update user info in case it changed
+                        Log.d(TAG, "User exists, updating user info");
+
+                        // Update name, email, profile image and lastLoginAt
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("lastLoginAt", System.currentTimeMillis());
+
+                        // Always update display name and email from login provider
+                        if (displayName != null && !displayName.isEmpty()) {
+                            updates.put("displayName", displayName);
+                        }
+                        if (email != null && !email.isEmpty()) {
+                            updates.put("email", email);
+                        }
+                        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                            updates.put("profileImageUrl", profileImageUrl);
+                        }
+
+                        dbRef.child("users").child(userId)
+                                .updateChildren(updates)
                                 .addOnSuccessListener(aVoid -> {
-                                    Log.d(TAG, "User updated successfully");
-                                    saveUserToSharedPreferences(documentSnapshot);
+                                    Log.d(TAG, "User info updated - Name: " + displayName + ", Email: " + email);
+
+                                    // Reload user data from database to get updated info
+                                    dbRef.child("users").child(userId).get()
+                                            .addOnSuccessListener(updatedSnapshot -> {
+                                                saveUserToSharedPreferences(updatedSnapshot);
+                                            });
                                 })
                                 .addOnFailureListener(e -> Log.e(TAG, "Failed to update user", e));
                     } else {
@@ -725,13 +811,14 @@ public class LoginActivity extends AppCompatActivity {
                             user.setProfileImageUrl(profileImageUrl);
                         }
 
-                        db.collection("users").document(userId)
-                                .set(user)
+                        dbRef.child("users").child(userId)
+                                .setValue(user)
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d(TAG, "User created successfully");
                                     // Save to SharedPreferences
                                     SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                                     SharedPreferences.Editor editor = prefs.edit();
+                                    editor.putString("user_id", userId);
                                     editor.putString("user_name", displayName);
                                     editor.putString("user_email", email);
                                     editor.putString("user_username", user.getUsername());
@@ -741,6 +828,7 @@ public class LoginActivity extends AppCompatActivity {
                                         editor.putString("profile_image_url", profileImageUrl);
                                     }
                                     editor.apply();
+                                    Log.d(TAG, "Saved new user to SharedPreferences - Name: " + displayName + ", Email: " + email);
                                 })
                                 .addOnFailureListener(e -> Log.e(TAG, "Failed to create user", e));
                     }
@@ -749,25 +837,26 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Save user data from Firestore document to SharedPreferences
+     * Save user data from Realtime Database DataSnapshot to SharedPreferences
      */
-    private void saveUserToSharedPreferences(com.google.firebase.firestore.DocumentSnapshot doc) {
+    private void saveUserToSharedPreferences(DataSnapshot dataSnapshot) {
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        String displayName = doc.getString("displayName");
-        String email = doc.getString("email");
-        String username = doc.getString("username");
-        String bio = doc.getString("bio");
-        String mbti = doc.getString("mbti");
-        String profileImageUrl = doc.getString("profileImageUrl");
+        User user = dataSnapshot.getValue(User.class);
+        if (user != null) {
+            // Save user ID for future reference
+            if (user.getUserId() != null) editor.putString("user_id", user.getUserId());
 
-        if (displayName != null) editor.putString("user_name", displayName);
-        if (email != null) editor.putString("user_email", email);
-        if (username != null) editor.putString("user_username", username);
-        if (bio != null) editor.putString("user_bio", bio);
-        if (mbti != null) editor.putString("user_mbti", mbti);
-        if (profileImageUrl != null) editor.putString("profile_image_url", profileImageUrl);
+            if (user.getDisplayName() != null) editor.putString("user_name", user.getDisplayName());
+            if (user.getEmail() != null) editor.putString("user_email", user.getEmail());
+            if (user.getUsername() != null) editor.putString("user_username", user.getUsername());
+            if (user.getBio() != null) editor.putString("user_bio", user.getBio());
+            if (user.getMbti() != null) editor.putString("user_mbti", user.getMbti());
+            if (user.getProfileImageUrl() != null) editor.putString("profile_image_url", user.getProfileImageUrl());
+
+            Log.d(TAG, "Saved to SharedPreferences - Name: " + user.getDisplayName() + ", Email: " + user.getEmail());
+        }
 
         editor.apply();
     }

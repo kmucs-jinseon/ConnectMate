@@ -18,12 +18,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class EditProfileActivity extends AppCompatActivity {
+
+    // Firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference dbRef;
 
     // UI elements
     private Toolbar toolbar;
@@ -49,6 +60,10 @@ public class EditProfileActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
+
+        // Initialize Firebase
+        mAuth = FirebaseAuth.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize SharedPreferences
         prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
@@ -113,7 +128,14 @@ public class EditProfileActivity extends AppCompatActivity {
                     Uri uri = result.getData().getData();
                     if (uri != null) {
                         selectedImageUri = uri;
-                        profileImage.setImageURI(uri);
+
+                        // Display the selected image using Glide
+                        Glide.with(this)
+                                .load(uri)
+                                .placeholder(R.drawable.circle_logo)
+                                .error(R.drawable.circle_logo)
+                                .circleCrop()
+                                .into(profileImage);
 
                         // Take persistable URI permission to access the image later
                         try {
@@ -140,6 +162,7 @@ public class EditProfileActivity extends AppCompatActivity {
         String currentMbti = prefs.getString("user_mbti", "");
         String currentBio = prefs.getString("user_bio", "");
         String imageUriString = prefs.getString("profile_image_uri", "");
+        String profileImageUrl = prefs.getString("profile_image_url", "");
 
         // Set current values to inputs
         if (nameInput != null) nameInput.setText(currentName);
@@ -147,11 +170,23 @@ public class EditProfileActivity extends AppCompatActivity {
         if (mbtiInput != null) mbtiInput.setText(currentMbti);
         if (bioInput != null) bioInput.setText(currentBio);
 
-        // Load profile image if exists
-        if (!imageUriString.isEmpty()) {
+        // Load profile image if exists - try URL first, then local URI
+        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(profileImageUrl)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .circleCrop()
+                    .into(profileImage);
+        } else if (!imageUriString.isEmpty()) {
             try {
                 Uri imageUri = Uri.parse(imageUriString);
-                profileImage.setImageURI(imageUri);
+                Glide.with(this)
+                        .load(imageUri)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .circleCrop()
+                        .into(profileImage);
                 selectedImageUri = imageUri;
             } catch (Exception e) {
                 // If loading fails, keep the default image
@@ -251,12 +286,16 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        // Set default values
+        String finalMbti = mbti.isEmpty() ? "ENFP" : mbti;
+        String finalBio = bio.isEmpty() ? "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨" : bio;
+
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("user_name", name);
         editor.putString("user_username", username);
-        editor.putString("user_mbti", mbti.isEmpty() ? "ENFP" : mbti);
-        editor.putString("user_bio", bio.isEmpty() ? "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨" : bio);
+        editor.putString("user_mbti", finalMbti);
+        editor.putString("user_bio", finalBio);
 
         if (selectedImageUri != null) {
             editor.putString("profile_image_uri", selectedImageUri.toString());
@@ -264,9 +303,64 @@ public class EditProfileActivity extends AppCompatActivity {
 
         editor.apply();
 
-        Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+        // Sync to Realtime Database
+        syncToRealtimeDatabase(name, username, finalMbti, finalBio);
+    }
 
-        // Return to previous screen
-        finish();
+    /**
+     * Sync profile data to Realtime Database
+     */
+    private void syncToRealtimeDatabase(String name, String username, String mbti, String bio) {
+        String userId = getUserId();
+
+        if (userId == null) {
+            // No user ID found, only save locally
+            Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Prepare data to update
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("displayName", name);
+        updates.put("username", username);
+        updates.put("mbti", mbti);
+        updates.put("bio", bio);
+
+        if (selectedImageUri != null) {
+            updates.put("profileImageUrl", selectedImageUri.toString());
+        }
+
+        // Update Realtime Database
+        dbRef.child("users").child(userId)
+                .updateChildren(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("EditProfileActivity", "Error updating profile in Realtime Database", e);
+                    // Even if database update fails, local save was successful
+                    Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+    }
+
+    /**
+     * Get the user ID based on login method
+     */
+    private String getUserId() {
+        // Check if user is logged in via Firebase Auth
+        if (mAuth.getCurrentUser() != null) {
+            return mAuth.getCurrentUser().getUid();
+        }
+
+        // Check SharedPreferences for social login user ID
+        String userId = prefs.getString("user_id", "");
+        if (!userId.isEmpty()) {
+            return userId;
+        }
+
+        return null;
     }
 }
