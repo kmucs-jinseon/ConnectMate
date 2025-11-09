@@ -1,0 +1,27 @@
+# Android SDK Location
+# Automatically set by Android Studio - update this if SDK is in a different location
+sdk.dir=/path/to/Android/sdk
+
+# Kakao API Keys
+# Get these from https://developers.kakao.com
+# 1. KAKAO_APP_KEY - Native App Key (for Maps SDK and Kakao Login)
+#    Found in: Kakao Developers Console > Your App > App Keys > Native App Key
+KAKAO_APP_KEY=your_native_app_key_here
+
+# 2. KAKAO_REST_API_KEY - REST API Key (for Local Search API)
+#    Found in: Kakao Developers Console > Your App > App Keys > REST API Key
+#    Required for map search functionality
+KAKAO_REST_API_KEY=your_rest_api_key_here
+
+# Naver API Keys
+# Get these from https://developers.naver.com
+NAVER_CLIENT_ID=your_naver_client_id_here
+NAVER_CLIENT_SECRET=your_naver_client_secret_here
+
+# T Map API Key
+# Get this from https://openapi.sk.com
+# 1. Register/Login at SK Open API
+# 2. Go to 마이페이지 > 앱 탭 (My Page > App tab)
+# 3. Create an app and get your appKey
+# Required for pedestrian walking route directions
+TMAP_APP_KEY=your_tmap_app_key_here

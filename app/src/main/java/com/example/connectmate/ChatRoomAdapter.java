@@ -50,6 +50,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     static class ChatRoomViewHolder extends RecyclerView.ViewHolder {
         private final CircleImageView profileImage;
         private final TextView chatName;
+        private final TextView memberCount;
         private final TextView lastMessage;
         private final TextView timestamp;
         private final CardView unreadBadge;
@@ -59,6 +60,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             super(itemView);
             profileImage = itemView.findViewById(R.id.profile_image);
             chatName = itemView.findViewById(R.id.chat_name);
+            memberCount = itemView.findViewById(R.id.member_count);
             lastMessage = itemView.findViewById(R.id.last_message);
             timestamp = itemView.findViewById(R.id.timestamp);
             unreadBadge = itemView.findViewById(R.id.unread_badge);
@@ -67,6 +69,10 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
 
         public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener) {
             chatName.setText(chatRoom.getName());
+
+            // Display member count
+            int count = chatRoom.getMemberCount();
+            memberCount.setText(count + "명");
 
             // Show last message or default text
             if (chatRoom.getLastMessage() != null && !chatRoom.getLastMessage().isEmpty()) {

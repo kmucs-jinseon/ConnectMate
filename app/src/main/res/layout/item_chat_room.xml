@@ -37,10 +37,22 @@
         android:textColor="@color/gray_900"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@id/timestamp"
+        app:layout_constraintEnd_toStartOf="@id/member_count"
         app:layout_constraintStart_toEndOf="@id/profile_image"
         app:layout_constraintTop_toTopOf="@id/profile_image"
         tools:text="@string/nick_name" />
+
+    <!-- Member Count -->
+    <TextView
+        android:id="@+id/member_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="4dp"
+        android:textColor="@color/gray_500"
+        android:textSize="12sp"
+        app:layout_constraintBaseline_toBaselineOf="@id/chat_name"
+        app:layout_constraintEnd_toStartOf="@id/timestamp"
+        tools:text="5명" />
 
     <!-- Last Message -->
     <TextView

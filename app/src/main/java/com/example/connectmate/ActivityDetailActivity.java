@@ -44,6 +44,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private TextView detailCreator;
     private MaterialButton btnJoinActivity;
     private MaterialButton btnDeleteActivity;
+    private MaterialButton btnViewOnMap;
 
     // Cards (for visibility control)
     private MaterialCardView locationCard;
@@ -92,6 +93,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         detailCreator = findViewById(R.id.detail_creator);
         btnJoinActivity = findViewById(R.id.btn_join_activity);
         btnDeleteActivity = findViewById(R.id.btn_delete_activity);
+        btnViewOnMap = findViewById(R.id.btn_view_on_map);
 
         locationCard = findViewById(R.id.location_card);
         participantsCard = findViewById(R.id.participants_card);
@@ -197,6 +199,14 @@ public class ActivityDetailActivity extends AppCompatActivity {
             });
         } else {
             btnDeleteActivity.setVisibility(View.GONE);
+        }
+
+        // Navigation button - only show if activity has coordinates
+        if (activity.getLatitude() != 0.0 && activity.getLongitude() != 0.0) {
+            btnViewOnMap.setOnClickListener(v -> viewOnMap());
+        } else {
+            // Hide navigation button if no coordinates
+            if (btnViewOnMap != null) btnViewOnMap.setVisibility(View.GONE);
         }
     }
 
@@ -353,5 +363,27 @@ public class ActivityDetailActivity extends AppCompatActivity {
         chip.setChipBackgroundColorResource(android.R.color.transparent);
         chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
         chip.setTextColor(Color.WHITE);
+    }
+
+    /**
+     * View activity location on the internal map
+     */
+    private void viewOnMap() {
+        if (activity == null) return;
+
+        double lat = activity.getLatitude();
+        double lng = activity.getLongitude();
+        String placeName = activity.getTitle();
+
+        // Create intent to open MainActivity with map coordinates
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("navigate_to_map", true);
+        intent.putExtra("map_latitude", lat);
+        intent.putExtra("map_longitude", lng);
+        intent.putExtra("map_title", placeName);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+
+        Log.d(TAG, "Navigating to map for: " + placeName + " at (" + lat + ", " + lng + ")");
     }
 }

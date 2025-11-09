@@ -1,9 +1,7 @@
 package com.example.connectmate;
 
-import com.google.firebase.firestore.PropertyName;
-
 /**
- * User model class for Firestore
+ * User model class for Firebase Realtime Database
  * Represents a user profile with authentication and social login information
  */
 public class User {
@@ -22,7 +20,7 @@ public class User {
     public long createdAt;
     public long lastLoginAt;
 
-    // Required empty constructor for Firestore
+    // Required empty constructor for Firebase Realtime Database
     public User() {
     }
 
@@ -50,142 +48,114 @@ public class User {
     }
 
     // Getters and Setters
-    @PropertyName("userId")
     public String getUserId() {
         return userId;
     }
 
-    @PropertyName("userId")
     public void setUserId(String userId) {
         this.userId = userId;
     }
 
-    @PropertyName("email")
     public String getEmail() {
         return email;
     }
 
-    @PropertyName("email")
     public void setEmail(String email) {
         this.email = email;
     }
 
-    @PropertyName("displayName")
     public String getDisplayName() {
         return displayName;
     }
 
-    @PropertyName("displayName")
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
 
-    @PropertyName("username")
     public String getUsername() {
         return username;
     }
 
-    @PropertyName("username")
     public void setUsername(String username) {
         this.username = username;
     }
 
-    @PropertyName("profileImageUrl")
     public String getProfileImageUrl() {
         return profileImageUrl;
     }
 
-    @PropertyName("profileImageUrl")
     public void setProfileImageUrl(String profileImageUrl) {
         this.profileImageUrl = profileImageUrl;
     }
 
-    @PropertyName("loginMethod")
     public String getLoginMethod() {
         return loginMethod;
     }
 
-    @PropertyName("loginMethod")
     public void setLoginMethod(String loginMethod) {
         this.loginMethod = loginMethod;
     }
 
-    @PropertyName("bio")
     public String getBio() {
         return bio;
     }
 
-    @PropertyName("bio")
     public void setBio(String bio) {
         this.bio = bio;
     }
 
-    @PropertyName("mbti")
     public String getMbti() {
         return mbti;
     }
 
-    @PropertyName("mbti")
     public void setMbti(String mbti) {
         this.mbti = mbti;
     }
 
-    @PropertyName("rating")
     public double getRating() {
         return rating;
     }
 
-    @PropertyName("rating")
     public void setRating(double rating) {
         this.rating = rating;
     }
 
-    @PropertyName("activitiesCount")
     public int getActivitiesCount() {
         return activitiesCount;
     }
 
-    @PropertyName("activitiesCount")
     public void setActivitiesCount(int activitiesCount) {
         this.activitiesCount = activitiesCount;
     }
 
-    @PropertyName("connectionsCount")
     public int getConnectionsCount() {
         return connectionsCount;
     }
 
-    @PropertyName("connectionsCount")
     public void setConnectionsCount(int connectionsCount) {
         this.connectionsCount = connectionsCount;
     }
 
-    @PropertyName("badgesCount")
     public int getBadgesCount() {
         return badgesCount;
     }
 
-    @PropertyName("badgesCount")
     public void setBadgesCount(int badgesCount) {
         this.badgesCount = badgesCount;
     }
 
-    @PropertyName("createdAt")
     public long getCreatedAt() {
         return createdAt;
     }
 
-    @PropertyName("createdAt")
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
     }
 
-    @PropertyName("lastLoginAt")
     public long getLastLoginAt() {
         return lastLoginAt;
     }
 
-    @PropertyName("lastLoginAt")
     public void setLastLoginAt(long lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
     }

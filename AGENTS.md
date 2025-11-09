@@ -30,5 +30,9 @@
 - PRs should state the user impact, test evidence (`./gradlew test`, device names), and call out any new configuration keys.
 
 ## Configuration & Secrets
-- API keys (`KAKAO_APP_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`) load from `local.properties` via `buildConfigField`. Never commit actual secrets—document placeholder keys instead.
+- API keys load from `local.properties` via `buildConfigField`. Never commit actual secrets—document placeholder keys instead.
+  - `KAKAO_APP_KEY` - Native App Key for Kakao Maps SDK and Kakao Login
+  - `KAKAO_REST_API_KEY` - REST API Key for Kakao Local Search API (map search functionality)
+  - `NAVER_CLIENT_ID` - Naver API Client ID
+  - `NAVER_CLIENT_SECRET` - Naver API Client Secret
 - When adding third-party SDKs, update `google-services.json` through Firebase and note any required manifest placeholders in the PR description.

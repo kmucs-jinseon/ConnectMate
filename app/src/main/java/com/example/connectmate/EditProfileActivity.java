@@ -1,10 +1,14 @@
 package com.example.connectmate;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -12,13 +16,25 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class EditProfileActivity extends AppCompatActivity {
+
+    // Firebase
+    private FirebaseAuth mAuth;
+    private DatabaseReference dbRef;
 
     // UI elements
     private Toolbar toolbar;
@@ -34,13 +50,20 @@ public class EditProfileActivity extends AppCompatActivity {
     private Uri selectedImageUri;
     private SharedPreferences prefs;
 
-    // Image picker launcher
-    private ActivityResultLauncher<String> imagePickerLauncher;
+    // Image picker launcher using Intent to allow both gallery and files app
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+
+    // Permission launcher for storage access
+    private ActivityResultLauncher<String> permissionLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
+
+        // Initialize Firebase
+        mAuth = FirebaseAuth.getInstance();
+        dbRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize SharedPreferences
         prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
@@ -83,16 +106,50 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void setupImagePicker() {
-        // Register the image picker launcher
-        imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
-            uri -> {
-                if (uri != null) {
-                    selectedImageUri = uri;
-                    profileImage.setImageURI(uri);
+        // Register permission launcher
+        permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    // Permission granted, launch image picker
+                    launchImagePicker();
+                } else {
+                    // Permission denied, show message
+                    Toast.makeText(this, "사진을 선택하려면 저장소 접근 권한이 필요합니다", Toast.LENGTH_LONG).show();
+                }
+            }
+        );
 
-                    // Save the image URI to preferences
-                    prefs.edit().putString("profile_image_uri", uri.toString()).apply();
+        // Register the image picker launcher with support for both gallery and file manager
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        selectedImageUri = uri;
+
+                        // Display the selected image using Glide
+                        Glide.with(this)
+                                .load(uri)
+                                .placeholder(R.drawable.circle_logo)
+                                .error(R.drawable.circle_logo)
+                                .circleCrop()
+                                .into(profileImage);
+
+                        // Take persistable URI permission to access the image later
+                        try {
+                            getContentResolver().takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            );
+                        } catch (SecurityException e) {
+                            // Some apps don't grant persistable permissions, but we can still use the URI
+                        }
+
+                        // Save the image URI to preferences
+                        prefs.edit().putString("profile_image_uri", uri.toString()).apply();
+                    }
                 }
             }
         );
@@ -105,6 +162,7 @@ public class EditProfileActivity extends AppCompatActivity {
         String currentMbti = prefs.getString("user_mbti", "");
         String currentBio = prefs.getString("user_bio", "");
         String imageUriString = prefs.getString("profile_image_uri", "");
+        String profileImageUrl = prefs.getString("profile_image_url", "");
 
         // Set current values to inputs
         if (nameInput != null) nameInput.setText(currentName);
@@ -112,11 +170,23 @@ public class EditProfileActivity extends AppCompatActivity {
         if (mbtiInput != null) mbtiInput.setText(currentMbti);
         if (bioInput != null) bioInput.setText(currentBio);
 
-        // Load profile image if exists
-        if (!imageUriString.isEmpty()) {
+        // Load profile image if exists - try URL first, then local URI
+        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(profileImageUrl)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .circleCrop()
+                    .into(profileImage);
+        } else if (!imageUriString.isEmpty()) {
             try {
                 Uri imageUri = Uri.parse(imageUriString);
-                profileImage.setImageURI(imageUri);
+                Glide.with(this)
+                        .load(imageUri)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .circleCrop()
+                        .into(profileImage);
                 selectedImageUri = imageUri;
             } catch (Exception e) {
                 // If loading fails, keep the default image
@@ -128,12 +198,65 @@ public class EditProfileActivity extends AppCompatActivity {
     private void setupClickListeners() {
         // Change photo button
         changePhotoButton.setOnClickListener(v -> {
-            // Launch image picker
-            imagePickerLauncher.launch("image/*");
+            // Check and request permission if needed
+            if (checkStoragePermission()) {
+                launchImagePicker();
+            } else {
+                requestStoragePermission();
+            }
         });
 
         // Save button
         saveButton.setOnClickListener(v -> saveProfile());
+    }
+
+    /**
+     * Check if storage permission is granted
+     */
+    private boolean checkStoragePermission() {
+        // For Android 13+ (API 33+), check READ_MEDIA_IMAGES
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                == PackageManager.PERMISSION_GRANTED;
+        } else {
+            // For Android 12 and below, check READ_EXTERNAL_STORAGE
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    /**
+     * Request storage permission based on Android version
+     */
+    private void requestStoragePermission() {
+        String permission;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permission = Manifest.permission.READ_MEDIA_IMAGES;
+        } else {
+            permission = Manifest.permission.READ_EXTERNAL_STORAGE;
+        }
+        permissionLauncher.launch(permission);
+    }
+
+    /**
+     * Launch image picker with chooser for gallery and file manager
+     */
+    private void launchImagePicker() {
+        // Create intent to pick image from gallery
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        galleryIntent.setType("image/*");
+
+        // Create intent to pick image from file manager
+        Intent fileIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        fileIntent.setType("image/*");
+
+        // Create chooser to let user select between gallery and file manager
+        Intent chooserIntent = Intent.createChooser(galleryIntent, "사진 선택");
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{fileIntent});
+
+        // Launch the chooser
+        imagePickerLauncher.launch(chooserIntent);
     }
 
     private void saveProfile() {
@@ -163,12 +286,16 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        // Set default values
+        String finalMbti = mbti.isEmpty() ? "ENFP" : mbti;
+        String finalBio = bio.isEmpty() ? "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨" : bio;
+
         // Save to SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("user_name", name);
         editor.putString("user_username", username);
-        editor.putString("user_mbti", mbti.isEmpty() ? "ENFP" : mbti);
-        editor.putString("user_bio", bio.isEmpty() ? "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨" : bio);
+        editor.putString("user_mbti", finalMbti);
+        editor.putString("user_bio", finalBio);
 
         if (selectedImageUri != null) {
             editor.putString("profile_image_uri", selectedImageUri.toString());
@@ -176,9 +303,64 @@ public class EditProfileActivity extends AppCompatActivity {
 
         editor.apply();
 
-        Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+        // Sync to Realtime Database
+        syncToRealtimeDatabase(name, username, finalMbti, finalBio);
+    }
 
-        // Return to previous screen
-        finish();
+    /**
+     * Sync profile data to Realtime Database
+     */
+    private void syncToRealtimeDatabase(String name, String username, String mbti, String bio) {
+        String userId = getUserId();
+
+        if (userId == null) {
+            // No user ID found, only save locally
+            Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Prepare data to update
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("displayName", name);
+        updates.put("username", username);
+        updates.put("mbti", mbti);
+        updates.put("bio", bio);
+
+        if (selectedImageUri != null) {
+            updates.put("profileImageUrl", selectedImageUri.toString());
+        }
+
+        // Update Realtime Database
+        dbRef.child("users").child(userId)
+                .updateChildren(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("EditProfileActivity", "Error updating profile in Realtime Database", e);
+                    // Even if database update fails, local save was successful
+                    Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+    }
+
+    /**
+     * Get the user ID based on login method
+     */
+    private String getUserId() {
+        // Check if user is logged in via Firebase Auth
+        if (mAuth.getCurrentUser() != null) {
+            return mAuth.getCurrentUser().getUid();
+        }
+
+        // Check SharedPreferences for social login user ID
+        String userId = prefs.getString("user_id", "");
+        if (!userId.isEmpty()) {
+            return userId;
+        }
+
+        return null;
     }
 }
