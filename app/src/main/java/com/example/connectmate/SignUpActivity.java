@@ -188,17 +188,34 @@ public class SignUpActivity extends AppCompatActivity {
 
         // Create user with Firebase
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    signUpButton.setEnabled(true);
-                    if (task.isSuccessful()) {
-                        Log.d(TAG, "createUserWithEmail:success");
-                        Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_SHORT).show();
-                        navigateToMain();
-                    } else {
-                        Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                        Toast.makeText(SignUpActivity.this, "Sign up failed: " + Objects.requireNonNull(task.getException()).getMessage(),
-                                Toast.LENGTH_LONG).show();
+                .addOnSuccessListener(result -> {
+                    FirebaseUser fu = result.getUser();
+                    if(fu != null){
+                        String uid = fu.getUid();
+                        String mail = fu.getEmail();
+                        String name = fu.getDisplayName();
+                        String photo = fu.getPhotoUrl() != null ? fu.getPhotoUrl().toString() : null;
+
+                        Log.d(TAG, "[LOGIN] calling saveUserToFirestore uid=" + uid);
+                        saveUserToFirestore(uid, mail, name, photo, "email");
                     }
+                    navigateToMain();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "createUserWithEmail failed", e);
+                    String msg = "회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+                    if (e instanceof com.google.firebase.auth.FirebaseAuthException) {
+                        String code = ((com.google.firebase.auth.FirebaseAuthException) e).getErrorCode();
+                        switch (code) {
+                            case "ERROR_EMAIL_ALREADY_IN_USE": msg = "이미 사용 중인 이메일입니다."; break;
+                            case "ERROR_INVALID_EMAIL":        msg = "이메일 형식이 올바르지 않습니다."; break;
+                            case "ERROR_WEAK_PASSWORD":        msg = "비밀번호가 너무 약합니다."; break;
+                            case "ERROR_NETWORK_REQUEST_FAILED": msg = "네트워크 오류입니다. 연결을 확인해 주세요."; break;
+                            case "ERROR_TOO_MANY_REQUESTS":    msg = "요청이 많습니다. 잠시 후 다시 시도해 주세요."; break;
+                        }
+                    }
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                    signUpButton.setEnabled(true);
                 });
     }
 
@@ -572,7 +589,8 @@ public class SignUpActivity extends AppCompatActivity {
                                     saveUserToSharedPreferences(documentSnapshot);
                                 })
                                 .addOnFailureListener(e -> Log.e(TAG, "Failed to update user", e));
-                    } else {
+                    }
+                    else {
                         Log.d(TAG, "New user, creating profile");
                         User user = new User(userId, email, displayName, loginMethod);
                         if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
@@ -621,6 +639,8 @@ public class SignUpActivity extends AppCompatActivity {
 
         editor.apply();
     }
+
+
 
     /**
      * Save login state to SharedPreferences

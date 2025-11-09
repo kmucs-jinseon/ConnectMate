@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -170,93 +171,56 @@ public class ProfileFragment extends Fragment {
         // Load user data from Firestore
         db.collection("users").document(userId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        // Load data from Firestore
-                        String displayName = documentSnapshot.getString("displayName");
-                        String email = documentSnapshot.getString("email");
-                        String username = documentSnapshot.getString("username");
-                        String bio = documentSnapshot.getString("bio");
-                        String mbti = documentSnapshot.getString("mbti");
-                        String profileImageUrl = documentSnapshot.getString("profileImageUrl");
-                        Double rating = documentSnapshot.getDouble("rating");
-                        Long activitiesCountLong = documentSnapshot.getLong("activitiesCount");
-                        Long connectionsCountLong = documentSnapshot.getLong("connectionsCount");
-                        Long badgesCountLong = documentSnapshot.getLong("badgesCount");
-
-                        // Update UI
-                        if (profileName != null && displayName != null) {
-                            profileName.setText(displayName);
-                        }
-
-                        if (profileUsername != null && username != null) {
-                            profileUsername.setText("@" + username);
-                        }
-
-                        if (profileEmail != null && email != null) {
-                            profileEmail.setText(email);
-                        }
-
-                        if (profileBio != null && bio != null) {
-                            profileBio.setText(bio);
-                        }
-
-                        if (mbtiChip != null && mbti != null) {
-                            mbtiChip.setText(mbti);
-                        }
-
-                        if (ratingText != null && rating != null) {
-                            ratingText.setText(String.format("%.1f", rating));
-                        }
-
-                        if (activitiesCount != null && activitiesCountLong != null) {
-                            activitiesCount.setText(String.valueOf(activitiesCountLong));
-                        }
-
-                        if (connectionsCount != null && connectionsCountLong != null) {
-                            connectionsCount.setText(String.valueOf(connectionsCountLong));
-                        }
-
-                        if (badgesCount != null && badgesCountLong != null) {
-                            badgesCount.setText(String.valueOf(badgesCountLong));
-                        }
-
-                        // Load profile image from URL if available
-                        if (profileImageUrl != null && !profileImageUrl.isEmpty() && profileAvatar != null) {
-                            // For now, just try to load as URI
-                            // In production, use an image loading library like Glide or Picasso
-                            try {
-                                Uri imageUri = Uri.parse(profileImageUrl);
-                                profileAvatar.setImageURI(imageUri);
-                            } catch (Exception e) {
-                                profileAvatar.setImageResource(R.drawable.circle_logo);
-                            }
-                        } else {
-                            // Check if there's a local profile image
-                            SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                            String localImageUri = prefs.getString("profile_image_uri", "");
-                            if (!localImageUri.isEmpty() && profileAvatar != null) {
-                                try {
-                                    Uri imageUri = Uri.parse(localImageUri);
-                                    profileAvatar.setImageURI(imageUri);
-                                } catch (Exception e) {
-                                    profileAvatar.setImageResource(R.drawable.circle_logo);
-                                }
-                            }
-                        }
-                    } else {
-                        // User not found in Firestore, fallback to SharedPreferences
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
                         loadUserDataFromSharedPreferences();
+                        return;
                     }
+
+                    User u = doc.toObject(User.class);
+                    if (u == null) {
+                        loadUserDataFromSharedPreferences();
+                        return;
+                    }
+
+                    bindUserToUi(u);
                 })
-                .addOnFailureListener(e -> {
-                    // Error loading from Firestore, fallback to SharedPreferences
-                    android.util.Log.e("ProfileFragment", "Error loading user data from Firestore", e);
-                    loadUserDataFromSharedPreferences();
-                });
+                .addOnFailureListener(e -> loadUserDataFromSharedPreferences());
     }
 
-    /**
+    private void bindUserToUi(User u){
+        setText(profileName, or(u.displayName, "이름"));
+        setText(profileUsername, "@" + or(u.username, or(safeId(u.displayName), "user")));
+        setText(profileEmail, or(u.email, "user@example.com"));
+        setText(profileBio, or(u.bio, "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨"));
+        if (mbtiChip != null) mbtiChip.setText(or(u.mbti, "ENFP"));
+
+        if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 4.8)));
+        if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
+        if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
+        if (badgesCount != null) badgesCount.setText(String.valueOf(or(u.badgesCount, 0L)));
+
+        // 이미지는 Glide/Picasso 권장
+        if (profileAvatar != null) {
+            String url = u.profileImageUrl;
+            if (!TextUtils.isEmpty(url)) {
+                // Glide.with(this).load(url).placeholder(R.drawable.circle_logo).into(profileAvatar);
+                try { profileAvatar.setImageURI(Uri.parse(url)); } catch (Exception e) { profileAvatar.setImageResource(R.drawable.circle_logo); }
+            } else {
+                profileAvatar.setImageResource(R.drawable.circle_logo);
+            }
+        }
+    }
+
+    private void setText(TextView tv, String text) { if (tv != null) tv.setText(text); }
+    private String or(String v, String d) { return v == null || v.isEmpty() ? d : v; }
+    private Double or(Double v, Double d) { return v == null ? d : v; }
+    private Long or(Long v, Long d) { return v == null ? d : v; }
+    private long or(Long v, long def) { return v != null ? v : def; }
+    private long or(Integer v, long def) { return v != null ? v.longValue() : def; }
+    private String safeId(String s) { return s == null ? "" : s.toLowerCase().replace(" ", ""); }
+
+    /*
      * Get the user ID based on login method
      */
     private String getUserId() {

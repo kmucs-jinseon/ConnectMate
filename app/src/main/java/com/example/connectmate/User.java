@@ -7,20 +7,20 @@ import com.google.firebase.firestore.PropertyName;
  * Represents a user profile with authentication and social login information
  */
 public class User {
-    private String userId;           // Firebase Auth UID or social login ID
-    private String email;
-    private String displayName;
-    private String username;
-    private String profileImageUrl;
-    private String loginMethod;      // "firebase", "google", "kakao", "naver"
-    private String bio;
-    private String mbti;
-    private double rating;
-    private int activitiesCount;
-    private int connectionsCount;
-    private int badgesCount;
-    private long createdAt;
-    private long lastLoginAt;
+    public String userId;           // Firebase Auth UID or social login ID
+    public String email;
+    public String displayName;
+    public String username;
+    public String profileImageUrl;
+    public String loginMethod;      // "firebase", "google", "kakao", "naver"
+    public String bio;
+    public String mbti;
+    public double rating;
+    public int activitiesCount;
+    public int connectionsCount;
+    public int badgesCount;
+    public long createdAt;
+    public long lastLoginAt;
 
     // Required empty constructor for Firestore
     public User() {
