@@ -267,8 +267,14 @@ public class LoginActivity extends AppCompatActivity {
         // Disable button during sign-in
         googleSignInButton.setEnabled(false);
 
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        googleSignInLauncher.launch(signInIntent);
+        // Sign out first to force account picker to show
+        // This prevents automatic re-login with cached account
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+            Log.d(TAG, "Google sign out completed, showing account picker");
+            // Now launch sign-in intent which will show account picker
+            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+            googleSignInLauncher.launch(signInIntent);
+        });
     }
 
     private void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask) {
@@ -512,52 +518,91 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        Log.d(TAG, "═══════════════════════════════════════════");
+        Log.d(TAG, "Starting Naver Login");
+        Log.d(TAG, "Client ID: " + BuildConfig.NAVER_CLIENT_ID);
+        Log.d(TAG, "═══════════════════════════════════════════");
+
         // Disable button during sign-in
         naverSignInButton.setEnabled(false);
 
         OAuthLoginCallback callback = new OAuthLoginCallback() {
             @Override
             public void onSuccess() {
-                Log.d(TAG, "Naver login success");
+                Log.d(TAG, "═══════════════════════════════════════════");
+                Log.d(TAG, "Naver OAuth login success");
+                Log.d(TAG, "═══════════════════════════════════════════");
                 getUserInfoFromNaver();
             }
 
             @Override
             public void onFailure(int httpStatus, @NonNull String message) {
-                Log.e(TAG, "Naver login failed: " + message);
-                naverSignInButton.setEnabled(true);
-                Toast.makeText(LoginActivity.this, "Naver login failed: " + message, Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "═══════════════════════════════════════════");
+                Log.e(TAG, "Naver login failed");
+                Log.e(TAG, "HTTP Status: " + httpStatus);
+                Log.e(TAG, "Message: " + message);
+                Log.e(TAG, "═══════════════════════════════════════════");
+                runOnUiThread(() -> {
+                    naverSignInButton.setEnabled(true);
+                    String errorMsg = "Naver login failed";
+                    if (message != null && !message.isEmpty()) {
+                        errorMsg = message;
+                    }
+                    Toast.makeText(LoginActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                });
             }
 
             @Override
             public void onError(int errorCode, @NonNull String message) {
-                Log.e(TAG, "Naver login error: " + message);
-                naverSignInButton.setEnabled(true);
-                Toast.makeText(LoginActivity.this, "Naver login error: " + message, Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "═══════════════════════════════════════════");
+                Log.e(TAG, "Naver login error");
+                Log.e(TAG, "Error Code: " + errorCode);
+                Log.e(TAG, "Message: " + message);
+                Log.e(TAG, "═══════════════════════════════════════════");
+                runOnUiThread(() -> {
+                    naverSignInButton.setEnabled(true);
+                    String errorMsg = "Naver login error";
+                    if (message != null && !message.isEmpty()) {
+                        errorMsg = message;
+                    }
+                    Toast.makeText(LoginActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                });
             }
         };
 
         try {
             NaverIdLoginSDK.INSTANCE.authenticate(this, callback);
         } catch (Exception e) {
-            Log.e(TAG, "Naver login exception", e);
+            Log.e(TAG, "═══════════════════════════════════════════");
+            Log.e(TAG, "Naver login exception");
+            Log.e(TAG, "Exception type: " + e.getClass().getName());
+            Log.e(TAG, "Exception message: " + e.getMessage());
+            Log.e(TAG, "═══════════════════════════════════════════");
+            e.printStackTrace();
             naverSignInButton.setEnabled(true);
-            Toast.makeText(this, "Naver login error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Naver login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void getUserInfoFromNaver() {
+        Log.d(TAG, "Fetching Naver user info...");
+
         // After successful login, you can get the access token
         String accessToken = NaverIdLoginSDK.INSTANCE.getAccessToken();
 
         if (accessToken == null || accessToken.isEmpty()) {
-            Log.w(TAG, "Failed to get Naver access token");
-            naverSignInButton.setEnabled(true);
-            Toast.makeText(LoginActivity.this, "Failed to get access token", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "═══════════════════════════════════════════");
+            Log.e(TAG, "Failed to get Naver access token");
+            Log.e(TAG, "Access token is null or empty");
+            Log.e(TAG, "═══════════════════════════════════════════");
+            runOnUiThread(() -> {
+                naverSignInButton.setEnabled(true);
+                Toast.makeText(LoginActivity.this, "Failed to get access token", Toast.LENGTH_SHORT).show();
+            });
             return;
         }
 
-        Log.d(TAG, "Naver access token: " + accessToken.substring(0, 20) + "...");
+        Log.d(TAG, "Naver access token obtained: " + accessToken.substring(0, Math.min(20, accessToken.length())) + "...");
 
         // Fetch user profile from Naver API
         Request request = new Request.Builder()
@@ -565,30 +610,59 @@ public class LoginActivity extends AppCompatActivity {
                 .addHeader("Authorization", "Bearer " + accessToken)
                 .build();
 
+        Log.d(TAG, "Calling Naver user info API...");
+
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "Failed to fetch Naver user info", e);
+                Log.e(TAG, "═══════════════════════════════════════════");
+                Log.e(TAG, "Failed to fetch Naver user info");
+                Log.e(TAG, "Exception: " + e.getClass().getName());
+                Log.e(TAG, "Message: " + e.getMessage());
+                Log.e(TAG, "═══════════════════════════════════════════");
+                e.printStackTrace();
                 runOnUiThread(() -> {
                     naverSignInButton.setEnabled(true);
-                    Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "Failed to connect to Naver: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                Log.d(TAG, "Naver API response code: " + response.code());
+
                 if (!response.isSuccessful()) {
-                    Log.e(TAG, "Naver API error: " + response.code());
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    Log.e(TAG, "═══════════════════════════════════════════");
+                    Log.e(TAG, "Naver API error");
+                    Log.e(TAG, "Status code: " + response.code());
+                    Log.e(TAG, "Error body: " + errorBody);
+                    Log.e(TAG, "═══════════════════════════════════════════");
                     runOnUiThread(() -> {
                         naverSignInButton.setEnabled(true);
-                        Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Naver API error: " + response.code(), Toast.LENGTH_SHORT).show();
                     });
                     return;
                 }
 
                 try {
-                    String responseBody = response.body().string();
-                    Log.d(TAG, "Naver API response: " + responseBody);
+                    String responseBody = response.body() != null ? response.body().string() : "";
+                    Log.d(TAG, "═══════════════════════════════════════════");
+                    Log.d(TAG, "Naver API response:");
+                    Log.d(TAG, "Response body is null: " + (responseBody == null));
+                    Log.d(TAG, "Response body is empty: " + (responseBody != null && responseBody.isEmpty()));
+                    Log.d(TAG, "Response body length: " + (responseBody != null ? responseBody.length() : 0));
+                    Log.d(TAG, "Response body: " + (responseBody != null ? responseBody : "NULL"));
+                    Log.d(TAG, "═══════════════════════════════════════════");
+
+                    if (responseBody == null || responseBody.isEmpty()) {
+                        Log.e(TAG, "Empty response body from Naver API!");
+                        runOnUiThread(() -> {
+                            naverSignInButton.setEnabled(true);
+                            Toast.makeText(LoginActivity.this, "Empty response from Naver", Toast.LENGTH_SHORT).show();
+                        });
+                        return;
+                    }
 
                     JSONObject json = new JSONObject(responseBody);
                     String resultCode = json.getString("resultcode");
@@ -601,13 +675,19 @@ public class LoginActivity extends AppCompatActivity {
                         String nickname = userResponse.optString("nickname", "Naver User");
                         String profileImage = userResponse.optString("profile_image", null);
 
-                        Log.d(TAG, "Naver user info - ID: " + userId + ", Email: " + email + ", Name: " + name);
+                        Log.d(TAG, "═══════════════════════════════════════════");
+                        Log.d(TAG, "Naver user info parsed successfully");
+                        Log.d(TAG, "ID: " + userId);
+                        Log.d(TAG, "Email: " + email);
+                        Log.d(TAG, "Name: " + name);
+                        Log.d(TAG, "Nickname: " + nickname);
+                        Log.d(TAG, "═══════════════════════════════════════════");
 
                         runOnUiThread(() -> {
                             // Re-enable button
                             naverSignInButton.setEnabled(true);
 
-                            // Save user to Firestore
+                            // Save user to Database
                             String firestoreUserId = "naver_" + userId;
                             String displayName = !name.isEmpty() ? name : (!nickname.isEmpty() ? nickname : "Naver User");
                             saveUserToFirestore(firestoreUserId, email, displayName, profileImage, "naver");
@@ -619,17 +699,25 @@ public class LoginActivity extends AppCompatActivity {
                             navigateToMain();
                         });
                     } else {
-                        Log.e(TAG, "Naver API error: Invalid result code " + resultCode);
+                        Log.e(TAG, "═══════════════════════════════════════════");
+                        Log.e(TAG, "Naver API error: Invalid result code");
+                        Log.e(TAG, "Result code: " + resultCode);
+                        Log.e(TAG, "═══════════════════════════════════════════");
                         runOnUiThread(() -> {
                             naverSignInButton.setEnabled(true);
-                            Toast.makeText(LoginActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, "Naver API returned error code: " + resultCode, Toast.LENGTH_SHORT).show();
                         });
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to parse Naver user info", e);
+                    Log.e(TAG, "═══════════════════════════════════════════");
+                    Log.e(TAG, "Failed to parse Naver user info");
+                    Log.e(TAG, "Exception: " + e.getClass().getName());
+                    Log.e(TAG, "Message: " + e.getMessage());
+                    Log.e(TAG, "═══════════════════════════════════════════");
+                    e.printStackTrace();
                     runOnUiThread(() -> {
                         naverSignInButton.setEnabled(true);
-                        Toast.makeText(LoginActivity.this, "Failed to parse user info", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Failed to parse user info: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     });
                 }
             }

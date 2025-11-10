@@ -272,8 +272,15 @@ public class SignUpActivity extends AppCompatActivity {
     // Google Sign-Up Methods (uses same flow as login)
     private void signUpWithGoogle() {
         googleSignUpButton.setEnabled(false);
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        googleSignInLauncher.launch(signInIntent);
+
+        // Sign out first to force account picker to show
+        // This prevents automatic re-login with cached account
+        mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> {
+            Log.d(TAG, "Google sign out completed, showing account picker");
+            // Now launch sign-in intent which will show account picker
+            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+            googleSignInLauncher.launch(signInIntent);
+        });
     }
 
     private void handleGoogleSignInResult(Task<GoogleSignInAccount> completedTask) {

@@ -131,6 +131,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Naver Login Callback Activity -->
+        <activity
+            android:name="com.navercorp.nid.oauth.NidOAuthLoginActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
     </application>
 
 </manifest>

@@ -26,6 +26,11 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.kakao.sdk.user.UserApiClient;
+import com.navercorp.nid.NaverIdLoginSDK;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -328,18 +333,65 @@ public class ProfileFragment extends Fragment {
     }
 
     private void performLogout() {
-        // Sign out from Firebase
+        // Get SharedPreferences
+        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String loginMethod = prefs.getString("login_method", "");
+
+        // Sign out from social providers based on login method
+        try {
+            switch (loginMethod) {
+                case "google":
+                    // Sign out from Google
+                    GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestEmail()
+                            .build();
+                    GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(requireContext(), gso);
+                    googleSignInClient.signOut().addOnCompleteListener(task -> {
+                        android.util.Log.d("ProfileFragment", "Google sign out completed");
+                    });
+                    break;
+
+                case "kakao":
+                    // Sign out from Kakao
+                    UserApiClient.getInstance().logout(error -> {
+                        if (error != null) {
+                            android.util.Log.e("ProfileFragment", "Kakao logout failed", error);
+                        } else {
+                            android.util.Log.d("ProfileFragment", "Kakao logout success");
+                        }
+                        return null;
+                    });
+                    break;
+
+                case "naver":
+                    // Sign out from Naver
+                    NaverIdLoginSDK.INSTANCE.logout();
+                    android.util.Log.d("ProfileFragment", "Naver logout completed");
+                    break;
+
+                case "firebase":
+                case "email":
+                    // Firebase Auth only login
+                    android.util.Log.d("ProfileFragment", "Firebase email login logout");
+                    break;
+
+                default:
+                    android.util.Log.w("ProfileFragment", "Unknown login method: " + loginMethod);
+                    break;
+            }
+        } catch (Exception e) {
+            android.util.Log.e("ProfileFragment", "Error during social provider logout", e);
+        }
+
+        // Sign out from Firebase Auth (for all login methods)
         mAuth.signOut();
 
-        // Clear login state from SharedPreferences
-        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        // Clear ALL user data from SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean("is_logged_in", false);
-        editor.remove("login_method");
+        editor.clear(); // Clear everything
         editor.apply();
 
-        // Also sign out from Google if needed
-        // GoogleSignIn.getClient(requireContext(), GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
+        android.util.Log.d("ProfileFragment", "Logout completed - All data cleared");
 
         Toast.makeText(requireContext(), "로그아웃 되었습니다", Toast.LENGTH_SHORT).show();
 
