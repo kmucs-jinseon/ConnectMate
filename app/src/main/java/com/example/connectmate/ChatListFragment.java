@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -22,6 +24,9 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +55,7 @@ public class ChatListFragment extends Fragment {
     private List<ChatRoom> allChatRooms;
     private List<ChatRoom> filteredChatRooms;
     private List<FavoriteChat> favoriteChatList;
+    private String currentUserId;
 
     public ChatListFragment() {
         super(R.layout.fragment_chat);
@@ -66,11 +72,20 @@ public class ChatListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        getCurrentUserId();
         initializeViews(view);
         setupRecyclerViews();
         setupClickListeners();
-        loadSampleData();
-        updateUI();
+    }
+
+    private void getCurrentUserId() {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            currentUserId = firebaseUser.getUid();
+        } else {
+            SharedPreferences prefs = requireActivity().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            currentUserId = prefs.getString("user_id", "");
+        }
     }
 
     private void initializeViews(View view) {
@@ -196,7 +211,7 @@ public class ChatListFragment extends Fragment {
             String lowerQuery = query.toLowerCase();
             for (ChatRoom room : allChatRooms) {
                 if (room.getName().toLowerCase().contains(lowerQuery) ||
-                    room.getLastMessage().toLowerCase().contains(lowerQuery)) {
+                    (room.getLastMessage() != null && room.getLastMessage().toLowerCase().contains(lowerQuery))) {
                     filteredChatRooms.add(room);
                 }
             }
@@ -226,11 +241,11 @@ public class ChatListFragment extends Fragment {
         }
     }
 
-    private void loadSampleData() {
-        // Load chat rooms from ChatManager
+    private void loadData() {
+        // Load chat rooms from ChatManager for the current user
         ChatManager chatManager = ChatManager.getInstance(requireContext());
         allChatRooms.clear();
-        allChatRooms.addAll(chatManager.getAllChatRooms());
+        allChatRooms.addAll(chatManager.getChatRoomsForUser(currentUserId));
 
         // Clear and reload favorites to prevent duplicates
         favoriteChatList.clear();
@@ -263,7 +278,7 @@ public class ChatListFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Reload chat rooms when fragment becomes visible
-        loadSampleData();
+        loadData();
         updateUI();
     }
 

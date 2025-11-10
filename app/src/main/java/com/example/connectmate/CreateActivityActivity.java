@@ -1,4 +1,5 @@
 package com.example.connectmate;
+
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
@@ -13,7 +14,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.connectmate.models.Activity;
+import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.ActivityManager;
+import com.example.connectmate.utils.ChatManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -39,7 +42,7 @@ public class CreateActivityActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_create_activity); // 👉 XML 파일 이름에 맞게 수정하세요
+        setContentView(R.layout.fragment_create_activity);
 
         initViews();
         setupCategoryDropdown();
@@ -63,7 +66,6 @@ public class CreateActivityActivity extends AppCompatActivity {
     }
 
     private void setupCategoryDropdown() {
-        // 카테고리 칩 생성
         String[] categories = getResources().getStringArray(R.array.category_options);
         Log.d(TAG, "Setting up categories. Count: " + categories.length);
 
@@ -73,7 +75,6 @@ public class CreateActivityActivity extends AppCompatActivity {
         }
 
         for (String category : categories) {
-            // Create chip with FilterChipStyle
             Chip chip = new Chip(this);
             chip.setChipBackgroundColorResource(R.color.filter_chip_background);
             chip.setTextColor(getResources().getColorStateList(R.color.filter_chip_text, null));
@@ -90,7 +91,6 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         Log.d(TAG, "Finished adding chips. ChipGroup child count: " + categoryChipGroup.getChildCount());
 
-        // Handle chip selection
         categoryChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (!checkedIds.isEmpty()) {
                 int chipId = checkedIds.get(0);
@@ -163,7 +163,6 @@ public class CreateActivityActivity extends AppCompatActivity {
                 return;
             }
 
-            // Parse participant limit
             int maxParticipants = 0;
             if (!participantsStr.isEmpty()) {
                 try {
@@ -174,7 +173,6 @@ public class CreateActivityActivity extends AppCompatActivity {
                 }
             }
 
-            // Get visibility
             int checkedId = visibilityToggle.getCheckedButtonId();
             String visibility = (checkedId == R.id.visibility_public) ? "공개" : "비공개";
 
@@ -182,20 +180,17 @@ public class CreateActivityActivity extends AppCompatActivity {
             String creatorId = "";
             String creatorName = "Anonymous";
 
-            // Try Firebase Auth
             FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
             if (firebaseUser != null) {
                 creatorId = firebaseUser.getUid();
                 creatorName = (firebaseUser.getDisplayName() != null) ?
                     firebaseUser.getDisplayName() : firebaseUser.getEmail();
             } else {
-                // Try SharedPreferences for social login
                 SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                 creatorId = prefs.getString("user_id", "");
                 creatorName = prefs.getString("user_name", "Anonymous");
             }
 
-            // Create Activity object
             Activity activity = new Activity(
                 title,
                 description,
@@ -210,15 +205,22 @@ public class CreateActivityActivity extends AppCompatActivity {
                 creatorName
             );
 
-            // Save activity using ActivityManager
             ActivityManager activityManager = ActivityManager.getInstance(this);
             boolean saved = activityManager.saveActivity(activity);
 
             if (saved) {
-                Toast.makeText(this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
-                Log.d(TAG, "Activity created: " + activity.getTitle());
+                // Now, create the chat room and add the creator automatically
+                ChatManager chatManager = ChatManager.getInstance(this);
+                chatManager.createOrGetChatRoom(
+                    activity.getId(),
+                    activity.getTitle(),
+                    creatorId,
+                    creatorName
+                );
 
-                // Close activity and return to previous screen
+                Toast.makeText(this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Activity created and chat room initialized: " + activity.getTitle());
+
                 finish();
             } else {
                 Toast.makeText(this, "활동 생성에 실패했습니다.", Toast.LENGTH_SHORT).show();

@@ -142,6 +142,17 @@ public class ChatRoom implements Serializable {
     }
 
     /**
+     * Get a member's name by their ID
+     */
+    public String getMemberName(String memberId) {
+        int index = memberIds.indexOf(memberId);
+        if (index != -1 && index < memberNames.size()) {
+            return memberNames.get(index);
+        }
+        return null; // Or a default name
+    }
+
+    /**
      * Get member count
      */
     public int getMemberCount() {

@@ -1,15 +1,20 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
@@ -80,6 +85,52 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         // Load messages
         loadMessages();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.chat_room_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+        if (itemId == R.id.action_leave_room) {
+            leaveChatRoom();
+            return true;
+        } else if (itemId == R.id.action_view_participants) {
+            showParticipantsDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showParticipantsDialog() {
+        if (chatRoom == null || chatRoom.getMemberNames().isEmpty()) {
+            Toast.makeText(this, "참여자가 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> memberNames = chatRoom.getMemberNames();
+        String[] items = memberNames.toArray(new String[0]);
+
+        new AlertDialog.Builder(this)
+            .setTitle("참여자 목록 (" + memberNames.size() + "명)")
+            .setItems(items, null)
+            .setPositiveButton("확인", null)
+            .show();
+    }
+
+    private void leaveChatRoom() {
+        ChatManager chatManager = ChatManager.getInstance(this);
+        boolean success = chatManager.leaveChatRoom(chatRoom.getId(), currentUserId, currentUserName);
+        if (success) {
+            Toast.makeText(this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+        } else {
+            Toast.makeText(this, "채팅방 나가기 실패", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void getCurrentUserInfo() {

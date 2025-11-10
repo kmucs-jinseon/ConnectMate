@@ -80,6 +80,13 @@ public class ActivityDetailActivity extends AppCompatActivity {
         setupButtons();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload details to reflect any changes (like participant count)
+        displayActivityDetails();
+    }
+
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
         detailTitle = findViewById(R.id.detail_title);
@@ -147,9 +154,13 @@ public class ActivityDetailActivity extends AppCompatActivity {
             locationCard.setVisibility(View.GONE);
         }
 
-        // Participants
+        // Participants (Source of truth is the chat room member count)
         if (activity.getMaxParticipants() > 0) {
-            String participantsText = activity.getCurrentParticipants() + " / " +
+            ChatManager chatManager = ChatManager.getInstance(this);
+            ChatRoom chatRoom = chatManager.getChatRoomByActivityId(activity.getId());
+            int currentParticipants = (chatRoom != null) ? chatRoom.getMemberCount() : 0;
+
+            String participantsText = currentParticipants + " / " +
                 activity.getMaxParticipants() + " participants";
             detailParticipants.setText(participantsText);
         } else {
@@ -263,19 +274,17 @@ public class ActivityDetailActivity extends AppCompatActivity {
         }
 
         // Get current user info
-        String userId = "";
+        String userId = getCurrentUserId();
         String userName = "Guest";
 
         // Try Firebase Auth
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
-            userId = firebaseUser.getUid();
             userName = (firebaseUser.getDisplayName() != null) ?
                 firebaseUser.getDisplayName() : firebaseUser.getEmail();
         } else {
             // Try SharedPreferences for social login
             SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-            userId = prefs.getString("user_id", "");
             userName = prefs.getString("user_name", "Guest");
         }
 
@@ -284,14 +293,19 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create or get chat room
+        // Create or get chat room, automatically adding the creator as the first member
         ChatManager chatManager = ChatManager.getInstance(this);
-        ChatRoom chatRoom = chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle());
+        ChatRoom chatRoom = chatManager.createOrGetChatRoom(
+            activity.getId(),
+            activity.getTitle(),
+            activity.getCreatorId(),
+            activity.getCreatorName()
+        );
 
-        // Check if user is already a member
+        // Check if the current user is already a member
         boolean isAlreadyMember = chatRoom.getMemberIds().contains(userId);
 
-        // Add user as member
+        // Add the current user as a member only if they aren't already and aren't the creator
         if (!isAlreadyMember) {
             chatManager.addMemberToChatRoom(chatRoom.getId(), userId, userName);
 
@@ -301,22 +315,15 @@ public class ActivityDetailActivity extends AppCompatActivity {
             chatManager.sendMessage(systemMessage);
 
             Log.d(TAG, "User joined activity chat: " + userName);
-        }
-
-        // Update activity participant count
-        ActivityManager activityManager = ActivityManager.getInstance(this);
-        if (!isAlreadyMember) {
-            activity.setCurrentParticipants(activity.getCurrentParticipants() + 1);
-            activityManager.updateActivity(activity);
+            Toast.makeText(this, "채팅방에 참여했습니다!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "이미 참여중인 채팅방입니다.", Toast.LENGTH_SHORT).show();
         }
 
         // Navigate to chat room
         Intent intent = new Intent(this, ChatRoomActivity.class);
         intent.putExtra("chat_room_id", chatRoom.getId());
-        intent.putExtra("chat_room", chatRoom);
         startActivity(intent);
-
-        Toast.makeText(this, "채팅방에 참여했습니다!", Toast.LENGTH_SHORT).show();
     }
 
     private void setCategoryColor(Chip chip, String category) {
