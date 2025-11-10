@@ -21,14 +21,18 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ProfileFragment extends Fragment {
 
     private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private DatabaseReference databaseRef;
 
     // UI elements - Profile Card
     private ImageButton moreButton;
@@ -66,9 +70,9 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize Firebase Auth and Firestore
+        // Initialize Firebase Auth and Realtime Database
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        databaseRef = FirebaseDatabase.getInstance().getReference();
 
         // Initialize UI elements
         initializeViews(view);
@@ -168,24 +172,30 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        // Load user data from Firestore
-        db.collection("users").document(userId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) {
-                        loadUserDataFromSharedPreferences();
-                        return;
+        // Load user data from Realtime Database
+        databaseRef.child("users").child(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            loadUserDataFromSharedPreferences();
+                            return;
+                        }
+
+                        User u = snapshot.getValue(User.class);
+                        if (u == null) {
+                            loadUserDataFromSharedPreferences();
+                            return;
+                        }
+
+                        bindUserToUi(u);
                     }
 
-                    User u = doc.toObject(User.class);
-                    if (u == null) {
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
                         loadUserDataFromSharedPreferences();
-                        return;
                     }
-
-                    bindUserToUi(u);
-                })
-                .addOnFailureListener(e -> loadUserDataFromSharedPreferences());
+                });
     }
 
     private void bindUserToUi(User u){

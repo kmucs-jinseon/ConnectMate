@@ -358,6 +358,96 @@ public class MapFragment extends Fragment {
         }
     }
 
+    /**
+     * Navigate to a specific location on the map
+     * @param latitude Target latitude
+     * @param longitude Target longitude
+     * @param title Location title/name
+     */
+    public void navigateToLocation(double latitude, double longitude, String title) {
+        Log.d(TAG, "Navigating to location: " + title + " at (" + latitude + ", " + longitude + ")");
+
+        if (kakaoMap == null) {
+            Log.w(TAG, "KakaoMap is not ready yet, waiting...");
+            // Wait for map to be ready
+            if (mapView != null) {
+                mapView.post(() -> navigateToLocation(latitude, longitude, title));
+            }
+            return;
+        }
+
+        try {
+            LatLng targetLocation = LatLng.from(latitude, longitude);
+
+            // Move camera to target location with appropriate zoom level
+            kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(targetLocation, 15));
+
+            // Add a marker for the target location
+            if (kakaoMap.getLabelManager() != null) {
+                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+
+                if (labelLayer != null) {
+                    LabelStyles styles = kakaoMap.getLabelManager()
+                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
+
+                    LabelOptions options = LabelOptions.from(
+                        "target_" + System.currentTimeMillis(),
+                        targetLocation
+                    ).setStyles(styles);
+
+                    labelLayer.addLabel(options);
+                }
+            }
+
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Navigated to: " + title, Toast.LENGTH_SHORT).show();
+            }
+
+            Log.d(TAG, "Successfully navigated to location");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to navigate to location", e);
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Failed to navigate to location", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    /**
+     * Show walking route to a specific location
+     * @param latitude Target latitude
+     * @param longitude Target longitude
+     * @param title Location title/name
+     */
+    public void showRouteToLocation(double latitude, double longitude, String title) {
+        Log.d(TAG, "Showing route to location: " + title + " at (" + latitude + ", " + longitude + ")");
+
+        if (kakaoMap == null) {
+            Log.w(TAG, "KakaoMap is not ready yet, waiting...");
+            // Wait for map to be ready
+            if (mapView != null) {
+                mapView.post(() -> showRouteToLocation(latitude, longitude, title));
+            }
+            return;
+        }
+
+        // First navigate to the location
+        navigateToLocation(latitude, longitude, title);
+
+        // TODO: Implement route drawing using T Map Pedestrian API
+        // This would require:
+        // 1. Get current location
+        // 2. Call T Map Pedestrian API to get route
+        // 3. Draw polyline on map with the route
+        // For now, just show a message
+        if (getContext() != null) {
+            Toast.makeText(getContext(),
+                "Route to " + title + " (Route drawing coming soon)",
+                Toast.LENGTH_LONG).show();
+        }
+
+        Log.d(TAG, "Route display requested - full implementation pending");
+    }
+
     @Override
     public void onResume() {
         super.onResume();
