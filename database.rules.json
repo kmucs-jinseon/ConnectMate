@@ -1,0 +1,89 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        // Users can read their own data
+        ".read": "$uid === auth.uid",
+        // Users can write their own data
+        ".write": "$uid === auth.uid",
+        // Validate user data structure
+        ".validate": "newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString()"
+      }
+    },
+
+    "activities": {
+      // Anyone authenticated can read all activities
+      ".read": "auth != null",
+
+      "$activityId": {
+        // Only authenticated users can create activities
+        ".write": "auth != null && (!data.exists() || data.child('creatorId').val() === auth.uid)",
+
+        // Validate activity data structure
+        ".validate": "newData.hasChildren(['id', 'title', 'creatorId', 'createdTimestamp']) && newData.child('id').isString() && newData.child('title').isString() && newData.child('creatorId').isString() && newData.child('createdTimestamp').isNumber()",
+
+        "participants": {
+          // Anyone can read participants
+          ".read": "auth != null",
+
+          "$userId": {
+            // Users can add/remove themselves, or creator can manage participants
+            ".write": "auth != null && ($userId === auth.uid || root.child('activities').child($activityId).child('creatorId').val() === auth.uid)"
+          }
+        },
+
+        "currentParticipants": {
+          // Automatically managed by server
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+
+    "userActivities": {
+      "$userId": {
+        // Users can read their own activities
+        ".read": "$userId === auth.uid",
+
+        "$activityId": {
+          // Users can manage their own activity list
+          ".write": "$userId === auth.uid"
+        }
+      }
+    },
+
+    "chatRooms": {
+      // Anyone authenticated can read all chat rooms (could be restricted to members only)
+      ".read": "auth != null",
+
+      "$chatRoomId": {
+        // Authenticated users can create chat rooms
+        ".write": "auth != null && (!data.exists() || data.child('members').child(auth.uid).exists())",
+
+        // Validate chat room data structure
+        ".validate": "newData.hasChildren(['id', 'name', 'createdTimestamp']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('createdTimestamp').isNumber()",
+
+        "members": {
+          "$userId": {
+            // Users can add themselves, or existing members can add others
+            ".write": "auth != null && ($userId === auth.uid || data.parent().child(auth.uid).exists())"
+          }
+        }
+      }
+    },
+
+    "messages": {
+      "$chatRoomId": {
+        // Only chat room members can read messages
+        ".read": "auth != null && root.child('chatRooms').child($chatRoomId).child('members').child(auth.uid).exists()",
+
+        "$messageId": {
+          // Only chat room members can send messages
+          ".write": "auth != null && root.child('chatRooms').child($chatRoomId).child('members').child(auth.uid).exists()",
+
+          // Validate message data structure
+          ".validate": "newData.hasChildren(['id', 'chatRoomId', 'senderId', 'message', 'timestamp']) && newData.child('id').isString() && newData.child('chatRoomId').isString() && newData.child('senderId').isString() && newData.child('message').isString() && newData.child('timestamp').isNumber()"
+        }
+      }
+    }
+  }
+}

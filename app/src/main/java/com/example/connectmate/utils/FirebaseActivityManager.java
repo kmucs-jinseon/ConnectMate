@@ -1,0 +1,530 @@
+package com.example.connectmate.utils;
+
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.example.connectmate.models.Activity;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Firebase-based Activity Manager with real-time multi-user sync
+ * Replaces SharedPreferences-based ActivityManager
+ */
+public class FirebaseActivityManager {
+    private static final String TAG = "FirebaseActivityManager";
+
+    // Firebase paths
+    private static final String PATH_ACTIVITIES = "activities";
+    private static final String PATH_USER_ACTIVITIES = "userActivities";
+    private static final String PATH_PARTICIPANTS = "participants";
+
+    private final DatabaseReference activitiesRef;
+    private final DatabaseReference userActivitiesRef;
+    private final FirebaseAuth auth;
+
+    private static FirebaseActivityManager instance;
+
+    // Listeners for real-time updates
+    private final Map<String, ActivityListener> activityListeners = new HashMap<>();
+    private ChildEventListener activitiesChildListener;
+
+    private FirebaseActivityManager() {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+
+        // Enable offline persistence
+        try {
+            database.setPersistenceEnabled(true);
+        } catch (Exception e) {
+            Log.w(TAG, "Persistence already enabled or failed to enable", e);
+        }
+
+        activitiesRef = database.getReference(PATH_ACTIVITIES);
+        userActivitiesRef = database.getReference(PATH_USER_ACTIVITIES);
+        auth = FirebaseAuth.getInstance();
+
+        // Keep data synced locally
+        activitiesRef.keepSynced(true);
+    }
+
+    /**
+     * Get singleton instance
+     */
+    public static synchronized FirebaseActivityManager getInstance() {
+        if (instance == null) {
+            instance = new FirebaseActivityManager();
+        }
+        return instance;
+    }
+
+    /**
+     * Save a new activity to Firebase
+     */
+    public void saveActivity(Activity activity, OnCompleteListener<Activity> listener) {
+        if (activity.getId() == null || activity.getId().isEmpty()) {
+            // Generate new ID if not set
+            String id = activitiesRef.push().getKey();
+            activity.setId(id);
+        }
+
+        // Set creator info if not already set
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser != null && activity.getCreatorId() == null) {
+            activity.setCreatorId(currentUser.getUid());
+            activity.setCreatorName(currentUser.getDisplayName() != null ?
+                currentUser.getDisplayName() : currentUser.getEmail());
+        }
+
+        // Set timestamp
+        if (activity.getCreatedTimestamp() == 0) {
+            activity.setCreatedTimestamp(System.currentTimeMillis());
+        }
+
+        // Save to /activities/{activityId}
+        activitiesRef.child(activity.getId()).setValue(activity)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Activity saved: " + activity.getTitle());
+
+                // Add to user's activity list
+                if (activity.getCreatorId() != null) {
+                    userActivitiesRef.child(activity.getCreatorId())
+                        .child(activity.getId())
+                        .setValue(true);
+                }
+
+                // Initialize creator as first participant
+                addParticipant(activity.getId(), activity.getCreatorId(),
+                    activity.getCreatorName(), null);
+
+                if (listener != null) {
+                    listener.onSuccess(activity);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error saving activity", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Get all activities with real-time updates
+     */
+    public void getAllActivities(ActivityListListener listener) {
+        activitiesRef.orderByChild("createdTimestamp")
+            .addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    List<Activity> activities = new ArrayList<>();
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        Activity activity = child.getValue(Activity.class);
+                        if (activity != null) {
+                            activities.add(0, activity); // Add to beginning (newest first)
+                        }
+                    }
+
+                    Log.d(TAG, "Loaded " + activities.size() + " activities from Firebase");
+                    listener.onActivitiesLoaded(activities);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error loading activities", error.toException());
+                    listener.onError(error.toException());
+                }
+            });
+    }
+
+    /**
+     * Listen for activity changes in real-time (add, update, remove)
+     */
+    public void listenForActivityChanges(ActivityChangeListener listener) {
+        // Remove previous listener if exists
+        if (activitiesChildListener != null) {
+            activitiesRef.removeEventListener(activitiesChildListener);
+        }
+
+        activitiesChildListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                Activity activity = snapshot.getValue(Activity.class);
+                if (activity != null) {
+                    listener.onActivityAdded(activity);
+                }
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                Activity activity = snapshot.getValue(Activity.class);
+                if (activity != null) {
+                    listener.onActivityChanged(activity);
+                }
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                Activity activity = snapshot.getValue(Activity.class);
+                if (activity != null) {
+                    listener.onActivityRemoved(activity);
+                }
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                // Not used for activities
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        };
+
+        activitiesRef.addChildEventListener(activitiesChildListener);
+    }
+
+    /**
+     * Get activity by ID
+     */
+    public void getActivityById(String id, OnCompleteListener<Activity> listener) {
+        activitiesRef.child(id).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Activity activity = snapshot.getValue(Activity.class);
+                if (activity != null && listener != null) {
+                    listener.onSuccess(activity);
+                } else if (listener != null) {
+                    listener.onError(new Exception("Activity not found"));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                if (listener != null) {
+                    listener.onError(error.toException());
+                }
+            }
+        });
+    }
+
+    /**
+     * Listen to a specific activity for real-time updates
+     */
+    public void listenToActivity(String activityId, ActivityListener listener) {
+        ValueEventListener valueListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Activity activity = snapshot.getValue(Activity.class);
+                if (activity != null) {
+                    listener.onActivityUpdated(activity);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        };
+
+        activitiesRef.child(activityId).addValueEventListener(valueListener);
+        activityListeners.put(activityId, listener);
+    }
+
+    /**
+     * Update an existing activity
+     */
+    public void updateActivity(Activity activity, OnCompleteListener<Activity> listener) {
+        if (activity.getId() == null) {
+            if (listener != null) {
+                listener.onError(new Exception("Activity ID is required for update"));
+            }
+            return;
+        }
+
+        activitiesRef.child(activity.getId()).setValue(activity)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Activity updated: " + activity.getTitle());
+                if (listener != null) {
+                    listener.onSuccess(activity);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error updating activity", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Delete an activity
+     */
+    public void deleteActivity(String id, OnCompleteListener<Void> listener) {
+        activitiesRef.child(id).removeValue()
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Activity deleted: " + id);
+                if (listener != null) {
+                    listener.onSuccess(null);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error deleting activity", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Get activities by category
+     */
+    public void getActivitiesByCategory(String category, ActivityListListener listener) {
+        activitiesRef.orderByChild("category").equalTo(category)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    List<Activity> activities = new ArrayList<>();
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        Activity activity = child.getValue(Activity.class);
+                        if (activity != null) {
+                            activities.add(activity);
+                        }
+                    }
+                    listener.onActivitiesLoaded(activities);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    listener.onError(error.toException());
+                }
+            });
+    }
+
+    /**
+     * Search activities (Note: Firebase doesn't support full-text search,
+     * so we load all and filter locally. For production, consider using Algolia or Elasticsearch)
+     */
+    public void searchActivities(String query, ActivityListListener listener) {
+        getAllActivities(new ActivityListListener() {
+            @Override
+            public void onActivitiesLoaded(List<Activity> allActivities) {
+                List<Activity> results = new ArrayList<>();
+                String lowerQuery = query.toLowerCase();
+
+                for (Activity activity : allActivities) {
+                    if ((activity.getTitle() != null && activity.getTitle().toLowerCase().contains(lowerQuery)) ||
+                        (activity.getLocation() != null && activity.getLocation().toLowerCase().contains(lowerQuery)) ||
+                        (activity.getDescription() != null && activity.getDescription().toLowerCase().contains(lowerQuery)) ||
+                        (activity.getCategory() != null && activity.getCategory().toLowerCase().contains(lowerQuery))) {
+                        results.add(activity);
+                    }
+                }
+
+                listener.onActivitiesLoaded(results);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                listener.onError(e);
+            }
+        });
+    }
+
+    /**
+     * Get activities created by a specific user
+     */
+    public void getUserActivities(String userId, ActivityListListener listener) {
+        userActivitiesRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Activity> activities = new ArrayList<>();
+                int[] pendingLoads = {(int) snapshot.getChildrenCount()};
+
+                if (pendingLoads[0] == 0) {
+                    listener.onActivitiesLoaded(activities);
+                    return;
+                }
+
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String activityId = child.getKey();
+                    getActivityById(activityId, new OnCompleteListener<Activity>() {
+                        @Override
+                        public void onSuccess(Activity activity) {
+                            activities.add(activity);
+                            pendingLoads[0]--;
+                            if (pendingLoads[0] == 0) {
+                                listener.onActivitiesLoaded(activities);
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            pendingLoads[0]--;
+                            if (pendingLoads[0] == 0) {
+                                listener.onActivitiesLoaded(activities);
+                            }
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        });
+    }
+
+    /**
+     * Add a participant to an activity
+     */
+    public void addParticipant(String activityId, String userId, String userName,
+                              OnCompleteListener<Void> listener) {
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
+            .setValue(userName)
+            .addOnSuccessListener(aVoid -> {
+                // Update participant count
+                incrementParticipantCount(activityId, 1);
+
+                // Add to user's activities
+                userActivitiesRef.child(userId).child(activityId).setValue(true);
+
+                Log.d(TAG, "Participant added to activity: " + activityId);
+                if (listener != null) {
+                    listener.onSuccess(null);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error adding participant", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Remove a participant from an activity
+     */
+    public void removeParticipant(String activityId, String userId, OnCompleteListener<Void> listener) {
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
+            .removeValue()
+            .addOnSuccessListener(aVoid -> {
+                // Update participant count
+                incrementParticipantCount(activityId, -1);
+
+                // Remove from user's activities
+                userActivitiesRef.child(userId).child(activityId).removeValue();
+
+                Log.d(TAG, "Participant removed from activity: " + activityId);
+                if (listener != null) {
+                    listener.onSuccess(null);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error removing participant", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Get participants for an activity
+     */
+    public void getParticipants(String activityId, ParticipantsListener listener) {
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+            .addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Map<String, String> participants = new HashMap<>();
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        String userId = child.getKey();
+                        String userName = child.getValue(String.class);
+                        if (userId != null && userName != null) {
+                            participants.put(userId, userName);
+                        }
+                    }
+                    listener.onParticipantsLoaded(participants);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    listener.onError(error.toException());
+                }
+            });
+    }
+
+    /**
+     * Increment/decrement participant count
+     */
+    private void incrementParticipantCount(String activityId, int delta) {
+        activitiesRef.child(activityId).child("currentParticipants")
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Integer current = snapshot.getValue(Integer.class);
+                    if (current == null) current = 0;
+                    activitiesRef.child(activityId).child("currentParticipants")
+                        .setValue(Math.max(0, current + delta));
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error updating participant count", error.toException());
+                }
+            });
+    }
+
+    /**
+     * Remove all listeners
+     */
+    public void removeAllListeners() {
+        if (activitiesChildListener != null) {
+            activitiesRef.removeEventListener(activitiesChildListener);
+        }
+        activityListeners.clear();
+    }
+
+    // Callback interfaces
+    public interface OnCompleteListener<T> {
+        void onSuccess(T result);
+        void onError(Exception e);
+    }
+
+    public interface ActivityListListener {
+        void onActivitiesLoaded(List<Activity> activities);
+        void onError(Exception e);
+    }
+
+    public interface ActivityListener {
+        void onActivityUpdated(Activity activity);
+        void onError(Exception e);
+    }
+
+    public interface ActivityChangeListener {
+        void onActivityAdded(Activity activity);
+        void onActivityChanged(Activity activity);
+        void onActivityRemoved(Activity activity);
+        void onError(Exception e);
+    }
+
+    public interface ParticipantsListener {
+        void onParticipantsLoaded(Map<String, String> participants);
+        void onError(Exception e);
+    }
+}
