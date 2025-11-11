@@ -45,21 +45,25 @@ public class ChatManager {
     }
 
     /**
-     * Create or get existing chat room for an activity
+     * Create or get existing chat room for an activity, adding the creator automatically.
      */
-    public ChatRoom createOrGetChatRoom(String activityId, String activityTitle) {
-        // Check if chat room already exists for this activity
+    public ChatRoom createOrGetChatRoom(String activityId, String activityTitle, String creatorId, String creatorName) {
         ChatRoom existingRoom = getChatRoomByActivityId(activityId);
         if (existingRoom != null) {
-            Log.d(TAG, "Chat room already exists for activity: " + activityId);
             return existingRoom;
         }
 
         // Create new chat room
         ChatRoom chatRoom = new ChatRoom(activityTitle, activityId);
+
+        // Automatically add the creator as the first member
+        if (creatorId != null && !creatorId.isEmpty() && creatorName != null) {
+            chatRoom.addMember(creatorId, creatorName);
+        }
+
         saveChatRoom(chatRoom);
 
-        Log.d(TAG, "Created new chat room: " + chatRoom.getName());
+        Log.d(TAG, "Created new chat room: " + chatRoom.getName() + " with creator: " + creatorName);
         return chatRoom;
     }
 
@@ -86,7 +90,7 @@ public class ChatManager {
             }
 
             String json = gson.toJson(chatRooms);
-            prefs.edit().putString(KEY_CHAT_ROOMS, json).apply();
+            prefs.edit().putString(KEY_CHAT_ROOMS, json).commit(); // Use commit for immediate consistency
 
             Log.d(TAG, "Chat room saved: " + chatRoom.getName());
             return true;
@@ -107,12 +111,7 @@ public class ChatManager {
                 List<ChatRoom> chatRooms = gson.fromJson(json, listType);
 
                 // Sort by last message time (most recent first)
-                Collections.sort(chatRooms, new Comparator<ChatRoom>() {
-                    @Override
-                    public int compare(ChatRoom c1, ChatRoom c2) {
-                        return Long.compare(c2.getLastMessageTime(), c1.getLastMessageTime());
-                    }
-                });
+                Collections.sort(chatRooms, (c1, c2) -> Long.compare(c2.getLastMessageTime(), c1.getLastMessageTime()));
 
                 return chatRooms;
             }
@@ -120,6 +119,20 @@ public class ChatManager {
             Log.e(TAG, "Error loading chat rooms", e);
         }
         return new ArrayList<>();
+    }
+
+    /**
+     * Get all chat rooms for a specific user
+     */
+    public List<ChatRoom> getChatRoomsForUser(String userId) {
+        List<ChatRoom> allRooms = getAllChatRooms();
+        List<ChatRoom> userRooms = new ArrayList<>();
+        for (ChatRoom room : allRooms) {
+            if (room.getMemberIds().contains(userId)) {
+                userRooms.add(room);
+            }
+        }
+        return userRooms;
     }
 
     /**
@@ -155,6 +168,25 @@ public class ChatManager {
         ChatRoom chatRoom = getChatRoomById(chatRoomId);
         if (chatRoom != null) {
             chatRoom.addMember(memberId, memberName);
+            return saveChatRoom(chatRoom);
+        }
+        return false;
+    }
+
+    /**
+     * Remove member from chat room and post a system message.
+     */
+    public boolean leaveChatRoom(String chatRoomId, String memberId, String memberName) {
+        ChatRoom chatRoom = getChatRoomById(chatRoomId);
+        if (chatRoom != null) {
+            // Remove member
+            chatRoom.removeMember(memberId);
+
+            // Create and send a system message
+            String notificationMessage = memberName + "님이 나가셨습니다.";
+            ChatMessage notification = ChatMessage.createSystemMessage(chatRoomId, notificationMessage);
+            sendMessage(notification);
+
             return saveChatRoom(chatRoom);
         }
         return false;
@@ -223,7 +255,7 @@ public class ChatManager {
                     chatRooms.remove(i);
 
                     String json = gson.toJson(chatRooms);
-                    prefs.edit().putString(KEY_CHAT_ROOMS, json).apply();
+                    prefs.edit().putString(KEY_CHAT_ROOMS, json).commit(); // Use commit for immediate consistency
 
                     // Also delete messages
                     String key = KEY_MESSAGES_PREFIX + chatRoomId;

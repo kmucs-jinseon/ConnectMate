@@ -200,8 +200,8 @@ public class SignUpActivity extends AppCompatActivity {
                         String name = fu.getDisplayName();
                         String photo = fu.getPhotoUrl() != null ? fu.getPhotoUrl().toString() : null;
 
-                        Log.d(TAG, "[LOGIN] calling saveUserToFirestore uid=" + uid);
-                        saveUserToFirestore(uid, mail, name, photo, "email");
+                        Log.d(TAG, "[LOGIN] calling saveUserToRealtimeDatabase uid=" + uid);
+                        saveUserToRealtimeDatabase(uid, mail, name, photo, "email");
                     }
                     navigateToMain();
                 })
@@ -302,9 +302,9 @@ public class SignUpActivity extends AppCompatActivity {
             } else {
                 Log.w(TAG, "Google Sign-In succeeded but ID token is null");
 
-                // Save user info to Firestore using Google ID
+                // Save user info to Realtime Database using Google ID
                 String userId = "google_" + account.getId();
-                saveUserToFirestore(
+                saveUserToRealtimeDatabase(
                         userId,
                         account.getEmail() != null ? account.getEmail() : "",
                         account.getDisplayName() != null ? account.getDisplayName() : "Google User",
@@ -348,7 +348,7 @@ public class SignUpActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
 
                         if (user != null) {
-                            saveUserToFirestore(
+                            saveUserToRealtimeDatabase(
                                     user.getUid(),
                                     user.getEmail() != null ? user.getEmail() : "",
                                     user.getDisplayName() != null ? user.getDisplayName() : "Google User",
@@ -432,9 +432,9 @@ public class SignUpActivity extends AppCompatActivity {
                 }
 
                 runOnUiThread(() -> {
-                    // Save user to Firestore
+                    // Save user to Realtime Database
                     String userId = "kakao_" + user.getId();
-                    saveUserToFirestore(userId, email, nickname, profileImageUrl, "kakao");
+                    saveUserToRealtimeDatabase(userId, email, nickname, profileImageUrl, "kakao");
 
                     // Save login state with user ID
                     saveLoginState("kakao", userId);
@@ -547,13 +547,13 @@ public class SignUpActivity extends AppCompatActivity {
                             // Re-enable button
                             naverSignUpButton.setEnabled(true);
 
-                            // Save user to Firestore
-                            String firestoreUserId = "naver_" + userId;
+                            // Save user to Realtime Database
+                            String realtimeUserId = "naver_" + userId;
                             String displayName = !name.isEmpty() ? name : (!nickname.isEmpty() ? nickname : "Naver User");
-                            saveUserToFirestore(firestoreUserId, email, displayName, profileImage, "naver");
+                            saveUserToRealtimeDatabase(realtimeUserId, email, displayName, profileImage, "naver");
 
                             // Save login state with user ID
-                            saveLoginState("naver", firestoreUserId);
+                            saveLoginState("naver", realtimeUserId);
 
                             Toast.makeText(SignUpActivity.this, "Naver signup successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
                             navigateToMain();
@@ -583,58 +583,53 @@ public class SignUpActivity extends AppCompatActivity {
     /**
      * Save or update user information in Realtime Database
      */
-    private void saveUserToFirestore(String userId, String email, String displayName,
-                                     String profileImageUrl, String loginMethod) {
-        Log.d(TAG, "Saving user to Database: " + userId);
+    private void saveUserToRealtimeDatabase(String userId, String email, String displayName,
+                                            String profileImageUrl, String loginMethod) {
+        Log.d(TAG, "Saving user to Realtime Database: " + userId);
 
-        databaseRef.child("users").child(userId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            Log.d(TAG, "User exists, updating lastLoginAt");
-                            String existingProfileUrl = snapshot.child("profileImageUrl").getValue(String.class);
-                            databaseRef.child("users").child(userId).child("lastLoginAt")
-                                    .setValue(System.currentTimeMillis());
-                            if (profileImageUrl != null) {
-                                databaseRef.child("users").child(userId).child("profileImageUrl")
-                                        .setValue(profileImageUrl);
-                            }
-                            Log.d(TAG, "User updated successfully");
-                            saveUserToSharedPreferences(snapshot);
-                        }
-                        else {
-                            Log.d(TAG, "New user, creating profile");
-                            User user = new User(userId, email, displayName, loginMethod);
-                            if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
-                                user.setProfileImageUrl(profileImageUrl);
-                            }
-
-                            databaseRef.child("users").child(userId)
-                                    .setValue(user)
-                                    .addOnSuccessListener(aVoid -> {
-                                        Log.d(TAG, "User created successfully");
-                                        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                                        SharedPreferences.Editor editor = prefs.edit();
-                                        editor.putString("user_name", displayName);
-                                        editor.putString("user_email", email);
-                                        editor.putString("user_username", user.getUsername());
-                                        editor.putString("user_bio", user.getBio());
-                                        editor.putString("user_mbti", user.getMbti());
-                                        if (profileImageUrl != null) {
-                                            editor.putString("profile_image_url", profileImageUrl);
-                                        }
-                                        editor.apply();
-                                    })
-                                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create user", e));
-                        }
+        DatabaseReference userRef = databaseRef.child("users").child(userId);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    Log.d(TAG, "User exists, updating lastLoginAt");
+                    userRef.child("lastLoginAt").setValue(System.currentTimeMillis());
+                    if (profileImageUrl != null) {
+                        userRef.child("profileImageUrl").setValue(profileImageUrl);
+                    }
+                    Log.d(TAG, "User updated successfully");
+                    saveUserToSharedPreferences(snapshot);
+                } else {
+                    Log.d(TAG, "New user, creating profile");
+                    User user = new User(userId, email, displayName, loginMethod);
+                    if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                        user.setProfileImageUrl(profileImageUrl);
                     }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Failed to check user existence", error.toException());
-                    }
-                });
+                    userRef.setValue(user)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "User created successfully");
+                                SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putString("user_name", displayName);
+                                editor.putString("user_email", email);
+                                editor.putString("user_username", user.getUsername());
+                                editor.putString("user_bio", user.getBio());
+                                editor.putString("user_mbti", user.getMbti());
+                                if (profileImageUrl != null) {
+                                    editor.putString("profile_image_url", profileImageUrl);
+                                }
+                                editor.apply();
+                            })
+                            .addOnFailureListener(e -> Log.e(TAG, "Failed to create user", e));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to check user existence", error.toException());
+            }
+        });
     }
 
     private void saveUserToSharedPreferences(DataSnapshot snapshot) {

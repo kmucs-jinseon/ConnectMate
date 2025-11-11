@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.example.connectmate.models.Activity;
+import com.example.connectmate.models.ChatMessage;
+import com.example.connectmate.models.ChatRoom;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -22,12 +24,14 @@ public class ActivityManager {
 
     private final SharedPreferences prefs;
     private final Gson gson;
+    private final Context context;
 
     private static ActivityManager instance;
 
     private ActivityManager(Context context) {
-        prefs = context.getApplicationContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        gson = new Gson();
+        this.context = context.getApplicationContext();
+        this.prefs = this.context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        this.gson = new Gson();
     }
 
     /**
@@ -116,19 +120,30 @@ public class ActivityManager {
     }
 
     /**
-     * Delete an activity
+     * Delete an activity and its associated chat room.
      */
-    public boolean deleteActivity(String id) {
+    public boolean deleteActivity(String activityId) {
         try {
+            ChatManager chatManager = ChatManager.getInstance(context);
+            ChatRoom chatRoom = chatManager.getChatRoomByActivityId(activityId);
+
+            if (chatRoom != null) {
+                // Send a final message to the chat room
+                String farewellMessage = "채팅방이 삭제되었습니다";
+                ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), farewellMessage);
+                chatManager.sendMessage(systemMessage);
+
+                // Delete the chat room itself
+                chatManager.deleteChatRoom(chatRoom.getId());
+            }
+
             List<Activity> activities = getAllActivities();
             for (int i = 0; i < activities.size(); i++) {
-                if (activities.get(i).getId().equals(id)) {
+                if (activities.get(i).getId().equals(activityId)) {
                     activities.remove(i);
-
                     String json = gson.toJson(activities);
-                    prefs.edit().putString(KEY_ACTIVITIES, json).apply();
-
-                    Log.d(TAG, "Activity deleted: " + id);
+                    prefs.edit().putString(KEY_ACTIVITIES, json).commit(); // Use commit for consistency
+                    Log.d(TAG, "Activity deleted: " + activityId);
                     return true;
                 }
             }
@@ -137,6 +152,7 @@ public class ActivityManager {
         }
         return false;
     }
+
 
     /**
      * Get activities by category

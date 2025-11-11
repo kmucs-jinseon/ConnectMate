@@ -30,13 +30,13 @@ android {
             localPropertiesFile.inputStream().use { localProperties.load(it) }
         }
 
-        buildConfigField("String", "KAKAO_APP_KEY", "\"${localProperties.getProperty("KAKAO_APP_KEY", "")}\"")
-        buildConfigField("String", "KAKAO_REST_API_KEY", "\"${localProperties.getProperty("KAKAO_REST_API_KEY", "")}\"")
+        buildConfigField("String", "KAKAO_APP_KEY", "\"76e9f68c2c56d701f233ba2b44e74ea1\"")
+        buildConfigField("String", "KAKAO_REST_API_KEY", "\"f43ea834e9644c1cf67f89fbdcd6b3c9\"")
         buildConfigField("String", "NAVER_CLIENT_ID", "\"${localProperties.getProperty("NAVER_CLIENT_ID", "")}\"")
         buildConfigField("String", "NAVER_CLIENT_SECRET", "\"${localProperties.getProperty("NAVER_CLIENT_SECRET", "")}\"")
         buildConfigField("String", "TMAP_APP_KEY", "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\"")
 
-        manifestPlaceholders["KAKAO_APP_KEY"] = localProperties.getProperty("KAKAO_APP_KEY", "")
+        manifestPlaceholders["KAKAO_APP_KEY"] = "76e9f68c2c56d701f233ba2b44e74ea1"
     }
 
     buildTypes {
@@ -116,6 +116,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-firestore")
 
     // JSON Serialization
     implementation("com.google.code.gson:gson:2.10.1")

@@ -1,5 +1,6 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.Activity;
+import com.example.connectmate.models.ChatRoom;
+import com.example.connectmate.utils.ChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import java.util.List;
@@ -37,7 +40,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
     @Override
     public void onBindViewHolder(@NonNull ActivityViewHolder holder, int position) {
         Activity activity = activities.get(position);
-        holder.bind(activity, listener);
+        holder.bind(activity, listener, holder.itemView.getContext());
     }
 
     @Override
@@ -65,7 +68,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
             btnViewDetails = itemView.findViewById(R.id.btn_view_details);
         }
 
-        public void bind(Activity activity, OnActivityClickListener listener) {
+        public void bind(Activity activity, OnActivityClickListener listener, Context context) {
             activityTitle.setText(activity.getTitle());
             activityLocation.setText(activity.getLocation() != null ? activity.getLocation() : "");
 
@@ -78,12 +81,16 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
 
             activityDescription.setText(activity.getDescription() != null ? activity.getDescription() : "");
 
-            // Show participants count
+            // Show participants count from the real source of truth (ChatManager)
+            ChatManager chatManager = ChatManager.getInstance(context);
+            ChatRoom chatRoom = chatManager.getChatRoomByActivityId(activity.getId());
+            int currentParticipants = (chatRoom != null) ? chatRoom.getMemberCount() : 0;
+
             if (activity.getMaxParticipants() > 0) {
-                participantsCount.setText(activity.getCurrentParticipants() + "/" +
+                participantsCount.setText(currentParticipants + "/" +
                     activity.getMaxParticipants());
             } else {
-                participantsCount.setText(activity.getCurrentParticipants() + "명");
+                participantsCount.setText(currentParticipants + "명");
             }
 
             // Set category chip
