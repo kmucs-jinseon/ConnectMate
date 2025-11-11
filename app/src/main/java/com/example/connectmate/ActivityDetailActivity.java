@@ -18,7 +18,7 @@ import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.ChatMessage;
 import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.FirebaseActivityManager;
-import com.example.connectmate.utils.ChatManager;
+import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
@@ -334,43 +334,46 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create or get chat room
-        ChatManager chatManager = ChatManager.getInstance(this);
-        ChatRoom chatRoom = chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle());
+        // Create or get chat room using FirebaseChatManager
+        final String finalUserId = userId;
+        final String finalUserName = userName;
 
-        // Check if user is already a member
-        boolean isAlreadyMember = chatRoom.getMemberIds().contains(userId);
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom chatRoom) {
+                // Add user as member
+                chatManager.addMemberToChatRoom(chatRoom.getId(), finalUserId, finalUserName, new FirebaseChatManager.OnCompleteListener<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        // Send join notification message
+                        String joinMessage = finalUserName + "님이 입장하셨습니다";
+                        ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
+                        chatManager.sendMessage(systemMessage, null);
 
-        // Add user as member
-        if (!isAlreadyMember) {
-            chatManager.addMemberToChatRoom(chatRoom.getId(), userId, userName);
+                        Log.d(TAG, "User joined activity chat: " + finalUserName);
 
-            // Send join notification message
-            String joinMessage = userName + "님이 입장하셨습니다";
-            ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
-            chatManager.sendMessage(systemMessage);
+                        // Navigate to chat room
+                        navigateToChatRoom(chatRoom);
+                    }
 
-            Log.d(TAG, "User joined activity chat: " + userName);
-        }
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Failed to add member to chat room", e);
+                        navigateToChatRoom(chatRoom);
+                    }
+                });
+            }
 
-        // Update activity participant count in Firebase
-        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
-        if (!isAlreadyMember) {
-            final String finalUserName = userName; // Make effectively final for lambda
-            final String finalUserId = userId; // Make effectively final for lambda
-            activityManager.addParticipant(activity.getId(), finalUserId, finalUserName, new FirebaseActivityManager.OnCompleteListener<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    Log.d(TAG, "User added as participant: " + finalUserName);
-                }
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to create chat room", e);
+                Toast.makeText(ActivityDetailActivity.this, "채팅방 생성 실패", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
-                @Override
-                public void onError(Exception e) {
-                    Log.e(TAG, "Failed to add participant", e);
-                }
-            });
-        }
-
+    private void navigateToChatRoom(ChatRoom chatRoom) {
         // Navigate to chat room
         Intent intent = new Intent(this, ChatRoomActivity.class);
         intent.putExtra("chat_room_id", chatRoom.getId());

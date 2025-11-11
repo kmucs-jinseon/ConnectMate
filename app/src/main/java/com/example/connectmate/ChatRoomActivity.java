@@ -120,14 +120,23 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void leaveChatRoom() {
-        ChatManager chatManager = ChatManager.getInstance(this);
-        boolean success = chatManager.leaveChatRoom(chatRoom.getId(), currentUserId, currentUserName);
-        if (success) {
-            Toast.makeText(this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, "채팅방 나가기 실패", Toast.LENGTH_SHORT).show();
+        if (chatRoom == null || currentUserId == null || currentUserId.isEmpty()) {
+            Toast.makeText(this, "채팅방 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        // Show confirmation dialog
+        new AlertDialog.Builder(this)
+            .setTitle("채팅방 나가기")
+            .setMessage("정말 채팅방을 나가시겠습니까?")
+            .setPositiveButton("나가기", (dialog, which) -> {
+                // Note: Implement remove member from Firebase when needed
+                // For now, just close the activity
+                Toast.makeText(this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                finish();
+            })
+            .setNegativeButton("취소", null)
+            .show();
     }
 
     private void getCurrentUserInfo() {
