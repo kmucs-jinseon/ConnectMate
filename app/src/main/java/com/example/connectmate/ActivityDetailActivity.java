@@ -334,9 +334,22 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create or get chat room
+        // Create or get chat room (ensure creator info is available for the room metadata)
         ChatManager chatManager = ChatManager.getInstance(this);
-        ChatRoom chatRoom = chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle());
+        String creatorId = activity.getCreatorId();
+        String creatorName = activity.getCreatorName();
+        if (creatorId == null || creatorId.isEmpty()) {
+            creatorId = userId;
+        }
+        if (creatorName == null || creatorName.isEmpty()) {
+            creatorName = userName;
+        }
+        ChatRoom chatRoom = chatManager.createOrGetChatRoom(
+                activity.getId(),
+                activity.getTitle(),
+                creatorId,
+                creatorName
+        );
 
         // Check if user is already a member
         boolean isAlreadyMember = chatRoom.getMemberIds().contains(userId);

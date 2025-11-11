@@ -120,14 +120,45 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void leaveChatRoom() {
-        ChatManager chatManager = ChatManager.getInstance(this);
-        boolean success = chatManager.leaveChatRoom(chatRoom.getId(), currentUserId, currentUserName);
-        if (success) {
-            Toast.makeText(this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
-            finish();
-        } else {
-            Toast.makeText(this, "채팅방 나가기 실패", Toast.LENGTH_SHORT).show();
+        if (chatRoom == null) {
+            Toast.makeText(this, "채팅방 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.removeMemberFromChatRoom(chatRoom.getId(), currentUserId, new FirebaseChatManager.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // Update local model for immediate UI feedback
+                chatRoom.removeMember(currentUserId);
+
+                // Broadcast system message
+                String leaveMessage = currentUserName + "님이 나가셨습니다.";
+                ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), leaveMessage);
+                chatManager.sendMessage(systemMessage, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                    @Override
+                    public void onSuccess(ChatMessage message) {
+                        Log.d(TAG, "Leave notification sent");
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Failed to send leave notification", e);
+                    }
+                });
+
+                runOnUiThread(() -> {
+                    Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to leave chat room", e);
+                runOnUiThread(() -> Toast.makeText(ChatRoomActivity.this, "채팅방 나가기 실패", Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 
     private void getCurrentUserInfo() {
