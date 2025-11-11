@@ -17,7 +17,7 @@ import androidx.appcompat.widget.Toolbar;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.ChatMessage;
 import com.example.connectmate.models.ChatRoom;
-import com.example.connectmate.utils.ActivityManager;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import com.example.connectmate.utils.ChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -59,25 +59,25 @@ public class ActivityDetailActivity extends AppCompatActivity {
         // Get activity from intent
         activity = (Activity) getIntent().getSerializableExtra("activity");
 
+        initializeViews();
+        setupToolbar();
+
         if (activity == null) {
             // Try loading by ID if activity object not passed
             String activityId = getIntent().getStringExtra("activity_id");
             if (activityId != null) {
-                ActivityManager activityManager = ActivityManager.getInstance(this);
-                activity = activityManager.getActivityById(activityId);
+                loadActivityFromFirebase(activityId);
+            } else {
+                Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
             }
+        } else {
+            // Display initial data and set up real-time listener
+            displayActivityDetails();
+            setupButtons();
+            setupRealTimeListener(activity.getId());
         }
-
-        if (activity == null) {
-            Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
-        initializeViews();
-        setupToolbar();
-        displayActivityDetails();
-        setupButtons();
     }
 
     private void initializeViews() {
@@ -211,6 +211,51 @@ public class ActivityDetailActivity extends AppCompatActivity {
     }
 
     /**
+     * Load activity from Firebase by ID
+     */
+    private void loadActivityFromFirebase(String activityId) {
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+        activityManager.getActivityById(activityId, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+            @Override
+            public void onSuccess(Activity result) {
+                activity = result;
+                displayActivityDetails();
+                setupButtons();
+                setupRealTimeListener(activityId);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading activity", e);
+                Toast.makeText(ActivityDetailActivity.this, "Failed to load activity", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    /**
+     * Set up real-time listener for activity updates
+     */
+    private void setupRealTimeListener(String activityId) {
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+        activityManager.listenToActivity(activityId, new FirebaseActivityManager.ActivityListener() {
+            @Override
+            public void onActivityUpdated(Activity updatedActivity) {
+                activity = updatedActivity;
+                runOnUiThread(() -> {
+                    displayActivityDetails();
+                    Log.d(TAG, "Activity updated in real-time: " + updatedActivity.getTitle());
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error listening to activity updates", e);
+            }
+        });
+    }
+
+    /**
      * Get current user ID from Firebase Auth or SharedPreferences
      */
     private String getCurrentUserId() {
@@ -239,15 +284,20 @@ public class ActivityDetailActivity extends AppCompatActivity {
             .setTitle("Delete Activity")
             .setMessage("Are you sure you want to delete this activity?")
             .setPositiveButton("Delete", (dialog, which) -> {
-                ActivityManager activityManager = ActivityManager.getInstance(this);
-                boolean deleted = activityManager.deleteActivity(activity.getId());
+                FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+                activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        Toast.makeText(ActivityDetailActivity.this, "Activity deleted", Toast.LENGTH_SHORT).show();
+                        finish();  // Close the activity detail page
+                    }
 
-                if (deleted) {
-                    Toast.makeText(this, "Activity deleted", Toast.LENGTH_SHORT).show();
-                    finish();  // Close the activity detail page
-                } else {
-                    Toast.makeText(this, "Failed to delete activity", Toast.LENGTH_SHORT).show();
-                }
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Failed to delete activity", e);
+                        Toast.makeText(ActivityDetailActivity.this, "Failed to delete activity", Toast.LENGTH_SHORT).show();
+                    }
+                });
             })
             .setNegativeButton("Cancel", null)
             .show();
@@ -303,11 +353,22 @@ public class ActivityDetailActivity extends AppCompatActivity {
             Log.d(TAG, "User joined activity chat: " + userName);
         }
 
-        // Update activity participant count
-        ActivityManager activityManager = ActivityManager.getInstance(this);
+        // Update activity participant count in Firebase
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
         if (!isAlreadyMember) {
-            activity.setCurrentParticipants(activity.getCurrentParticipants() + 1);
-            activityManager.updateActivity(activity);
+            final String finalUserName = userName; // Make effectively final for lambda
+            final String finalUserId = userId; // Make effectively final for lambda
+            activityManager.addParticipant(activity.getId(), finalUserId, finalUserName, new FirebaseActivityManager.OnCompleteListener<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    Log.d(TAG, "User added as participant: " + finalUserName);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Failed to add participant", e);
+                }
+            });
         }
 
         // Navigate to chat room
@@ -385,5 +446,12 @@ public class ActivityDetailActivity extends AppCompatActivity {
         startActivity(intent);
 
         Log.d(TAG, "Navigating to map for: " + placeName + " at (" + lat + ", " + lng + ")");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up Firebase listeners
+        FirebaseActivityManager.getInstance().removeAllListeners();
     }
 }

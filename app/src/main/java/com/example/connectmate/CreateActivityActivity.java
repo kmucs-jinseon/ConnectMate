@@ -13,7 +13,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.connectmate.models.Activity;
-import com.example.connectmate.utils.ActivityManager;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -143,86 +143,127 @@ public class CreateActivityActivity extends AppCompatActivity {
         closeButton.setOnClickListener(v -> finish());
 
         createButton.setOnClickListener(v -> {
-            String title = (titleInput.getText() != null) ? titleInput.getText().toString().trim() : "";
-            String description = (descriptionInput.getText() != null) ? descriptionInput.getText().toString().trim() : "";
-            String category = selectedCategory;
-            String date = (dateInput.getText() != null) ? dateInput.getText().toString().trim() : "";
-            String time = (timeInput.getText() != null) ? timeInput.getText().toString().trim() : "";
-            String location = (locationInput.getText() != null) ? locationInput.getText().toString().trim() : "";
-            String participantsStr = (participantLimitInput.getText() != null) ? participantLimitInput.getText().toString().trim() : "";
-            String hashtags = (hashtagsInput.getText() != null) ? hashtagsInput.getText().toString().trim() : "";
+            Log.d(TAG, "Create button clicked");
 
-            // Validate required fields
-            if (title.isEmpty()) {
-                Toast.makeText(this, "제목을 입력하세요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            // Disable button to prevent double-click
+            createButton.setEnabled(false);
 
-            if (category.isEmpty()) {
-                Toast.makeText(this, "카테고리를 선택하세요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            try {
+                String title = (titleInput.getText() != null) ? titleInput.getText().toString().trim() : "";
+                String description = (descriptionInput.getText() != null) ? descriptionInput.getText().toString().trim() : "";
+                String category = selectedCategory;
+                String date = (dateInput.getText() != null) ? dateInput.getText().toString().trim() : "";
+                String time = (timeInput.getText() != null) ? timeInput.getText().toString().trim() : "";
+                String location = (locationInput.getText() != null) ? locationInput.getText().toString().trim() : "";
+                String participantsStr = (participantLimitInput.getText() != null) ? participantLimitInput.getText().toString().trim() : "";
+                String hashtags = (hashtagsInput.getText() != null) ? hashtagsInput.getText().toString().trim() : "";
 
-            // Parse participant limit
-            int maxParticipants = 0;
-            if (!participantsStr.isEmpty()) {
-                try {
-                    maxParticipants = Integer.parseInt(participantsStr);
-                } catch (NumberFormatException e) {
-                    Toast.makeText(this, "올바른 인원 수를 입력하세요.", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Validating fields - Title: " + title + ", Category: " + category);
+
+                // Validate required fields
+                if (title.isEmpty()) {
+                    Toast.makeText(this, "제목을 입력하세요.", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Title is empty");
+                    createButton.setEnabled(true);
                     return;
                 }
-            }
 
-            // Get visibility
-            int checkedId = visibilityToggle.getCheckedButtonId();
-            String visibility = (checkedId == R.id.visibility_public) ? "공개" : "비공개";
+                if (category == null || category.isEmpty()) {
+                    Toast.makeText(this, "카테고리를 선택하세요.", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Category is empty");
+                    createButton.setEnabled(true);
+                    return;
+                }
 
-            // Get current user info
-            String creatorId = "";
-            String creatorName = "Anonymous";
+                // Parse participant limit
+                int maxParticipants = 0;
+                if (!participantsStr.isEmpty()) {
+                    try {
+                        maxParticipants = Integer.parseInt(participantsStr);
+                        if (maxParticipants < 0) {
+                            Toast.makeText(this, "참가 인원은 0보다 커야 합니다.", Toast.LENGTH_LONG).show();
+                            createButton.setEnabled(true);
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(this, "올바른 인원 수를 입력하세요.", Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "Invalid participant number: " + participantsStr, e);
+                        createButton.setEnabled(true);
+                        return;
+                    }
+                }
 
-            // Try Firebase Auth
-            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-            if (firebaseUser != null) {
-                creatorId = firebaseUser.getUid();
-                creatorName = (firebaseUser.getDisplayName() != null) ?
-                    firebaseUser.getDisplayName() : firebaseUser.getEmail();
-            } else {
-                // Try SharedPreferences for social login
-                SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                creatorId = prefs.getString("user_id", "");
-                creatorName = prefs.getString("user_name", "Anonymous");
-            }
+                // Get visibility
+                int checkedId = visibilityToggle.getCheckedButtonId();
+                String visibility = (checkedId == R.id.visibility_public) ? "공개" : "비공개";
 
-            // Create Activity object
-            Activity activity = new Activity(
-                title,
-                description,
-                category,
-                date,
-                time,
-                location,
-                maxParticipants,
-                visibility,
-                hashtags,
-                creatorId,
-                creatorName
-            );
+                // Get current user info
+                String creatorId = "";
+                String creatorName = "Anonymous";
 
-            // Save activity using ActivityManager
-            ActivityManager activityManager = ActivityManager.getInstance(this);
-            boolean saved = activityManager.saveActivity(activity);
+                // Try Firebase Auth
+                FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (firebaseUser != null) {
+                    creatorId = firebaseUser.getUid();
+                    creatorName = (firebaseUser.getDisplayName() != null) ?
+                        firebaseUser.getDisplayName() : firebaseUser.getEmail();
+                    Log.d(TAG, "Firebase user: " + creatorName);
+                } else {
+                    // Try SharedPreferences for social login
+                    SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                    creatorId = prefs.getString("user_id", "");
+                    creatorName = prefs.getString("user_name", "Anonymous");
+                    Log.d(TAG, "Social login user: " + creatorName);
+                }
 
-            if (saved) {
-                Toast.makeText(this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
-                Log.d(TAG, "Activity created: " + activity.getTitle());
+                Log.d(TAG, "Creating activity with title: " + title);
 
-                // Close activity and return to previous screen
-                finish();
-            } else {
-                Toast.makeText(this, "활동 생성에 실패했습니다.", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Failed to save activity");
+                // Create Activity object
+                Activity activity = new Activity(
+                    title,
+                    description,
+                    category,
+                    date,
+                    time,
+                    location,
+                    maxParticipants,
+                    visibility,
+                    hashtags,
+                    creatorId,
+                    creatorName
+                );
+
+                // Show progress feedback
+                Toast.makeText(this, "활동 생성 중...", Toast.LENGTH_SHORT).show();
+
+                // Save activity using FirebaseActivityManager
+                Log.d(TAG, "Calling Firebase to save activity");
+                FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+                activityManager.saveActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+                    @Override
+                    public void onSuccess(Activity result) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "Activity created successfully: " + result.getTitle());
+                            // Close activity and return to previous screen
+                            finish();
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        runOnUiThread(() -> {
+                            createButton.setEnabled(true);
+                            Toast.makeText(CreateActivityActivity.this, "활동 생성에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            Log.e(TAG, "Failed to save activity", e);
+                        });
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in create button click", e);
+                Toast.makeText(this, "오류가 발생했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                createButton.setEnabled(true);
             }
         });
     }

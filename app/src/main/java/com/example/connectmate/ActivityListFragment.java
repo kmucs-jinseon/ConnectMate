@@ -17,7 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.Activity;
-import com.example.connectmate.utils.ActivityManager;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
@@ -66,7 +66,7 @@ public class ActivityListFragment extends Fragment {
         initializeViews(view);
         setupRecyclerView();
         setupClickListeners();
-        loadSampleData();
+        loadActivitiesFromFirebase();
         updateUI();
     }
 
@@ -226,19 +226,71 @@ public class ActivityListFragment extends Fragment {
         }
     }
 
-    private void loadSampleData() {
-        // Load activities from ActivityManager
-        ActivityManager activityManager = ActivityManager.getInstance(requireContext());
-        allActivities.clear();
-        allActivities.addAll(activityManager.getAllActivities());
+    private void loadActivitiesFromFirebase() {
+        // Load activities from Firebase with real-time updates
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
 
-        filteredActivities.clear();
-        filteredActivities.addAll(allActivities);
+        activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
+            @Override
+            public void onActivityAdded(Activity activity) {
+                // Add new activity to the beginning of the list
+                if (!allActivities.contains(activity)) {
+                    allActivities.add(0, activity);
 
-        activityAdapter.notifyDataSetChanged();
-        updateUI();
+                    // Update filtered list if no search/filter is active
+                    String currentSearch = searchInput != null && searchInput.getText() != null ?
+                        searchInput.getText().toString() : "";
+                    if (currentSearch.isEmpty()) {
+                        filteredActivities.add(0, activity);
+                    } else {
+                        searchActivities(currentSearch);
+                    }
 
-        Log.d(TAG, "Loaded " + allActivities.size() + " activities");
+                    activityAdapter.notifyDataSetChanged();
+                    updateUI();
+                    Log.d(TAG, "Activity added: " + activity.getTitle());
+                }
+            }
+
+            @Override
+            public void onActivityChanged(Activity activity) {
+                // Update existing activity
+                for (int i = 0; i < allActivities.size(); i++) {
+                    if (allActivities.get(i).getId().equals(activity.getId())) {
+                        allActivities.set(i, activity);
+                        break;
+                    }
+                }
+
+                // Update filtered list
+                for (int i = 0; i < filteredActivities.size(); i++) {
+                    if (filteredActivities.get(i).getId().equals(activity.getId())) {
+                        filteredActivities.set(i, activity);
+                        break;
+                    }
+                }
+
+                activityAdapter.notifyDataSetChanged();
+                Log.d(TAG, "Activity updated: " + activity.getTitle());
+            }
+
+            @Override
+            public void onActivityRemoved(Activity activity) {
+                // Remove activity from lists
+                allActivities.removeIf(a -> a.getId().equals(activity.getId()));
+                filteredActivities.removeIf(a -> a.getId().equals(activity.getId()));
+
+                activityAdapter.notifyDataSetChanged();
+                updateUI();
+                Log.d(TAG, "Activity removed: " + activity.getTitle());
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading activities", e);
+                Toast.makeText(requireContext(), "활동 로드 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void onActivityClick(Activity activity) {
@@ -250,10 +302,9 @@ public class ActivityListFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        // Reload activities when fragment becomes visible again
-        // This ensures new activities appear after creation
-        loadSampleData();
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Clean up Firebase listeners when fragment is destroyed
+        FirebaseActivityManager.getInstance().removeAllListeners();
     }
 }

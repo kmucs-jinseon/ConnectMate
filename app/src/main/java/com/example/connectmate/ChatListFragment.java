@@ -17,7 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.ChatRoom;
-import com.example.connectmate.utils.ChatManager;
+import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChatListFragment extends Fragment {
+
+    private static final String TAG = "ChatListFragment";
 
     // UI Components
     private ImageButton btnSearch;
@@ -69,7 +71,8 @@ public class ChatListFragment extends Fragment {
         initializeViews(view);
         setupRecyclerViews();
         setupClickListeners();
-        loadSampleData();
+        loadChatRoomsFromFirebase();
+        loadFavorites();
         updateUI();
     }
 
@@ -226,12 +229,90 @@ public class ChatListFragment extends Fragment {
         }
     }
 
-    private void loadSampleData() {
-        // Load chat rooms from ChatManager
-        ChatManager chatManager = ChatManager.getInstance(requireContext());
-        allChatRooms.clear();
-        allChatRooms.addAll(chatManager.getAllChatRooms());
+    /**
+     * Load chat rooms from Firebase with real-time updates
+     */
+    private void loadChatRoomsFromFirebase() {
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
 
+        // Listen for chat room changes in real-time
+        chatManager.listenForChatRoomChanges(new FirebaseChatManager.ChatRoomChangeListener() {
+            @Override
+            public void onChatRoomAdded(ChatRoom chatRoom) {
+                // Check if chat room already exists to avoid duplicates
+                boolean exists = false;
+                for (ChatRoom room : allChatRooms) {
+                    if (room.getId().equals(chatRoom.getId())) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists) {
+                    allChatRooms.add(0, chatRoom); // Add to beginning (newest first)
+
+                    // Update filtered list if no search/filter is active
+                    String currentSearch = searchInput != null && searchInput.getText() != null ?
+                        searchInput.getText().toString() : "";
+                    if (currentSearch.isEmpty()) {
+                        filteredChatRooms.add(0, chatRoom);
+                    } else {
+                        filterChats(currentSearch);
+                    }
+
+                    chatRoomAdapter.notifyDataSetChanged();
+                    updateUI();
+                    Log.d(TAG, "Chat room added: " + chatRoom.getName());
+                }
+            }
+
+            @Override
+            public void onChatRoomChanged(ChatRoom chatRoom) {
+                // Update existing chat room
+                for (int i = 0; i < allChatRooms.size(); i++) {
+                    if (allChatRooms.get(i).getId().equals(chatRoom.getId())) {
+                        allChatRooms.set(i, chatRoom);
+                        break;
+                    }
+                }
+
+                // Update filtered list
+                for (int i = 0; i < filteredChatRooms.size(); i++) {
+                    if (filteredChatRooms.get(i).getId().equals(chatRoom.getId())) {
+                        filteredChatRooms.set(i, chatRoom);
+                        break;
+                    }
+                }
+
+                chatRoomAdapter.notifyDataSetChanged();
+                Log.d(TAG, "Chat room updated: " + chatRoom.getName());
+            }
+
+            @Override
+            public void onChatRoomRemoved(ChatRoom chatRoom) {
+                // Remove chat room from lists
+                allChatRooms.removeIf(room -> room.getId().equals(chatRoom.getId()));
+                filteredChatRooms.removeIf(room -> room.getId().equals(chatRoom.getId()));
+
+                chatRoomAdapter.notifyDataSetChanged();
+                updateUI();
+                Log.d(TAG, "Chat room removed: " + chatRoom.getName());
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading chat rooms", e);
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "채팅방 로드 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * Load favorite chats
+     */
+    private void loadFavorites() {
         // Clear and reload favorites to prevent duplicates
         favoriteChatList.clear();
         // Sample favorites - using circle_logo as default profile image
@@ -239,10 +320,6 @@ public class ChatListFragment extends Fragment {
         favoriteChatList.add(new FavoriteChat("2", "Mom", null));
         // Note: Users can customize these with their own profile images
 
-        filteredChatRooms.clear(); // Also clear filtered list before adding
-        filteredChatRooms.addAll(allChatRooms);
-
-        chatRoomAdapter.notifyDataSetChanged();
         favoriteChatAdapter.notifyDataSetChanged();
     }
 
@@ -260,11 +337,10 @@ public class ChatListFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        // Reload chat rooms when fragment becomes visible
-        loadSampleData();
-        updateUI();
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Clean up Firebase listeners
+        FirebaseChatManager.getInstance().removeAllListeners();
     }
 
     // Inner class for FavoriteChat data

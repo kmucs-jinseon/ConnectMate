@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.connectmate.models.ChatMessage;
 import com.example.connectmate.models.ChatRoom;
-import com.example.connectmate.utils.ChatManager;
+import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -55,31 +55,28 @@ public class ChatRoomActivity extends AppCompatActivity {
         // Get chat room from intent
         chatRoom = (ChatRoom) getIntent().getSerializableExtra("chat_room");
 
-        if (chatRoom == null) {
-            String chatRoomId = getIntent().getStringExtra("chat_room_id");
-            if (chatRoomId != null) {
-                ChatManager chatManager = ChatManager.getInstance(this);
-                chatRoom = chatManager.getChatRoomById(chatRoomId);
-            }
-        }
-
-        if (chatRoom == null) {
-            Toast.makeText(this, "Chat room not found", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
         // Get current user info
         getCurrentUserInfo();
 
         // Initialize UI
         initializeViews();
-        setupToolbar();
         setupRecyclerView();
         setupMessageInput();
 
-        // Load messages
-        loadMessages();
+        if (chatRoom == null) {
+            String chatRoomId = getIntent().getStringExtra("chat_room_id");
+            if (chatRoomId != null) {
+                loadChatRoomFromFirebase(chatRoomId);
+            } else {
+                Toast.makeText(this, "Chat room not found", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+        } else {
+            setupToolbar();
+            loadMessagesFromFirebase();
+            listenForChatRoomUpdates();
+        }
     }
 
     private void getCurrentUserInfo() {
@@ -141,20 +138,137 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnSendMessage.setOnClickListener(v -> sendMessage());
     }
 
-    private void loadMessages() {
-        ChatManager chatManager = ChatManager.getInstance(this);
-        messages.clear();
-        messages.addAll(chatManager.getMessagesForChatRoom(chatRoom.getId()));
+    /**
+     * Load chat room from Firebase
+     */
+    private void loadChatRoomFromFirebase(String chatRoomId) {
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.getChatRoomById(chatRoomId, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom result) {
+                chatRoom = result;
+                setupToolbar();
+                loadMessagesFromFirebase();
+                listenForChatRoomUpdates();
+            }
 
-        messageAdapter.notifyDataSetChanged();
-        updateUI();
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading chat room", e);
+                Toast.makeText(ChatRoomActivity.this, "Failed to load chat room", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
 
-        // Scroll to bottom
-        if (!messages.isEmpty()) {
-            messagesRecyclerView.scrollToPosition(messages.size() - 1);
-        }
+    /**
+     * Load messages from Firebase with real-time updates
+     */
+    private void loadMessagesFromFirebase() {
+        if (chatRoom == null) return;
 
-        Log.d(TAG, "Loaded " + messages.size() + " messages");
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+
+        // Listen for new messages in real-time
+        chatManager.listenForNewMessages(chatRoom.getId(), new FirebaseChatManager.MessageChangeListener() {
+            @Override
+            public void onMessageAdded(ChatMessage message) {
+                // Check if message already exists to avoid duplicates
+                boolean exists = false;
+                for (ChatMessage m : messages) {
+                    if (m.getId() != null && m.getId().equals(message.getId())) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists) {
+                    messages.add(message);
+                    messageAdapter.notifyItemInserted(messages.size() - 1);
+
+                    // Auto-scroll to bottom if near the bottom or if it's the user's own message
+                    if (shouldAutoScroll() || message.getSenderId().equals(currentUserId)) {
+                        messagesRecyclerView.scrollToPosition(messages.size() - 1);
+                    }
+
+                    updateUI();
+                    Log.d(TAG, "New message added: " + message.getMessage());
+                }
+            }
+
+            @Override
+            public void onMessageChanged(ChatMessage message) {
+                // Update existing message
+                for (int i = 0; i < messages.size(); i++) {
+                    if (messages.get(i).getId() != null && messages.get(i).getId().equals(message.getId())) {
+                        messages.set(i, message);
+                        messageAdapter.notifyItemChanged(i);
+                        Log.d(TAG, "Message updated: " + message.getMessage());
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onMessageRemoved(ChatMessage message) {
+                // Remove message
+                for (int i = 0; i < messages.size(); i++) {
+                    if (messages.get(i).getId() != null && messages.get(i).getId().equals(message.getId())) {
+                        messages.remove(i);
+                        messageAdapter.notifyItemRemoved(i);
+                        updateUI();
+                        Log.d(TAG, "Message removed");
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading messages", e);
+                Toast.makeText(ChatRoomActivity.this, "메시지 로드 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Listen for chat room updates (member count, etc.)
+     */
+    private void listenForChatRoomUpdates() {
+        if (chatRoom == null) return;
+
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.getChatRoomById(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom updatedRoom) {
+                chatRoom = updatedRoom;
+                runOnUiThread(() -> {
+                    if (getSupportActionBar() != null) {
+                        int memberCount = chatRoom.getMemberCount();
+                        getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error updating chat room", e);
+            }
+        });
+    }
+
+    /**
+     * Check if should auto-scroll to bottom
+     */
+    private boolean shouldAutoScroll() {
+        LinearLayoutManager layoutManager = (LinearLayoutManager) messagesRecyclerView.getLayoutManager();
+        if (layoutManager == null) return true;
+
+        int lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
+        int totalItems = layoutManager.getItemCount();
+
+        // Auto-scroll if user is at the bottom or within 2 messages of the bottom
+        return totalItems == 0 || lastVisiblePosition >= totalItems - 3;
     }
 
     private void sendMessage() {
@@ -178,25 +292,27 @@ public class ChatRoomActivity extends AppCompatActivity {
             messageText
         );
 
-        // Send message
-        ChatManager chatManager = ChatManager.getInstance(this);
-        boolean sent = chatManager.sendMessage(message);
+        // Send message to Firebase
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+            @Override
+            public void onSuccess(ChatMessage result) {
+                // Clear input on successful send
+                runOnUiThread(() -> {
+                    messageInput.setText("");
+                    Log.d(TAG, "Message sent: " + messageText);
+                });
+                // Message will be added to list via real-time listener
+            }
 
-        if (sent) {
-            // Add to list and update UI
-            messages.add(message);
-            messageAdapter.notifyItemInserted(messages.size() - 1);
-            messagesRecyclerView.scrollToPosition(messages.size() - 1);
-
-            // Clear input
-            messageInput.setText("");
-
-            updateUI();
-
-            Log.d(TAG, "Message sent: " + messageText);
-        } else {
-            Toast.makeText(this, "메시지 전송 실패", Toast.LENGTH_SHORT).show();
-        }
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to send message", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(ChatRoomActivity.this, "메시지 전송 실패", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void updateUI() {
@@ -210,20 +326,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        // Reload chat room data to get updated member count
-        ChatManager chatManager = ChatManager.getInstance(this);
-        ChatRoom updatedChatRoom = chatManager.getChatRoomById(chatRoom.getId());
-        if (updatedChatRoom != null) {
-            chatRoom = updatedChatRoom;
-            // Update toolbar with new member count
-            if (getSupportActionBar() != null) {
-                int memberCount = chatRoom.getMemberCount();
-                getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
-            }
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up Firebase listeners
+        if (chatRoom != null) {
+            FirebaseChatManager.getInstance().removeMessageListener(chatRoom.getId());
         }
-        // Reload messages when returning to chat
-        loadMessages();
     }
 }

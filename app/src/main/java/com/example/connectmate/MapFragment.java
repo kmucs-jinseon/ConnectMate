@@ -27,8 +27,12 @@ import com.kakao.vectormap.label.LabelStyles;
 import com.kakao.vectormap.label.LabelStyle;
 import com.kakao.vectormap.label.LabelLayer;
 import com.kakao.vectormap.label.Label;
+import com.example.connectmate.models.Activity;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * MapFragment - Fragment containing Kakao Map with activity markers
@@ -44,6 +48,7 @@ public class MapFragment extends Fragment {
 
     // Data
     private List<ActivityMarker> activityMarkers;
+    private Map<String, Label> labelMap; // Map activity ID to label
     private LocationManager locationManager;
 
     @Nullable
@@ -66,6 +71,7 @@ public class MapFragment extends Fragment {
 
         // Initialize data
         activityMarkers = new ArrayList<>();
+        labelMap = new HashMap<>();
         locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
 
         // Wait for view to be laid out before initializing map
@@ -154,68 +160,151 @@ public class MapFragment extends Fragment {
                 // Center on current location or default
                 moveToCurrentLocation();
 
-                // Add sample activity markers
-                addSampleActivityMarkers();
+                // Load activity markers from Firebase with real-time updates
+                loadActivitiesFromFirebase();
             }
         });
     }
 
     /**
-     * Add sample activity markers to the map
+     * Load activities from Firebase and display as markers with real-time updates
      */
-    private void addSampleActivityMarkers() {
-        if (kakaoMap == null) return;
+    private void loadActivitiesFromFirebase() {
+        if (kakaoMap == null) {
+            Log.e(TAG, "KakaoMap is null, cannot load activities");
+            return;
+        }
 
-        // Sample activities
-        activityMarkers.add(new ActivityMarker(
-            "1", "Weekly Soccer Match", "Seoul National Park",
-            "Today, 3:00 PM", "Join us for a friendly soccer match!",
-            5, 10, 37.5665, 126.9780, "Sports"
-        ));
-        activityMarkers.add(new ActivityMarker(
-            "2", "Study Group - Java", "Gangnam Library",
-            "Tomorrow, 2:00 PM", "Let's study Java together",
-            3, 8, 37.5700, 126.9850, "Study"
-        ));
-        activityMarkers.add(new ActivityMarker(
-            "3", "Coffee Meetup", "Hongdae Cafe",
-            "Saturday, 4:00 PM", "Casual coffee and chat",
-            6, 12, 37.5550, 126.9200, "Social"
-        ));
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+
+        // Set up click listener for markers
+        kakaoMap.setOnLabelClickListener((map, layer, label) -> {
+            String activityId = label.getLabelId();
+            if (getContext() != null && activityId != null) {
+                // Find activity details
+                for (ActivityMarker marker : activityMarkers) {
+                    if (marker.getId().equals(activityId)) {
+                        Toast.makeText(getContext(),
+                            marker.getTitle() + " (" + marker.getCurrentParticipants() + "/" + marker.getMaxParticipants() + ")",
+                            Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                }
+            }
+            return true;
+        });
+
+        // Listen for real-time activity changes
+        activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
+            @Override
+            public void onActivityAdded(Activity activity) {
+                if (activity.getLatitude() != 0 && activity.getLongitude() != 0) {
+                    addActivityMarker(activity);
+                    Log.d(TAG, "Activity marker added: " + activity.getTitle());
+                }
+            }
+
+            @Override
+            public void onActivityChanged(Activity activity) {
+                // Remove old marker and add updated one
+                removeActivityMarker(activity.getId());
+                if (activity.getLatitude() != 0 && activity.getLongitude() != 0) {
+                    addActivityMarker(activity);
+                    Log.d(TAG, "Activity marker updated: " + activity.getTitle());
+                }
+            }
+
+            @Override
+            public void onActivityRemoved(Activity activity) {
+                removeActivityMarker(activity.getId());
+                Log.d(TAG, "Activity marker removed: " + activity.getTitle());
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading activities from Firebase", e);
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "활동 로드 중 오류가 발생했습니다", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * Add a marker for an activity to the map
+     */
+    private void addActivityMarker(Activity activity) {
+        if (kakaoMap == null || activity == null) return;
 
         try {
             if (kakaoMap.getLabelManager() != null) {
                 LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
 
-                for (ActivityMarker activity : activityMarkers) {
+                if (labelLayer != null) {
+                    // Create marker style
                     LabelStyles styles = kakaoMap.getLabelManager()
                         .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
 
+                    // Create label options
                     LabelOptions options = LabelOptions.from(
                         activity.getId(),
                         LatLng.from(activity.getLatitude(), activity.getLongitude())
                     ).setStyles(styles);
 
-                    if (labelLayer != null) {
-                        Label label = labelLayer.addLabel(options);
-                        label.setClickable(true);
-                    }
+                    // Add label to map
+                    Label label = labelLayer.addLabel(options);
+                    label.setClickable(true);
+
+                    // Store label reference for later updates/removal
+                    labelMap.put(activity.getId(), label);
+
+                    // Also add to activityMarkers list for compatibility
+                    ActivityMarker marker = new ActivityMarker(
+                        activity.getId(),
+                        activity.getTitle(),
+                        activity.getLocation(),
+                        activity.getTime(),
+                        activity.getDescription(),
+                        activity.getCurrentParticipants(),
+                        activity.getMaxParticipants(),
+                        activity.getLatitude(),
+                        activity.getLongitude(),
+                        activity.getCategory()
+                    );
+                    activityMarkers.add(marker);
+
+                    Log.d(TAG, "Added marker for: " + activity.getTitle() + " at (" +
+                        activity.getLatitude() + ", " + activity.getLongitude() + ")");
                 }
-
-                kakaoMap.setOnLabelClickListener((kakaoMap, layer, label) -> {
-                    String labelId = label.getLabelId();
-                    if (getContext() != null) {
-                        Toast.makeText(getContext(),
-                            "Activity: " + labelId,
-                            Toast.LENGTH_SHORT).show();
-                    }
-                    return true;
-                });
-
-                Log.d(TAG, "Added " + activityMarkers.size() + " activity markers");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Failed to add markers", e);
+            Log.e(TAG, "Failed to add marker for activity: " + activity.getTitle(), e);
+        }
+    }
+
+    /**
+     * Remove a marker from the map
+     */
+    private void removeActivityMarker(String activityId) {
+        if (kakaoMap == null || activityId == null) return;
+
+        try {
+            // Remove label from map
+            Label label = labelMap.get(activityId);
+            if (label != null && kakaoMap.getLabelManager() != null) {
+                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+                if (labelLayer != null) {
+                    labelLayer.remove(label);
+                }
+                labelMap.remove(activityId);
+            }
+
+            // Remove from activityMarkers list
+            activityMarkers.removeIf(marker -> marker.getId().equals(activityId));
+
+            Log.d(TAG, "Removed marker for activity: " + activityId);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to remove marker for activity: " + activityId, e);
         }
     }
 
@@ -469,11 +558,25 @@ public class MapFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        // Clean up Firebase listeners
+        FirebaseActivityManager.getInstance().removeAllListeners();
+
+        // Clean up map resources
         if (mapView != null) {
             mapView.finish();
         }
         mapView = null;
         kakaoMap = null;
+
+        // Clear marker collections
+        if (labelMap != null) {
+            labelMap.clear();
+        }
+        if (activityMarkers != null) {
+            activityMarkers.clear();
+        }
+
         Log.d(TAG, "MapFragment view destroyed");
     }
 }
