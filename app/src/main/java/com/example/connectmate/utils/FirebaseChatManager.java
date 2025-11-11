@@ -262,6 +262,27 @@ public class FirebaseChatManager {
     }
 
     /**
+     * Remove member from chat room
+     */
+    public void removeMemberFromChatRoom(String chatRoomId, String memberId,
+                                         OnCompleteListener<Void> listener) {
+        chatRoomsRef.child(chatRoomId).child("members").child(memberId)
+            .removeValue()
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Member removed from chat room: " + chatRoomId);
+                if (listener != null) {
+                    listener.onSuccess(null);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error removing member from chat room", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
      * Send a message to a chat room
      */
     public void sendMessage(ChatMessage message, OnCompleteListener<ChatMessage> listener) {
