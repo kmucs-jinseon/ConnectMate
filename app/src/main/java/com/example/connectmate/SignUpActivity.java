@@ -262,6 +262,7 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
+        intent.putExtra("just_logged_in", true);
         startActivity(intent);
         finish();
     }
@@ -393,12 +394,10 @@ public class SignUpActivity extends AppCompatActivity {
             return Unit.INSTANCE;
         };
 
+        // Always use Kakao Account (web-based OAuth) signup
         try {
-            if (UserApiClient.getInstance().isKakaoTalkLoginAvailable(this)) {
-                UserApiClient.getInstance().loginWithKakaoTalk(this, callback);
-            } else {
-                UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
-            }
+            Log.d(TAG, "Using Kakao Account signup (web-based OAuth)");
+            UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
         } catch (Exception e) {
             Log.e(TAG, "Kakao signup exception", e);
             kakaoSignUpButton.setEnabled(true);

@@ -67,7 +67,11 @@ public class LoginActivity extends AppCompatActivity {
     private DatabaseReference databaseRef;
     private GoogleSignInClient mGoogleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
+    private ActivityResultLauncher<Intent> oauthWebViewLauncher;
     private OkHttpClient httpClient;
+
+    private static final int REQUEST_KAKAO_OAUTH = 1001;
+    private static final int REQUEST_NAVER_OAUTH = 1002;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +90,7 @@ public class LoginActivity extends AppCompatActivity {
 
         initViews();
         configureGoogleSignIn();
+        configureOAuthWebViewLauncher();
         configureSocialLoginButtons();
         setupClickListeners();
     }
@@ -163,6 +168,39 @@ public class LoginActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Error configuring Google Sign-In", e);
         }
+    }
+
+    private void configureOAuthWebViewLauncher() {
+        // Initialize the OAuth WebView launcher for Kakao and Naver
+        oauthWebViewLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == OAuthWebViewActivity.RESULT_AUTH_CODE) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            String code = data.getStringExtra(OAuthWebViewActivity.RESULT_CODE);
+                            int requestCode = data.getIntExtra("request_code", 0);
+
+                            if (requestCode == REQUEST_KAKAO_OAUTH) {
+                                handleKakaoAuthCode(code);
+                            } else if (requestCode == REQUEST_NAVER_OAUTH) {
+                                handleNaverAuthCode(code);
+                            }
+                        }
+                    } else if (result.getResultCode() == RESULT_CANCELED) {
+                        Intent data = result.getData();
+                        if (data != null) {
+                            String error = data.getStringExtra(OAuthWebViewActivity.RESULT_ERROR);
+                            Log.e(TAG, "OAuth cancelled: " + error);
+                            Toast.makeText(this, "로그인 취소됨", Toast.LENGTH_SHORT).show();
+                        }
+
+                        // Re-enable buttons
+                        kakaoSignInButton.setEnabled(true);
+                        naverSignInButton.setEnabled(true);
+                    }
+                }
+        );
     }
 
     private void setupClickListeners() {
@@ -256,6 +294,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void navigateToMain() {
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        intent.putExtra("just_logged_in", true);
         startActivity(intent);
         finish();
     }
@@ -422,18 +461,10 @@ public class LoginActivity extends AppCompatActivity {
             return Unit.INSTANCE;
         };
 
-        // Check if KakaoTalk app is installed
+        // Always use Kakao Account (web-based OAuth) login
         try {
-            boolean isTalkAvailable = UserApiClient.getInstance().isKakaoTalkLoginAvailable(this);
-            Log.d(TAG, "KakaoTalk app installed: " + isTalkAvailable);
-
-            if (isTalkAvailable) {
-                Log.d(TAG, "Using KakaoTalk login");
-                UserApiClient.getInstance().loginWithKakaoTalk(this, callback);
-            } else {
-                Log.d(TAG, "Using Kakao Account login (web)");
-                UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
-            }
+            Log.d(TAG, "Using Kakao Account login (web-based OAuth)");
+            UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
         } catch (Exception e) {
             Log.e(TAG, "═══════════════════════════════════════════");
             Log.e(TAG, "Kakao login exception");
@@ -845,5 +876,25 @@ public class LoginActivity extends AppCompatActivity {
         }
         editor.apply();
         Log.d(TAG, "Login state saved: " + loginMethod + (userId != null ? " (ID: " + userId + ")" : ""));
+    }
+
+    /**
+     * Handle Kakao authorization code from WebView OAuth
+     */
+    private void handleKakaoAuthCode(String code) {
+        Log.d(TAG, "Handling Kakao auth code (WebView OAuth not fully implemented yet)");
+        Toast.makeText(this, "Kakao WebView OAuth - 개발 중", Toast.LENGTH_SHORT).show();
+        kakaoSignInButton.setEnabled(true);
+        // TODO: Exchange code for access token and get user info
+    }
+
+    /**
+     * Handle Naver authorization code from WebView OAuth
+     */
+    private void handleNaverAuthCode(String code) {
+        Log.d(TAG, "Handling Naver auth code (WebView OAuth not fully implemented yet)");
+        Toast.makeText(this, "Naver WebView OAuth - 개발 중", Toast.LENGTH_SHORT).show();
+        naverSignInButton.setEnabled(true);
+        // TODO: Exchange code for access token and get user info
     }
 }

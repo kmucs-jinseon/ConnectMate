@@ -17,6 +17,14 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- ============================================================ -->
+    <!-- Package Visibility Queries (Android 11+) -->
+    <!-- ============================================================ -->
+    <!-- Required for Naver Login to detect Naver app -->
+    <queries>
+        <package android:name="com.nhn.android.search" />
+    </queries>
+
     <application
         android:name=".ConnectMateApplication"
         android:allowBackup="true"
@@ -119,6 +127,12 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".OAuthWebViewActivity"
+            android:exported="false"
+            android:label="로그인"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
             <intent-filter>
@@ -136,7 +150,16 @@
             android:name="com.navercorp.nid.oauth.NidOAuthLoginActivity"
             android:exported="true"
             android:screenOrientation="portrait"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="oauth"
+                    android:scheme="naverlogin" />
+            </intent-filter>
+        </activity>
 
     </application>
 
