@@ -24,6 +24,17 @@
     <color name="pink_400">#F472B6</color>
     <color name="pink_500">#EC4899</color>
 
+    <!-- Additional Category Colors -->
+    <color name="orange_500">#F97316</color>
+    <color name="brown_500">#8B4513</color>
+    <color name="purple_500">#A855F7</color>
+    <color name="red_500">#EF4444</color>
+    <color name="indigo_500">#6366F1</color>
+    <color name="green_500">#10B981</color>
+    <color name="teal_500">#14B8A6</color>
+    <color name="cyan_500">#06B6D4</color>
+    <color name="amber_500">#F59E0B</color>
+
     <!-- Neutral Colors -->
     <color name="white">#FFFFFF</color>
     <color name="white_muted">#CCCCCC</color>

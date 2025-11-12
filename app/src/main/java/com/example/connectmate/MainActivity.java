@@ -17,6 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,14 +26,27 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.cardview.widget.CardView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-// Map imports removed - MapFragment now handles all map logic
+import com.example.connectmate.models.PlaceSearchResult;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * MainActivity - Main container activity with bottom navigation
@@ -61,8 +75,9 @@ public class MainActivity extends AppCompatActivity {
 
     // Map UI components
     private EditText searchInput;
-    private ImageButton filterButton;
+    private ImageButton searchSubmitButton;
     private ChipGroup filterChips;
+    private TextView currentLocationText;
     private FloatingActionButton btnCurrentLocation;
     private FloatingActionButton btnMapType;
     private FloatingActionButton btnZoomIn;
@@ -75,6 +90,17 @@ public class MainActivity extends AppCompatActivity {
     // Navigation & FAB
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabCreateActivity;
+
+    // Search components
+    private CardView mainSearchResultsCard;
+    private RecyclerView mainSearchResultsRecycler;
+    private PlaceSearchAdapter mainSearchAdapter;
+    private List<PlaceSearchResult> mainSearchResults;
+    private OkHttpClient httpClient;
+    private Gson gson;
+    private android.os.Handler searchHandler;
+    private Runnable searchRunnable;
+    private static final long SEARCH_DELAY_MS = 800;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,8 +199,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Map UI controls
         searchInput = findViewById(R.id.search_input);
-        filterButton = findViewById(R.id.filter_button);
+        searchSubmitButton = findViewById(R.id.search_submit_button);
         filterChips = findViewById(R.id.filter_chips);
+        currentLocationText = findViewById(R.id.current_location_text);
         btnCurrentLocation = findViewById(R.id.btn_current_location);
         btnMapType = findViewById(R.id.btn_map_type);
         btnZoomIn = findViewById(R.id.btn_zoom_in);
@@ -183,6 +210,16 @@ public class MainActivity extends AppCompatActivity {
         // Activity UI components
         activityUiOverlay = findViewById(R.id.activity_ui_overlay);
         activityFilterChips = findViewById(R.id.activity_filter_chips);
+
+        // Search results components
+        mainSearchResultsCard = findViewById(R.id.main_search_results_card);
+        mainSearchResultsRecycler = findViewById(R.id.main_search_results_recycler);
+
+        // Initialize HTTP client and search components
+        httpClient = new OkHttpClient();
+        gson = new Gson();
+        mainSearchResults = new ArrayList<>();
+        searchHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
         if (bottomNavigationView == null) {
             Log.e(TAG, "BottomNavigationView not found in layout");
@@ -195,11 +232,6 @@ public class MainActivity extends AppCompatActivity {
      * Setup map controls and listeners
      */
     private void setupMapControls() {
-        // Filter button
-        if (filterButton != null) {
-            filterButton.setOnClickListener(v -> toggleFilterChips());
-        }
-
         // Filter chips
         if (filterChips != null) {
             filterChips.setOnCheckedStateChangeListener((group, checkedIds) -> {
@@ -207,21 +239,98 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Search input
+        // Setup search adapter
+        if (mainSearchResultsRecycler != null) {
+            mainSearchAdapter = new PlaceSearchAdapter(mainSearchResults, place -> {
+                // When place is clicked, navigate to it on map
+                hideMainSearchResults();
+
+                // Switch to map tab
+                if (bottomNavigationView != null) {
+                    bottomNavigationView.setSelectedItemId(R.id.nav_map);
+                }
+
+                // Navigate MapFragment to this location
+                if (mapFragment instanceof MapFragment) {
+                    ((MapFragment) mapFragment).navigateToLocation(
+                        place.getLatitude(),
+                        place.getLongitude(),
+                        place.getPlaceName()
+                    );
+                }
+            });
+
+            mainSearchResultsRecycler.setLayoutManager(new LinearLayoutManager(this));
+            mainSearchResultsRecycler.setAdapter(mainSearchAdapter);
+        }
+
+        // Search submit button - MANUAL SEARCH
+        if (searchSubmitButton != null) {
+            searchSubmitButton.setOnClickListener(v -> {
+                if (searchInput != null) {
+                    String query = searchInput.getText().toString().trim();
+                    if (!query.isEmpty()) {
+                        Log.d(TAG, "Manual search triggered: " + query);
+                        performMainSearch(query);
+                        hideKeyboard();
+                    } else {
+                        Toast.makeText(this, "검색어를 입력하세요", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+
+        // Search input with real-time search
         if (searchInput != null) {
+            // Handle Enter key on keyboard
+            searchInput.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                    String query = searchInput.getText().toString().trim();
+                    if (!query.isEmpty()) {
+                        Log.d(TAG, "Keyboard search triggered: " + query);
+                        performMainSearch(query);
+                        hideKeyboard();
+                    } else {
+                        Toast.makeText(this, "검색어를 입력하세요", Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+                return false;
+            });
+
+            // Real-time search as user types
             searchInput.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if (!s.toString().isEmpty()) {
-                        Log.d(TAG, "Searching for: " + s);
-                    }
+                    // Not needed
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {}
+                public void afterTextChanged(Editable s) {
+                    // Cancel previous search request
+                    if (searchRunnable != null) {
+                        searchHandler.removeCallbacks(searchRunnable);
+                    }
+
+                    String query = s.toString().trim();
+
+                    // If empty, hide results
+                    if (query.isEmpty()) {
+                        hideMainSearchResults();
+                        return;
+                    }
+
+                    // Schedule new search after delay (debounce)
+                    searchRunnable = () -> {
+                        Log.d(TAG, "Real-time search triggered for: " + query);
+                        performMainSearch(query);
+                    };
+
+                    searchHandler.postDelayed(searchRunnable, SEARCH_DELAY_MS);
+                }
             });
         }
 
@@ -230,6 +339,10 @@ public class MainActivity extends AppCompatActivity {
             btnCurrentLocation.setOnClickListener(v -> {
                 if (mapFragment instanceof MapFragment) {
                     ((MapFragment) mapFragment).moveToCurrent();
+                    // Update location display when user clicks current location button
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        updateCurrentLocationDisplay();
+                    }, 500);
                 }
             });
         }
@@ -401,6 +514,16 @@ public class MainActivity extends AppCompatActivity {
         FragmentTransaction transaction = fm.beginTransaction();
         transaction.replace(R.id.main_container, targetFragment, tag);
 
+        // For MapFragment, update current location display after view is created
+        if (TAG_MAP.equals(tag)) {
+            transaction.runOnCommit(() -> {
+                // Use Handler to post location update after fragment is fully attached
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    updateCurrentLocationDisplay();
+                }, 500); // Small delay to ensure map is loaded
+            });
+        }
+
         // For SettingsFragment, add a callback to refresh data after view is created
         if (TAG_SETTING.equals(tag) && targetFragment instanceof SettingsFragment) {
             final SettingsFragment settingsFragment = (SettingsFragment) targetFragment;
@@ -545,6 +668,154 @@ public class MainActivity extends AppCompatActivity {
     // Location methods removed - MapFragment now handles all location logic
 
     /**
+     * Perform place search using Kakao Local API
+     */
+    private void performMainSearch(String query) {
+        if (query.isEmpty()) {
+            hideMainSearchResults();
+            return;
+        }
+
+        Log.d(TAG, "Searching for: " + query);
+
+        // Get current location for proximity search
+        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
+            android.net.Uri.encode(query);
+
+        // Try to get current location from MapFragment
+        Location currentLocation = getCurrentLocationFromMap();
+        if (currentLocation != null) {
+            double longitude = currentLocation.getLongitude();
+            double latitude = currentLocation.getLatitude();
+            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000"; // 20km radius
+            Log.d(TAG, "Searching near current location: " + latitude + ", " + longitude);
+        } else {
+            // Default to Seoul center if no location available
+            apiUrl += "&x=126.9780&y=37.5665&radius=20000";
+            Log.d(TAG, "Using default location (Seoul) for search");
+        }
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Main search request failed", e);
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                    "검색 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Main search response not successful: " + response.code());
+                    return;
+                }
+
+                String responseBody = response.body().string();
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    List<PlaceSearchResult> results = new ArrayList<>();
+                    for (int i = 0; i < documents.size(); i++) {
+                        JsonObject doc = documents.get(i).getAsJsonObject();
+
+                        PlaceSearchResult place = new PlaceSearchResult();
+                        place.setId(doc.get("id").getAsString());
+                        place.setPlaceName(doc.get("place_name").getAsString());
+                        place.setAddressName(doc.get("address_name").getAsString());
+
+                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
+                            place.setRoadAddressName(doc.get("road_address_name").getAsString());
+                        }
+
+                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
+                            place.setCategoryName(doc.get("category_name").getAsString());
+                        }
+
+                        // Kakao API returns x=longitude, y=latitude
+                        place.setLatitude(doc.get("y").getAsDouble());
+                        place.setLongitude(doc.get("x").getAsDouble());
+
+                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
+                            place.setDistance(doc.get("distance").getAsInt());
+                        }
+
+                        results.add(place);
+                    }
+
+                    runOnUiThread(() -> {
+                        if (results.isEmpty()) {
+                            hideMainSearchResults();
+                            Toast.makeText(MainActivity.this, "검색 결과가 없습니다", Toast.LENGTH_SHORT).show();
+                        } else {
+                            displayMainSearchResults(results);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing main search results", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Get current location from MapFragment if available
+     */
+    private Location getCurrentLocationFromMap() {
+        if (mapFragment instanceof MapFragment) {
+            return ((MapFragment) mapFragment).getCurrentLocationForSearch();
+        }
+        return null;
+    }
+
+    /**
+     * Display search results in RecyclerView
+     */
+    private void displayMainSearchResults(List<PlaceSearchResult> results) {
+        mainSearchResults.clear();
+        mainSearchResults.addAll(results);
+        if (mainSearchAdapter != null) {
+            mainSearchAdapter.updateResults(mainSearchResults);
+        }
+        if (mainSearchResultsCard != null) {
+            mainSearchResultsCard.setVisibility(View.VISIBLE);
+        }
+        Log.d(TAG, "Displaying " + results.size() + " main search results");
+    }
+
+    /**
+     * Hide search results
+     */
+    private void hideMainSearchResults() {
+        if (mainSearchResultsCard != null) {
+            mainSearchResultsCard.setVisibility(View.GONE);
+        }
+        mainSearchResults.clear();
+        if (mainSearchAdapter != null) {
+            mainSearchAdapter.updateResults(mainSearchResults);
+        }
+    }
+
+    /**
+     * Hide keyboard
+     */
+    private void hideKeyboard() {
+        if (searchInput != null) {
+            android.view.inputmethod.InputMethodManager imm =
+                (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
+            }
+        }
+    }
+
+    /**
      * Check if user is authenticated via any login method (Firebase, Kakao, or Naver)
      * Only check auto-login if this is a fresh app start (not from LoginActivity)
      */
@@ -589,5 +860,108 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "No valid user session found");
         return false;
+    }
+
+    /**
+     * Update current location display using reverse geocoding
+     */
+    public void updateCurrentLocationDisplay() {
+        Location currentLocation = getCurrentLocationFromMap();
+        if (currentLocation != null) {
+            reverseGeocode(currentLocation.getLatitude(), currentLocation.getLongitude());
+        } else {
+            if (currentLocationText != null) {
+                currentLocationText.setText("위치를 찾는 중...");
+            }
+        }
+    }
+
+    /**
+     * Reverse geocode coordinates to get address using Kakao API
+     */
+    private void reverseGeocode(double latitude, double longitude) {
+        String apiUrl = "https://dapi.kakao.com/v2/local/geo/coord2address.json?x=" +
+            longitude + "&y=" + latitude;
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Reverse geocoding failed", e);
+                runOnUiThread(() -> {
+                    if (currentLocationText != null) {
+                        currentLocationText.setText("현재 위치");
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Reverse geocoding response not successful: " + response.code());
+                    return;
+                }
+
+                String responseBody = response.body().string();
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    if (documents.size() > 0) {
+                        JsonObject doc = documents.get(0).getAsJsonObject();
+
+                        // Try to get road address first, fallback to regular address
+                        String address = null;
+                        if (doc.has("road_address") && !doc.get("road_address").isJsonNull()) {
+                            JsonObject roadAddress = doc.getAsJsonObject("road_address");
+                            address = roadAddress.get("address_name").getAsString();
+                        } else if (doc.has("address") && !doc.get("address").isJsonNull()) {
+                            JsonObject regAddress = doc.getAsJsonObject("address");
+                            address = regAddress.get("address_name").getAsString();
+                        }
+
+                        if (address != null) {
+                            // Shorten the address for display
+                            String shortAddress = shortenAddress(address);
+                            String finalAddress = shortAddress;
+                            runOnUiThread(() -> {
+                                if (currentLocationText != null) {
+                                    currentLocationText.setText(finalAddress);
+                                }
+                            });
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing reverse geocoding results", e);
+                    runOnUiThread(() -> {
+                        if (currentLocationText != null) {
+                            currentLocationText.setText("현재 위치");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Shorten address for compact display
+     * Example: "서울특별시 강남구 역삼동" -> "강남구 역삼동"
+     */
+    private String shortenAddress(String fullAddress) {
+        if (fullAddress == null) return "현재 위치";
+
+        String[] parts = fullAddress.split(" ");
+        if (parts.length >= 3) {
+            // Return last 2-3 parts (district and neighborhood)
+            return parts[parts.length - 2] + " " + parts[parts.length - 1];
+        } else if (parts.length == 2) {
+            return parts[0] + " " + parts[1];
+        }
+        return fullAddress;
     }
 }

@@ -26,8 +26,8 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_gravity="center"
-            android:src="@drawable/ic_map"
-            app:tint="@color/blue_500"
+            android:src="@drawable/ic_map_pin"
+            app:tint="@color/white"
             android:contentDescription="@string/location_icon"/>
 
     </androidx.cardview.widget.CardView>

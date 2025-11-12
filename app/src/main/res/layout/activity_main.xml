@@ -61,15 +61,6 @@
                 android:padding="12dp"
                 android:gravity="center_vertical">
 
-                <ImageView
-                    android:id="@+id/search_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="12dp"
-                    android:contentDescription="@string/search"
-                    android:src="@drawable/ic_search"
-                    app:tint="@color/gray_600" />
-
                 <EditText
                     android:id="@+id/search_input"
                     android:layout_width="0dp"
@@ -78,6 +69,7 @@
                     android:autofillHints="true"
                     android:background="@null"
                     android:hint="@string/search_activities_or_places"
+                    android:imeOptions="actionSearch"
                     android:inputType="text"
                     android:maxLines="1"
                     android:textColor="@color/gray_900"
@@ -85,16 +77,78 @@
                     android:textSize="16sp" />
 
                 <ImageButton
-                    android:id="@+id/filter_button"
+                    android:id="@+id/search_submit_button"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/filter"
+                    android:contentDescription="@string/search"
                     android:padding="8dp"
-                    android:src="@drawable/ic_more_vertical"
-                    app:tint="@color/gray_600" />
+                    android:src="@android:drawable/ic_menu_search"
+                    app:tint="@color/primary_blue" />
 
             </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Current Location Display -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/current_location_card"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/white"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_my_location"
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="@string/current_location"/>
+
+                <TextView
+                    android:id="@+id/current_location_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Getting location..."
+                    android:textColor="@color/gray_700"
+                    android:textSize="13sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Search Results List -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/main_search_results_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxHeight="300dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/main_search_results_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="vertical" />
 
         </androidx.cardview.widget.CardView>
 

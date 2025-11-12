@@ -172,17 +172,37 @@
                 style="@style/InputLayoutStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_medium"
+                android:layout_marginBottom="@dimen/spacing_small"
                 android:hint="@string/location_optional"
-                app:endIconDrawable="@drawable/ic_map_pin"
+                app:endIconDrawable="@drawable/ic_search"
                 app:endIconMode="custom">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/location_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:imeOptions="actionSearch"
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Location Search Results -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/location_search_results_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/spacing_medium"
+                android:maxHeight="300dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                android:visibility="gone">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/location_search_results_recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="vertical" />
+
+            </androidx.cardview.widget.CardView>
 
             <!-- Participant Limit -->
             <com.google.android.material.textfield.TextInputLayout

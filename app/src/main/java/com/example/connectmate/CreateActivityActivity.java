@@ -4,15 +4,23 @@ import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.connectmate.models.Activity;
+import com.example.connectmate.models.PlaceSearchResult;
 import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
@@ -21,8 +29,20 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class CreateActivityActivity extends AppCompatActivity {
 
@@ -36,15 +56,145 @@ public class CreateActivityActivity extends AppCompatActivity {
     private Button createButton;
     private String selectedCategory = "";
 
+    // Location data from map search
+    private String locationName;
+    private String locationAddress;
+    private double locationLatitude;
+    private double locationLongitude;
+
+    // Location search components
+    private CardView locationSearchResultsCard;
+    private RecyclerView locationSearchResultsRecycler;
+    private PlaceSearchAdapter locationSearchAdapter;
+    private List<PlaceSearchResult> locationSearchResults;
+    private OkHttpClient httpClient;
+    private Gson gson;
+    private android.os.Handler searchHandler;
+    private Runnable searchRunnable;
+    private static final long SEARCH_DELAY_MS = 800;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fragment_create_activity); // 👉 XML 파일 이름에 맞게 수정하세요
 
         initViews();
+        setupLocationInput(); // Setup listener before handling intent
+        handleLocationIntent();
         setupCategoryDropdown();
         setupDateTimePickers();
         setupButtons();
+    }
+
+    /**
+     * Setup location input with search functionality
+     */
+    private void setupLocationInput() {
+        if (locationInput == null) {
+            Log.e(TAG, "locationInput is null!");
+            return;
+        }
+
+        // Setup search adapter
+        if (locationSearchResultsRecycler != null) {
+            locationSearchAdapter = new PlaceSearchAdapter(locationSearchResults, place -> {
+                // When place is selected, populate location field
+                locationName = place.getPlaceName();
+                locationAddress = place.getRoadAddressName() != null && !place.getRoadAddressName().isEmpty()
+                    ? place.getRoadAddressName()
+                    : place.getAddressName();
+                locationLatitude = place.getLatitude();
+                locationLongitude = place.getLongitude();
+
+                // Set the location text
+                locationInput.setText(locationName);
+
+                // Hide results
+                hideLocationSearchResults();
+
+                // Hide keyboard
+                hideKeyboard();
+
+                Log.d(TAG, "Location selected: " + locationName + " (" + locationLatitude + ", " + locationLongitude + ")");
+                Toast.makeText(this, "📍 " + locationName + " 선택됨", Toast.LENGTH_SHORT).show();
+            });
+
+            locationSearchResultsRecycler.setLayoutManager(new LinearLayoutManager(this));
+            locationSearchResultsRecycler.setAdapter(locationSearchAdapter);
+        }
+
+        // Real-time search as user types
+        locationInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not needed
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Cancel previous search request
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+
+                String query = s.toString().trim();
+
+                // If empty, hide results
+                if (query.isEmpty()) {
+                    hideLocationSearchResults();
+                    return;
+                }
+
+                // Schedule new search after delay (debounce)
+                searchRunnable = () -> {
+                    Log.d(TAG, "Location search triggered for: " + query);
+                    performLocationSearch(query);
+                };
+
+                searchHandler.postDelayed(searchRunnable, SEARCH_DELAY_MS);
+            }
+        });
+
+        // Handle Enter key on keyboard
+        locationInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                String query = locationInput.getText().toString().trim();
+                if (!query.isEmpty()) {
+                    Log.d(TAG, "Keyboard search triggered: " + query);
+                    performLocationSearch(query);
+                    hideKeyboard();
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Handle location data passed from MapFragment
+     */
+    private void handleLocationIntent() {
+        if (getIntent() != null) {
+            locationName = getIntent().getStringExtra("location_name");
+            locationAddress = getIntent().getStringExtra("location_address");
+            locationLatitude = getIntent().getDoubleExtra("location_latitude", 0.0);
+            locationLongitude = getIntent().getDoubleExtra("location_longitude", 0.0);
+
+            // If location data exists, populate the location field
+            if (locationName != null && !locationName.isEmpty()) {
+                if (locationInput != null) {
+                    locationInput.setText(locationName);
+                    // Keep it editable in case user wants to change it
+                }
+                Log.d(TAG, "Location received: " + locationName + " (" + locationLatitude + ", " + locationLongitude + ")");
+                Toast.makeText(this, "📍 " + locationName + " 선택됨", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void initViews() {
@@ -60,6 +210,16 @@ public class CreateActivityActivity extends AppCompatActivity {
         hashtagsInput = findViewById(R.id.hashtags_input);
         visibilityToggle = findViewById(R.id.visibility_toggle);
         createButton = findViewById(R.id.create_button);
+
+        // Location search components
+        locationSearchResultsCard = findViewById(R.id.location_search_results_card);
+        locationSearchResultsRecycler = findViewById(R.id.location_search_results_recycler);
+
+        // Initialize HTTP client and search components
+        httpClient = new OkHttpClient();
+        gson = new Gson();
+        locationSearchResults = new ArrayList<>();
+        searchHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     }
 
     private void setupCategoryDropdown() {
@@ -233,6 +393,13 @@ public class CreateActivityActivity extends AppCompatActivity {
                     creatorName
                 );
 
+                // Set location coordinates if they were provided from map search
+                if (locationLatitude != 0.0 && locationLongitude != 0.0) {
+                    activity.setLatitude(locationLatitude);
+                    activity.setLongitude(locationLongitude);
+                    Log.d(TAG, "Activity location set to: " + locationLatitude + ", " + locationLongitude);
+                }
+
                 // Show progress feedback
                 Toast.makeText(this, "활동 생성 중...", Toast.LENGTH_SHORT).show();
 
@@ -266,5 +433,130 @@ public class CreateActivityActivity extends AppCompatActivity {
                 createButton.setEnabled(true);
             }
         });
+    }
+
+    /**
+     * Search for places using Kakao Local API
+     */
+    private void performLocationSearch(String query) {
+        if (query.isEmpty()) {
+            hideLocationSearchResults();
+            return;
+        }
+
+        Log.d(TAG, "Searching for location: " + query);
+
+        // Use Seoul as default location for search
+        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
+            android.net.Uri.encode(query) + "&x=126.9780&y=37.5665&radius=20000";
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Location search request failed", e);
+                runOnUiThread(() -> Toast.makeText(CreateActivityActivity.this,
+                    "검색 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Location search response not successful: " + response.code());
+                    return;
+                }
+
+                String responseBody = response.body().string();
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    List<PlaceSearchResult> results = new ArrayList<>();
+                    for (int i = 0; i < documents.size(); i++) {
+                        JsonObject doc = documents.get(i).getAsJsonObject();
+
+                        PlaceSearchResult place = new PlaceSearchResult();
+                        place.setId(doc.get("id").getAsString());
+                        place.setPlaceName(doc.get("place_name").getAsString());
+                        place.setAddressName(doc.get("address_name").getAsString());
+
+                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
+                            place.setRoadAddressName(doc.get("road_address_name").getAsString());
+                        }
+
+                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
+                            place.setCategoryName(doc.get("category_name").getAsString());
+                        }
+
+                        // Kakao API returns x=longitude, y=latitude
+                        place.setLatitude(doc.get("y").getAsDouble());
+                        place.setLongitude(doc.get("x").getAsDouble());
+
+                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
+                            place.setDistance(doc.get("distance").getAsInt());
+                        }
+
+                        results.add(place);
+                    }
+
+                    runOnUiThread(() -> {
+                        if (results.isEmpty()) {
+                            hideLocationSearchResults();
+                            Toast.makeText(CreateActivityActivity.this, "검색 결과가 없습니다", Toast.LENGTH_SHORT).show();
+                        } else {
+                            displayLocationSearchResults(results);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing location search results", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Display location search results
+     */
+    private void displayLocationSearchResults(List<PlaceSearchResult> results) {
+        locationSearchResults.clear();
+        locationSearchResults.addAll(results);
+        if (locationSearchAdapter != null) {
+            locationSearchAdapter.updateResults(locationSearchResults);
+        }
+        if (locationSearchResultsCard != null) {
+            locationSearchResultsCard.setVisibility(View.VISIBLE);
+        }
+        Log.d(TAG, "Displaying " + results.size() + " location search results");
+    }
+
+    /**
+     * Hide location search results
+     */
+    private void hideLocationSearchResults() {
+        if (locationSearchResultsCard != null) {
+            locationSearchResultsCard.setVisibility(View.GONE);
+        }
+        locationSearchResults.clear();
+        if (locationSearchAdapter != null) {
+            locationSearchAdapter.updateResults(locationSearchResults);
+        }
+    }
+
+    /**
+     * Hide keyboard
+     */
+    private void hideKeyboard() {
+        if (locationInput != null) {
+            android.view.inputmethod.InputMethodManager imm =
+                (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(locationInput.getWindowToken(), 0);
+            }
+        }
     }
 }
