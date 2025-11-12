@@ -206,6 +206,9 @@ public class LoginActivity extends AppCompatActivity {
 
                         Log.d(TAG, "[LOGIN] calling saveUserToRealtimeDatabase uid=" + uid);
                         saveUserToRealtimeDatabase(uid, mail, name, photo, "email");
+
+                        // Save login state with user ID
+                        saveLoginState("email", uid);
                     }
                     navigateToMain();
                 })

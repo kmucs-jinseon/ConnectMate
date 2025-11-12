@@ -31,6 +31,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
+import com.bumptech.glide.Glide;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -171,23 +172,33 @@ public class ProfileFragment extends Fragment {
         // Get user ID based on login method
         String userId = getUserId();
 
+        android.util.Log.d("ProfileFragment", "loadUserData - userId: " + userId);
+
         if (userId == null) {
             // Fallback to SharedPreferences if no user ID found
+            android.util.Log.d("ProfileFragment", "No userId found, loading from SharedPreferences");
             loadUserDataFromSharedPreferences();
             return;
         }
 
         // Load user data from Realtime Database
+        android.util.Log.d("ProfileFragment", "Loading user data from Firebase for userId: " + userId);
         databaseRef.child("users").child(userId)
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        android.util.Log.d("ProfileFragment", "Firebase snapshot exists: " + snapshot.exists());
                         if (!snapshot.exists()) {
+                            android.util.Log.d("ProfileFragment", "Snapshot doesn't exist, falling back to SharedPreferences");
                             loadUserDataFromSharedPreferences();
                             return;
                         }
 
                         User u = snapshot.getValue(User.class);
+                        android.util.Log.d("ProfileFragment", "User object from Firebase: " + (u != null ? "not null" : "null"));
+                        if (u != null) {
+                            android.util.Log.d("ProfileFragment", "User email from Firebase: " + u.email);
+                        }
                         if (u == null) {
                             loadUserDataFromSharedPreferences();
                             return;
@@ -198,6 +209,7 @@ public class ProfileFragment extends Fragment {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        android.util.Log.e("ProfileFragment", "Firebase error: " + error.getMessage());
                         loadUserDataFromSharedPreferences();
                     }
                 });
@@ -215,12 +227,15 @@ public class ProfileFragment extends Fragment {
         if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
         if (badgesCount != null) badgesCount.setText(String.valueOf(or(u.badgesCount, 0L)));
 
-        // 이미지는 Glide/Picasso 권장
+        // Load profile image using Glide
         if (profileAvatar != null) {
             String url = u.profileImageUrl;
             if (!TextUtils.isEmpty(url)) {
-                // Glide.with(this).load(url).placeholder(R.drawable.circle_logo).into(profileAvatar);
-                try { profileAvatar.setImageURI(Uri.parse(url)); } catch (Exception e) { profileAvatar.setImageResource(R.drawable.circle_logo); }
+                Glide.with(this)
+                    .load(url)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .into(profileAvatar);
             } else {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
             }
@@ -241,24 +256,26 @@ public class ProfileFragment extends Fragment {
     private String getUserId() {
         // Check if user is logged in via Firebase Auth
         if (mAuth.getCurrentUser() != null) {
-            return mAuth.getCurrentUser().getUid();
+            String uid = mAuth.getCurrentUser().getUid();
+            android.util.Log.d("ProfileFragment", "getUserId - Firebase Auth UID: " + uid);
+            return uid;
         }
 
         // Check SharedPreferences for social login user ID
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         String loginMethod = prefs.getString("login_method", "");
+        android.util.Log.d("ProfileFragment", "getUserId - login_method: " + loginMethod);
 
-        // For social logins, we need to construct the user ID
-        // This is a workaround since we don't store the social user ID in SharedPreferences
-        // In a production app, you should store the user ID when logging in
-        if ("google".equals(loginMethod) || "kakao".equals(loginMethod) || "naver".equals(loginMethod)) {
-            // Try to get from user_id if we added it (we should add this during login)
+        // For social logins and email login, get the user_id from SharedPreferences
+        if ("google".equals(loginMethod) || "kakao".equals(loginMethod) || "naver".equals(loginMethod) || "email".equals(loginMethod)) {
             String userId = prefs.getString("user_id", "");
+            android.util.Log.d("ProfileFragment", "getUserId - user_id from prefs: " + userId);
             if (!userId.isEmpty()) {
                 return userId;
             }
         }
 
+        android.util.Log.d("ProfileFragment", "getUserId - returning null");
         return null;
     }
 
@@ -268,7 +285,10 @@ public class ProfileFragment extends Fragment {
     private void loadUserDataFromSharedPreferences() {
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
+        android.util.Log.d("ProfileFragment", "loadUserDataFromSharedPreferences called");
+
         String userName = prefs.getString("user_name", "이름");
+        android.util.Log.d("ProfileFragment", "user_name from prefs: " + userName);
         if (profileName != null) {
             profileName.setText(userName);
         }
@@ -284,8 +304,10 @@ public class ProfileFragment extends Fragment {
         String userEmail = "";
         if (mAuth.getCurrentUser() != null && mAuth.getCurrentUser().getEmail() != null) {
             userEmail = mAuth.getCurrentUser().getEmail();
+            android.util.Log.d("ProfileFragment", "Email from Firebase Auth: " + userEmail);
         } else {
             userEmail = prefs.getString("user_email", "user@example.com");
+            android.util.Log.d("ProfileFragment", "Email from SharedPreferences: " + userEmail);
         }
         if (profileEmail != null) {
             profileEmail.setText(userEmail);
@@ -305,14 +327,20 @@ public class ProfileFragment extends Fragment {
             ratingText.setText("4.8");
         }
 
-        String imageUriString = prefs.getString("profile_image_uri", "");
-        if (!imageUriString.isEmpty() && profileAvatar != null) {
+        // Load profile image using Glide
+        String imageUrlString = prefs.getString("profile_image_url", "");
+        if (!imageUrlString.isEmpty() && profileAvatar != null) {
             try {
-                Uri imageUri = Uri.parse(imageUriString);
-                profileAvatar.setImageURI(imageUri);
+                Glide.with(this)
+                    .load(imageUrlString)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .into(profileAvatar);
             } catch (Exception e) {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
             }
+        } else if (profileAvatar != null) {
+            profileAvatar.setImageResource(R.drawable.circle_logo);
         }
     }
 

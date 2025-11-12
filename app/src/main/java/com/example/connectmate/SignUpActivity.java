@@ -200,8 +200,11 @@ public class SignUpActivity extends AppCompatActivity {
                         String name = fu.getDisplayName();
                         String photo = fu.getPhotoUrl() != null ? fu.getPhotoUrl().toString() : null;
 
-                        Log.d(TAG, "[LOGIN] calling saveUserToRealtimeDatabase uid=" + uid);
+                        Log.d(TAG, "[SIGNUP] calling saveUserToRealtimeDatabase uid=" + uid);
                         saveUserToRealtimeDatabase(uid, mail, name, photo, "email");
+
+                        // Save login state with user ID
+                        saveLoginState("email", uid);
                     }
                     navigateToMain();
                 })

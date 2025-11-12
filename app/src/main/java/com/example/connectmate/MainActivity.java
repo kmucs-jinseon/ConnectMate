@@ -76,7 +76,9 @@ public class MainActivity extends AppCompatActivity {
     // Map UI components
     private EditText searchInput;
     private ImageButton searchSubmitButton;
+    private ImageButton searchClearButton;
     private ChipGroup filterChips;
+    private CardView currentLocationCard;
     private TextView currentLocationText;
     private FloatingActionButton btnCurrentLocation;
     private FloatingActionButton btnMapType;
@@ -200,7 +202,9 @@ public class MainActivity extends AppCompatActivity {
         // Map UI controls
         searchInput = findViewById(R.id.search_input);
         searchSubmitButton = findViewById(R.id.search_submit_button);
+        searchClearButton = findViewById(R.id.search_clear_button);
         filterChips = findViewById(R.id.filter_chips);
+        currentLocationCard = findViewById(R.id.current_location_card);
         currentLocationText = findViewById(R.id.current_location_text);
         btnCurrentLocation = findViewById(R.id.btn_current_location);
         btnMapType = findViewById(R.id.btn_map_type);
@@ -264,6 +268,18 @@ public class MainActivity extends AppCompatActivity {
             mainSearchResultsRecycler.setAdapter(mainSearchAdapter);
         }
 
+        // Search clear button - CLEAR SEARCH
+        if (searchClearButton != null) {
+            searchClearButton.setOnClickListener(v -> {
+                if (searchInput != null) {
+                    searchInput.setText("");
+                    hideMainSearchResults();
+                    searchClearButton.setVisibility(View.GONE);
+                    Log.d(TAG, "Search cleared");
+                }
+            });
+        }
+
         // Search submit button - MANUAL SEARCH
         if (searchSubmitButton != null) {
             searchSubmitButton.setOnClickListener(v -> {
@@ -316,6 +332,11 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     String query = s.toString().trim();
+
+                    // Show/hide clear button based on text
+                    if (searchClearButton != null) {
+                        searchClearButton.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                    }
 
                     // If empty, hide results
                     if (query.isEmpty()) {
@@ -869,11 +890,8 @@ public class MainActivity extends AppCompatActivity {
         Location currentLocation = getCurrentLocationFromMap();
         if (currentLocation != null) {
             reverseGeocode(currentLocation.getLatitude(), currentLocation.getLongitude());
-        } else {
-            if (currentLocationText != null) {
-                currentLocationText.setText("위치를 찾는 중...");
-            }
         }
+        // Don't show "Getting location..." - card stays hidden until we have actual location
     }
 
     /**
@@ -892,11 +910,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 Log.e(TAG, "Reverse geocoding failed", e);
-                runOnUiThread(() -> {
-                    if (currentLocationText != null) {
-                        currentLocationText.setText("현재 위치");
-                    }
-                });
+                // Keep card hidden on failure
             }
 
             @Override
@@ -932,6 +946,9 @@ public class MainActivity extends AppCompatActivity {
                             runOnUiThread(() -> {
                                 if (currentLocationText != null) {
                                     currentLocationText.setText(finalAddress);
+                                }
+                                if (currentLocationCard != null) {
+                                    currentLocationCard.setVisibility(View.VISIBLE);
                                 }
                             });
                         }

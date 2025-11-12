@@ -77,6 +77,17 @@
                     android:textSize="16sp" />
 
                 <ImageButton
+                    android:id="@+id/search_clear_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/close"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    app:tint="@color/gray_600" />
+
+                <ImageButton
                     android:id="@+id/search_submit_button"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
@@ -99,7 +110,7 @@
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/white"
-            android:visibility="visible">
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -123,7 +134,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Getting location..."
+                    android:text=""
                     android:textColor="@color/gray_700"
                     android:textSize="13sp"
                     android:maxLines="1"

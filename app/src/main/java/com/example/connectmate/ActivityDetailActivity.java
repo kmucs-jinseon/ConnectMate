@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -24,6 +25,10 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class ActivityDetailActivity extends AppCompatActivity {
 
@@ -312,21 +317,17 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Get current user info
+        // Get current user ID
         String userId = "";
-        String userName = "Guest";
 
         // Try Firebase Auth
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
             userId = firebaseUser.getUid();
-            userName = (firebaseUser.getDisplayName() != null) ?
-                firebaseUser.getDisplayName() : firebaseUser.getEmail();
          } else {
             // Try SharedPreferences for social login
             SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
             userId = prefs.getString("user_id", "");
-            userName = prefs.getString("user_name", "Guest");
         }
 
         if (userId.isEmpty()) {
@@ -334,18 +335,60 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // Create or get chat room using FirebaseChatManager
         final String finalUserId = userId;
-        final String finalUserName = userName;
 
-        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
-        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        // Fetch user's display name from Firebase Realtime Database (profile settings)
+        FirebaseDatabase.getInstance().getReference().child("users").child(finalUserId)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String displayName = "Guest";
+                    if (snapshot.exists()) {
+                        displayName = snapshot.child("displayName").getValue(String.class);
+                        if (displayName == null || displayName.isEmpty()) {
+                            displayName = snapshot.child("email").getValue(String.class);
+                        }
+                        if (displayName == null) {
+                            displayName = "Guest";
+                        }
+                    }
 
-        chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                    final String finalUserName = displayName;
+
+                    FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+                    FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+
+        // Check if user is already a participant
+        activityManager.isUserParticipant(activity.getId(), finalUserId, new FirebaseActivityManager.OnCompleteListener<Boolean>() {
             @Override
-            public void onSuccess(ChatRoom chatRoom) {
-                // First, add user as participant to the activity
-                activityManager.addParticipant(activity.getId(), finalUserId, finalUserName, new FirebaseActivityManager.OnCompleteListener<Void>() {
+            public void onSuccess(Boolean isParticipant) {
+                if (isParticipant) {
+                    // User is already a participant, just navigate to chat
+                    Log.d(TAG, "User is already a participant, navigating to chat");
+                    chatManager.getChatRoomByActivityId(activity.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                        @Override
+                        public void onSuccess(ChatRoom chatRoom) {
+                            if (chatRoom != null) {
+                                navigateToChatRoom(chatRoom);
+                            } else {
+                                Toast.makeText(ActivityDetailActivity.this, "이미 참여 중인 활동입니다", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ActivityDetailActivity.this, "이미 참여 중인 활동입니다", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    return;
+                }
+
+                // User is not a participant, proceed with joining
+                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                    @Override
+                    public void onSuccess(ChatRoom chatRoom) {
+                        // First, add user as participant to the activity
+                        activityManager.addParticipant(activity.getId(), finalUserId, finalUserName, new FirebaseActivityManager.OnCompleteListener<Void>() {
                     @Override
                     public void onSuccess(Void result) {
                         // Then add user as member to chat room
@@ -385,6 +428,22 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 Toast.makeText(ActivityDetailActivity.this, "채팅방 생성 실패", Toast.LENGTH_SHORT).show();
             }
         });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to check participant status", e);
+                Toast.makeText(ActivityDetailActivity.this, "참여 확인 실패", Toast.LENGTH_SHORT).show();
+            }
+        });
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Failed to fetch user display name", error.toException());
+                    Toast.makeText(ActivityDetailActivity.this, "사용자 정보 로드 실패", Toast.LENGTH_SHORT).show();
+                }
+            });
     }
 
     private void navigateToChatRoom(ChatRoom chatRoom) {

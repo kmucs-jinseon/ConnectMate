@@ -61,6 +61,8 @@ public class CreateActivityActivity extends AppCompatActivity {
     private String locationAddress;
     private double locationLatitude;
     private double locationLongitude;
+    private boolean suppressLocationTextWatcher = false;
+    private boolean hasLinkedLocationCoordinates = false;
 
     // Location search components
     private CardView locationSearchResultsCard;
@@ -73,6 +75,10 @@ public class CreateActivityActivity extends AppCompatActivity {
     private Runnable searchRunnable;
     private static final long SEARCH_DELAY_MS = 800;
 
+    // Edit mode variables
+    private boolean isEditMode = false;
+    private Activity editingActivity = null;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,10 +86,83 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         initViews();
         setupLocationInput(); // Setup listener before handling intent
-        handleLocationIntent();
+        handleEditModeOrLocation(); // Check for edit mode or location data
         setupCategoryDropdown();
         setupDateTimePickers();
         setupButtons();
+    }
+
+    /**
+     * Handle edit mode or location intent data
+     */
+    private void handleEditModeOrLocation() {
+        if (getIntent() != null) {
+            // Check if in edit mode
+            isEditMode = getIntent().getBooleanExtra("edit_mode", false);
+            editingActivity = (Activity) getIntent().getSerializableExtra("activity");
+
+            if (isEditMode && editingActivity != null) {
+                // Pre-populate fields with existing activity data
+                populateFieldsForEdit();
+            } else {
+                // Handle location data from MapFragment
+                handleLocationIntent();
+            }
+        }
+    }
+
+    /**
+     * Populate fields when editing an existing activity
+     */
+    private void populateFieldsForEdit() {
+        if (editingActivity == null) return;
+
+        // Set title
+        if (titleInput != null && editingActivity.getTitle() != null) {
+            titleInput.setText(editingActivity.getTitle());
+        }
+
+        // Set description
+        if (descriptionInput != null && editingActivity.getDescription() != null) {
+            descriptionInput.setText(editingActivity.getDescription());
+        }
+
+        // Set date
+        if (dateInput != null && editingActivity.getDate() != null) {
+            dateInput.setText(editingActivity.getDate());
+        }
+
+        // Set time
+        if (timeInput != null && editingActivity.getTime() != null) {
+            timeInput.setText(editingActivity.getTime());
+        }
+
+        // Set location
+        if (locationInput != null && editingActivity.getLocation() != null) {
+            locationName = editingActivity.getLocation();
+            locationLatitude = editingActivity.getLatitude();
+            locationLongitude = editingActivity.getLongitude();
+            hasLinkedLocationCoordinates = locationLatitude != 0.0 || locationLongitude != 0.0;
+            setLocationInputText(locationName);
+        }
+
+        // Set participant limit
+        if (participantLimitInput != null && editingActivity.getMaxParticipants() > 0) {
+            participantLimitInput.setText(String.valueOf(editingActivity.getMaxParticipants()));
+        }
+
+        // Set hashtags
+        if (hashtagsInput != null && editingActivity.getHashtags() != null) {
+            hashtagsInput.setText(editingActivity.getHashtags());
+        }
+
+        // Set category (will be selected after chips are created)
+        selectedCategory = editingActivity.getCategory();
+
+        // Update button text for edit mode
+        if (createButton != null) {
+            createButton.setText("Update Activity");
+        }
     }
 
     /**
@@ -105,9 +184,10 @@ public class CreateActivityActivity extends AppCompatActivity {
                     : place.getAddressName();
                 locationLatitude = place.getLatitude();
                 locationLongitude = place.getLongitude();
+                hasLinkedLocationCoordinates = true;
 
                 // Set the location text
-                locationInput.setText(locationName);
+                setLocationInputText(locationName);
 
                 // Hide results
                 hideLocationSearchResults();
@@ -137,6 +217,13 @@ public class CreateActivityActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
+                if (suppressLocationTextWatcher) {
+                    suppressLocationTextWatcher = false;
+                    return;
+                }
+
+                clearStoredLocationCoordinates();
+
                 // Cancel previous search request
                 if (searchRunnable != null) {
                     searchHandler.removeCallbacks(searchRunnable);
@@ -188,13 +275,44 @@ public class CreateActivityActivity extends AppCompatActivity {
             // If location data exists, populate the location field
             if (locationName != null && !locationName.isEmpty()) {
                 if (locationInput != null) {
-                    locationInput.setText(locationName);
+                    hasLinkedLocationCoordinates = locationLatitude != 0.0 || locationLongitude != 0.0;
+                    setLocationInputText(locationName);
                     // Keep it editable in case user wants to change it
                 }
                 Log.d(TAG, "Location received: " + locationName + " (" + locationLatitude + ", " + locationLongitude + ")");
                 Toast.makeText(this, "📍 " + locationName + " 선택됨", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    /**
+     * Sets the location input text without triggering side effects like clearing coordinates.
+     */
+    private void setLocationInputText(String text) {
+        if (locationInput == null) {
+            return;
+        }
+        suppressLocationTextWatcher = true;
+        locationInput.setText(text);
+        Editable currentText = locationInput.getText();
+        if (currentText != null) {
+            locationInput.setSelection(currentText.length());
+        }
+    }
+
+    /**
+     * Clears stored coordinates when the user edits the location text manually.
+     */
+    private void clearStoredLocationCoordinates() {
+        if (!hasLinkedLocationCoordinates) {
+            return;
+        }
+        hasLinkedLocationCoordinates = false;
+        locationLatitude = 0.0;
+        locationLongitude = 0.0;
+        locationAddress = null;
+        locationName = null;
+        Log.d(TAG, "Location input edited manually - cleared stored coordinates.");
     }
 
     private void initViews() {
@@ -263,6 +381,20 @@ public class CreateActivityActivity extends AppCompatActivity {
                 selectedCategory = "";
             }
         });
+
+        // If in edit mode, select the appropriate category chip
+        if (isEditMode && selectedCategory != null && !selectedCategory.isEmpty()) {
+            for (int i = 0; i < categoryChipGroup.getChildCount(); i++) {
+                View view = categoryChipGroup.getChildAt(i);
+                if (view instanceof Chip) {
+                    Chip chip = (Chip) view;
+                    if (chip.getText().toString().equals(selectedCategory)) {
+                        chip.setChecked(true);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private void setupDateTimePickers() {
@@ -376,56 +508,115 @@ public class CreateActivityActivity extends AppCompatActivity {
                     Log.d(TAG, "Social login user: " + creatorName);
                 }
 
-                Log.d(TAG, "Creating activity with title: " + title);
-
-                // Create Activity object
-                Activity activity = new Activity(
-                    title,
-                    description,
-                    category,
-                    date,
-                    time,
-                    location,
-                    maxParticipants,
-                    visibility,
-                    hashtags,
-                    creatorId,
-                    creatorName
-                );
-
-                // Set location coordinates if they were provided from map search
-                if (locationLatitude != 0.0 && locationLongitude != 0.0) {
-                    activity.setLatitude(locationLatitude);
-                    activity.setLongitude(locationLongitude);
-                    Log.d(TAG, "Activity location set to: " + locationLatitude + ", " + locationLongitude);
-                }
-
-                // Show progress feedback
-                Toast.makeText(this, "활동 생성 중...", Toast.LENGTH_SHORT).show();
-
-                // Save activity using FirebaseActivityManager
-                Log.d(TAG, "Calling Firebase to save activity");
+                Activity activity;
                 FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
-                activityManager.saveActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
-                    @Override
-                    public void onSuccess(Activity result) {
-                        runOnUiThread(() -> {
-                            Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
-                            Log.d(TAG, "Activity created successfully: " + result.getTitle());
-                            // Close activity and return to previous screen
-                            finish();
-                        });
+
+                if (isEditMode && editingActivity != null) {
+                    // UPDATE MODE - preserve existing activity data
+                    Log.d(TAG, "Updating activity with ID: " + editingActivity.getId());
+
+                    // Update existing activity with new values
+                    activity = editingActivity;
+                    activity.setTitle(title);
+                    activity.setDescription(description);
+                    activity.setCategory(category);
+                    activity.setDate(date);
+                    activity.setTime(time);
+                    activity.setLocation(location);
+                    activity.setMaxParticipants(maxParticipants);
+                    activity.setVisibility(visibility);
+                    activity.setHashtags(hashtags);
+
+                    // Update location coordinates if they were provided from map search
+                    if (hasLinkedLocationCoordinates) {
+                        activity.setLatitude(locationLatitude);
+                        activity.setLongitude(locationLongitude);
+                        Log.d(TAG, "Activity location updated to: " + locationLatitude + ", " + locationLongitude);
+                    } else {
+                        activity.setLatitude(0.0);
+                        activity.setLongitude(0.0);
+                        Log.d(TAG, "Activity location coordinates cleared due to manual location edits.");
                     }
 
-                    @Override
-                    public void onError(Exception e) {
-                        runOnUiThread(() -> {
-                            createButton.setEnabled(true);
-                            Toast.makeText(CreateActivityActivity.this, "활동 생성에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                            Log.e(TAG, "Failed to save activity", e);
-                        });
+                    // Show progress feedback
+                    Toast.makeText(this, "활동 수정 중...", Toast.LENGTH_SHORT).show();
+
+                    // Update activity using FirebaseActivityManager
+                    Log.d(TAG, "Calling Firebase to update activity");
+                    activityManager.updateActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+                        @Override
+                        public void onSuccess(Activity result) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CreateActivityActivity.this, "활동이 수정되었습니다!", Toast.LENGTH_SHORT).show();
+                                Log.d(TAG, "Activity updated successfully: " + result.getTitle());
+                                // Close activity and return to previous screen
+                                finish();
+                            });
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            runOnUiThread(() -> {
+                                createButton.setEnabled(true);
+                                Toast.makeText(CreateActivityActivity.this, "활동 수정에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Log.e(TAG, "Failed to update activity", e);
+                            });
+                        }
+                    });
+                } else {
+                    // CREATE MODE - create new activity
+                    Log.d(TAG, "Creating activity with title: " + title);
+
+                    // Create Activity object
+                    activity = new Activity(
+                        title,
+                        description,
+                        category,
+                        date,
+                        time,
+                        location,
+                        maxParticipants,
+                        visibility,
+                        hashtags,
+                        creatorId,
+                        creatorName
+                    );
+
+                    // Set location coordinates if they were provided from map search
+                    if (hasLinkedLocationCoordinates) {
+                        activity.setLatitude(locationLatitude);
+                        activity.setLongitude(locationLongitude);
+                        Log.d(TAG, "Activity location set to: " + locationLatitude + ", " + locationLongitude);
+                    } else {
+                        Log.d(TAG, "No map coordinates linked to location text; using default activity coordinates.");
                     }
-                });
+
+                    // Show progress feedback
+                    Toast.makeText(this, "활동 생성 중...", Toast.LENGTH_SHORT).show();
+
+                    // Save activity using FirebaseActivityManager
+                    Log.d(TAG, "Calling Firebase to save activity");
+                    activityManager.saveActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+                        @Override
+                        public void onSuccess(Activity result) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
+                                Log.d(TAG, "Activity created successfully: " + result.getTitle());
+                                // Close activity and return to previous screen
+                                finish();
+                            });
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            runOnUiThread(() -> {
+                                createButton.setEnabled(true);
+                                Toast.makeText(CreateActivityActivity.this, "활동 생성에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Log.e(TAG, "Failed to save activity", e);
+                            });
+                        }
+                    });
+                }
 
             } catch (Exception e) {
                 Log.e(TAG, "Exception in create button click", e);

@@ -101,7 +101,17 @@ public class ActivityListFragment extends Fragment {
         filteredActivities = new ArrayList<>();
 
         // Setup RecyclerView
-        activityAdapter = new ActivityAdapter(filteredActivities, this::onActivityClick);
+        activityAdapter = new ActivityAdapter(filteredActivities, new ActivityAdapter.OnActivityClickListener() {
+            @Override
+            public void onActivityClick(Activity activity) {
+                ActivityListFragment.this.onActivityClick(activity);
+            }
+
+            @Override
+            public void onEditActivity(Activity activity) {
+                ActivityListFragment.this.onEditActivity(activity);
+            }
+        });
         activityRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         activityRecyclerView.setAdapter(activityAdapter);
     }
@@ -296,6 +306,15 @@ public class ActivityListFragment extends Fragment {
     private void onActivityClick(Activity activity) {
         // Open activity detail screen
         Intent intent = new Intent(requireContext(), ActivityDetailActivity.class);
+        intent.putExtra("activity_id", activity.getId());
+        intent.putExtra("activity", activity);
+        startActivity(intent);
+    }
+
+    private void onEditActivity(Activity activity) {
+        // Open edit activity screen
+        Intent intent = new Intent(requireContext(), CreateActivityActivity.class);
+        intent.putExtra("edit_mode", true);
         intent.putExtra("activity_id", activity.getId());
         intent.putExtra("activity", activity);
         startActivity(intent);

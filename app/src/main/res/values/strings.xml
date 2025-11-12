@@ -140,6 +140,9 @@
     <string name="no_activities_yet">No activities yet</string>
     <string name="create_activity_to_get_started">Create an activity to get started</string>
     <string name="participants">Participants</string>
+    <string name="creator">개설자</string>
+    <string name="edit">수정</string>
+    <string name="created_by">개설자:</string>
     <string name="app_info">앱 정보</string>
     <string name="notification">알림</string>
     <string name="last_message">last_message</string>

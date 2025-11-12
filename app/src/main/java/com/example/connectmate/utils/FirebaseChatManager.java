@@ -108,6 +108,40 @@ public class FirebaseChatManager {
     }
 
     /**
+     * Get existing chat room by activity ID (without creating one)
+     */
+    public void getChatRoomByActivityId(String activityId, OnCompleteListener<ChatRoom> listener) {
+        chatRoomsRef.orderByChild("activityId").equalTo(activityId)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        for (DataSnapshot child : snapshot.getChildren()) {
+                            ChatRoom existingRoom = child.getValue(ChatRoom.class);
+                            if (existingRoom != null && listener != null) {
+                                Log.d(TAG, "Found chat room for activity: " + activityId);
+                                listener.onSuccess(existingRoom);
+                                return;
+                            }
+                        }
+                    }
+                    // No chat room found
+                    if (listener != null) {
+                        listener.onSuccess(null);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error finding chat room", error.toException());
+                    if (listener != null) {
+                        listener.onError(error.toException());
+                    }
+                }
+            });
+    }
+
+    /**
      * Save a chat room to Firebase
      */
     public void saveChatRoom(ChatRoom chatRoom, OnCompleteListener<ChatRoom> listener) {

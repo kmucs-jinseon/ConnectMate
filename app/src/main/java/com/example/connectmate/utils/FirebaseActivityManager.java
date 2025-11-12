@@ -470,6 +470,31 @@ public class FirebaseActivityManager {
     }
 
     /**
+     * Check if a user is already a participant
+     */
+    public void isUserParticipant(String activityId, String userId, OnCompleteListener<Boolean> listener) {
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean exists = snapshot.exists();
+                    Log.d(TAG, "User " + userId + " is participant: " + exists);
+                    if (listener != null) {
+                        listener.onSuccess(exists);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error checking participant status", error.toException());
+                    if (listener != null) {
+                        listener.onError(error.toException());
+                    }
+                }
+            });
+    }
+
+    /**
      * Increment/decrement participant count
      */
     private void incrementParticipantCount(String activityId, int delta) {
@@ -486,6 +511,26 @@ public class FirebaseActivityManager {
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {
                     Log.e(TAG, "Error updating participant count", error.toException());
+                }
+            });
+    }
+
+    /**
+     * Listen to participant count changes for a specific activity in realtime
+     */
+    public void listenToParticipantCount(String activityId, ParticipantCountListener listener) {
+        activitiesRef.child(activityId).child("currentParticipants")
+            .addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Integer count = snapshot.getValue(Integer.class);
+                    if (count == null) count = 0;
+                    listener.onCountChanged(count);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    listener.onError(error.toException());
                 }
             });
     }
@@ -525,6 +570,11 @@ public class FirebaseActivityManager {
 
     public interface ParticipantsListener {
         void onParticipantsLoaded(Map<String, String> participants);
+        void onError(Exception e);
+    }
+
+    public interface ParticipantCountListener {
+        void onCountChanged(int count);
         void onError(Exception e);
     }
 }

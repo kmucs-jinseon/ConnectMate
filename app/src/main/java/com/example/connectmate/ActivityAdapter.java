@@ -1,6 +1,7 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,8 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.ChatManager;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import java.util.List;
 
 public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.ActivityViewHolder> {
@@ -22,6 +26,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
 
     public interface OnActivityClickListener {
         void onActivityClick(Activity activity);
+        void onEditActivity(Activity activity);
     }
 
     public ActivityAdapter(List<Activity> activities, OnActivityClickListener listener) {
@@ -53,8 +58,10 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
         private final Chip categoryChip;
         private final TextView activityLocation;
         private final TextView activityTime;
+        private final TextView activityCreator;
         private final TextView activityDescription;
         private final TextView participantsCount;
+        private final MaterialButton btnEditActivity;
         private final MaterialButton btnViewDetails;
 
         public ActivityViewHolder(@NonNull View itemView) {
@@ -63,8 +70,10 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
             categoryChip = itemView.findViewById(R.id.category_chip);
             activityLocation = itemView.findViewById(R.id.activity_location);
             activityTime = itemView.findViewById(R.id.activity_time);
+            activityCreator = itemView.findViewById(R.id.activity_creator);
             activityDescription = itemView.findViewById(R.id.activity_description);
             participantsCount = itemView.findViewById(R.id.participants_count);
+            btnEditActivity = itemView.findViewById(R.id.btn_edit_activity);
             btnViewDetails = itemView.findViewById(R.id.btn_view_details);
         }
 
@@ -81,17 +90,51 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
 
             activityDescription.setText(activity.getDescription() != null ? activity.getDescription() : "");
 
-            // Show participants count from the real source of truth (ChatManager)
-            ChatManager chatManager = ChatManager.getInstance(context);
-            ChatRoom chatRoom = chatManager.getChatRoomByActivityId(activity.getId());
-            int currentParticipants = (chatRoom != null) ? chatRoom.getMemberCount() : 0;
+            // Listen to participant count changes in realtime
+            FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+            activityManager.listenToParticipantCount(activity.getId(),
+                new FirebaseActivityManager.ParticipantCountListener() {
+                    @Override
+                    public void onCountChanged(int count) {
+                        // Update UI on main thread
+                        participantsCount.post(() -> {
+                            if (activity.getMaxParticipants() > 0) {
+                                participantsCount.setText(count + "/" + activity.getMaxParticipants());
+                            } else {
+                                participantsCount.setText(count + "명");
+                            }
+                        });
+                    }
 
-            if (activity.getMaxParticipants() > 0) {
-                participantsCount.setText(currentParticipants + "/" +
-                    activity.getMaxParticipants());
+                    @Override
+                    public void onError(Exception e) {
+                        // Fallback to showing current value from activity model
+                        participantsCount.post(() -> {
+                            int currentCount = activity.getCurrentParticipants();
+                            if (activity.getMaxParticipants() > 0) {
+                                participantsCount.setText(currentCount + "/" + activity.getMaxParticipants());
+                            } else {
+                                participantsCount.setText(currentCount + "명");
+                            }
+                        });
+                    }
+                });
+
+            // Display creator name
+            if (activity.getCreatorName() != null && !activity.getCreatorName().isEmpty()) {
+                activityCreator.setText("개설자: " + activity.getCreatorName());
             } else {
-                participantsCount.setText(currentParticipants + "명");
+                activityCreator.setText("개설자: 알 수 없음");
             }
+
+            // Check if current user is the creator
+            String currentUserId = getCurrentUserId(context);
+            boolean isCreator = currentUserId != null &&
+                activity.getCreatorId() != null &&
+                currentUserId.equals(activity.getCreatorId());
+
+            // Show/hide edit button based on creator status
+            btnEditActivity.setVisibility(isCreator ? View.VISIBLE : View.GONE);
 
             // Set category chip
             if (activity.getCategory() != null) {
@@ -111,6 +154,27 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
                     listener.onActivityClick(activity);
                 }
             });
+
+            btnEditActivity.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEditActivity(activity);
+                }
+            });
+        }
+
+        /**
+         * Get current user ID from Firebase or SharedPreferences
+         */
+        private String getCurrentUserId(Context context) {
+            // Try Firebase Auth first
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                return firebaseUser.getUid();
+            }
+
+            // Fallback to SharedPreferences for social login
+            SharedPreferences prefs = context.getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            return prefs.getString("user_id", null);
         }
 
         private void setCategoryColor(Chip chip, String category) {
