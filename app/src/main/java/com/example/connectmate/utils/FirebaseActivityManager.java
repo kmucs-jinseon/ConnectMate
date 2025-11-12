@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.connectmate.models.Activity;
+import com.example.connectmate.models.ChatRoom;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -76,51 +77,102 @@ public class FirebaseActivityManager {
      */
     public void saveActivity(Activity activity, OnCompleteListener<Activity> listener) {
         if (activity.getId() == null || activity.getId().isEmpty()) {
-            // Generate new ID if not set
             String id = activitiesRef.push().getKey();
             activity.setId(id);
         }
 
-        // Set creator info if not already set
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser != null && activity.getCreatorId() == null) {
             activity.setCreatorId(currentUser.getUid());
-            activity.setCreatorName(currentUser.getDisplayName() != null ?
-                currentUser.getDisplayName() : currentUser.getEmail());
+            String creatorName = currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getEmail();
+            activity.setCreatorName(creatorName);
         }
 
-        // Set timestamp
         if (activity.getCreatedTimestamp() == 0) {
             activity.setCreatedTimestamp(System.currentTimeMillis());
         }
 
-        // Save to /activities/{activityId}
+        // Step 1: Save the main activity data
         activitiesRef.child(activity.getId()).setValue(activity)
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Activity saved: " + activity.getTitle());
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Activity data saved successfully: " + activity.getTitle());
 
-                // Add to user's activity list
-                if (activity.getCreatorId() != null) {
-                    userActivitiesRef.child(activity.getCreatorId())
-                        .child(activity.getId())
-                        .setValue(true);
-                }
-
-                // Initialize creator as first participant
-                addParticipant(activity.getId(), activity.getCreatorId(),
-                    activity.getCreatorName(), null);
-
-                if (listener != null) {
-                    listener.onSuccess(activity);
-                }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Error saving activity", e);
-                if (listener != null) {
-                    listener.onError(e);
-                }
-            });
+                    // Step 2: Automatically join the creator to the activity and create chat room
+                    joinActivityAndCreateChat(activity, listener);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error saving activity data", e);
+                    if (listener != null) {
+                        listener.onError(e);
+                    }
+                });
     }
+
+    private void joinActivityAndCreateChat(Activity activity, OnCompleteListener<Activity> finalListener) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
+            if (finalListener != null) finalListener.onError(new Exception("User not authenticated."));
+            return;
+        }
+
+        String userId = currentUser.getUid();
+        String userName = currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getEmail();
+
+        // Step 2a: Add creator as a participant
+        addParticipant(activity.getId(), userId, userName, new OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d(TAG, "Creator successfully added as participant.");
+
+                // Step 2b: Create the chat room and add the creator as a member
+                FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                    @Override
+                    public void onSuccess(ChatRoom chatRoom) {
+                        Log.d(TAG, "Chat room created or retrieved: " + chatRoom.getId());
+
+                        // Step 2c: Add creator to the chat room members
+                        chatManager.addMemberToChatRoom(chatRoom.getId(), userId, userName, new FirebaseChatManager.OnCompleteListener<Void>() {
+                            @Override
+                            public void onSuccess(Void memberResult) {
+                                Log.d(TAG, "Creator added to chat room members.");
+                                // All steps successful
+                                if (finalListener != null) {
+                                    finalListener.onSuccess(activity);
+                                }
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "Failed to add creator to chat room members", e);
+                                if (finalListener != null) {
+                                    finalListener.onError(e);
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Failed to create or get chat room", e);
+                        if (finalListener != null) {
+                            finalListener.onError(e);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to add creator as participant", e);
+                if (finalListener != null) {
+                    finalListener.onError(e);
+                }
+            }
+        });
+    }
+
+    // ... (The rest of the FirebaseActivityManager methods remain unchanged) ...
 
     /**
      * Get all activities with real-time updates
@@ -272,22 +324,60 @@ public class FirebaseActivityManager {
     }
 
     /**
-     * Delete an activity
+     * Delete an activity and its associated chat room.
      */
-    public void deleteActivity(String id, OnCompleteListener<Void> listener) {
-        activitiesRef.child(id).removeValue()
-            .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Activity deleted: " + id);
-                if (listener != null) {
-                    listener.onSuccess(null);
+    public void deleteActivity(String activityId, OnCompleteListener<Void> listener) {
+        // Define the action to delete the activity node.
+        // This will be called after attempting to delete the chat room.
+        final Runnable deleteActivityAction = () -> {
+            activitiesRef.child(activityId).removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Activity deleted: " + activityId);
+                    if (listener != null) {
+                        listener.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error deleting activity", e);
+                    if (listener != null) {
+                        listener.onError(e);
+                    }
+                });
+        };
+
+        // First, try to find and delete the chat room associated with the activity.
+        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        chatManager.getChatRoomByActivityId(activityId, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom chatRoom) {
+                if (chatRoom != null) {
+                    // Chat room found, delete it.
+                    chatManager.deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d(TAG, "Associated chat room deleted successfully: " + chatRoom.getId());
+                            deleteActivityAction.run();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Failed to delete associated chat room, but proceeding with activity deletion.", e);
+                            deleteActivityAction.run();
+                        }
+                    });
+                } else {
+                    // No chat room to delete.
+                    Log.d(TAG, "No associated chat room found for activity: " + activityId);
+                    deleteActivityAction.run();
                 }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Error deleting activity", e);
-                if (listener != null) {
-                    listener.onError(e);
-                }
-            });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to check for associated chat room, but proceeding with activity deletion.", e);
+                deleteActivityAction.run();
+            }
+        });
     }
 
     /**
@@ -421,26 +511,130 @@ public class FirebaseActivityManager {
      * Remove a participant from an activity
      */
     public void removeParticipant(String activityId, String userId, OnCompleteListener<Void> listener) {
-        activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
-            .removeValue()
-            .addOnSuccessListener(aVoid -> {
-                // Update participant count
-                incrementParticipantCount(activityId, -1);
+        DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference activitiesRef = rootRef.child("activities");
+        DatabaseReference chatRoomsRef = rootRef.child("chatRooms");
 
-                // Remove from user's activities
-                userActivitiesRef.child(userId).child(activityId).removeValue();
+        Log.d(TAG, "🔹 removeParticipant() called for user: " + userId + " in activity: " + activityId);
 
-                Log.d(TAG, "Participant removed from activity: " + activityId);
-                if (listener != null) {
-                    listener.onSuccess(null);
-                }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Error removing participant", e);
-                if (listener != null) {
-                    listener.onError(e);
-                }
-            });
+        // 1️⃣ 활동 참가자 제거
+        activitiesRef.child(activityId).child("participants").child(userId)
+                .removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "✅ 참가자 제거 완료 (activities)");
+
+                    // 2️⃣ userActivities에서도 제거
+                    rootRef.child("userActivities").child(userId).child(activityId).removeValue();
+
+                    // 3️⃣ 채팅방 멤버 제거
+                    chatRoomsRef.orderByChild("activityId").equalTo(activityId)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                    if (!snapshot.exists()) {
+                                        Log.w(TAG, "⚠️ No chat room found for activityId: " + activityId);
+                                        if (listener != null) listener.onSuccess(null);
+                                        return;
+                                    }
+
+                                    for (DataSnapshot chatRoomSnapshot : snapshot.getChildren()) {
+                                        String chatRoomId = chatRoomSnapshot.getKey();
+                                        if (chatRoomId == null) continue;
+
+                                        DatabaseReference membersRef = chatRoomsRef.child(chatRoomId).child("members");
+                                        membersRef.child(userId).removeValue().addOnSuccessListener(v -> {
+                                            Log.d(TAG, "✅ " + userId + " removed from chat room members");
+
+                                            // 4️⃣ 남은 멤버 수 확인 → 0명이면 방 삭제
+                                            membersRef.get().addOnSuccessListener(membersSnapshot -> {
+                                                long remaining = membersSnapshot.getChildrenCount();
+                                                Log.d(TAG, "👥 Remaining members: " + remaining);
+
+                                                if (remaining == 0) {
+                                                    // 채팅방 삭제
+                                                    chatRoomsRef.child(chatRoomId).removeValue()
+                                                            .addOnSuccessListener(del -> {
+                                                                Log.d(TAG, "🔥 Chat room deleted (no members left): " + chatRoomId);
+
+                                                                // 관련 메시지 노드도 삭제
+                                                                rootRef.child("messages").child(chatRoomId).removeValue()
+                                                                        .addOnSuccessListener(msgDel -> Log.d(TAG, "🧹 Messages deleted for " + chatRoomId))
+                                                                        .addOnFailureListener(e -> Log.e(TAG, "❌ Message delete failed", e));
+                                                            })
+                                                            .addOnFailureListener(e -> Log.e(TAG, "❌ Chat room delete failed", e));
+                                                } else {
+                                                    Log.d(TAG, "⏸ Chat room kept (members remain).");
+                                                }
+                                            });
+                                        });
+                                    }
+
+                                    // 5️⃣ 참가자 수 감소
+                                    incrementParticipantCount(activityId, -1);
+
+                                    if (listener != null) listener.onSuccess(null);
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+                                    Log.e(TAG, "❌ Failed to access chat room for removal", error.toException());
+                                    if (listener != null) listener.onError(error.toException());
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Failed to remove participant", e);
+                    if (listener != null) listener.onError(e);
+                });
+    }
+
+
+    /**
+     * User leaves the activity (chat room)
+     * Removes user from participants, and deletes the activity if no one remains.
+     */
+    public void leaveActivity(String activityId, String userId, OnCompleteListener<Void> listener) {
+        DatabaseReference participantsRef = activitiesRef.child(activityId).child(PATH_PARTICIPANTS);
+
+        participantsRef.child(userId).removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    // Update participant count
+                    incrementParticipantCount(activityId, -1);
+
+                    // Remove from user's activities
+                    userActivitiesRef.child(userId).child(activityId).removeValue();
+
+                    // Check if there are any participants left
+                    participantsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (!snapshot.exists() || snapshot.getChildrenCount() == 0) {
+                                // No participants left -> delete the entire activity
+                                activitiesRef.child(activityId).removeValue()
+                                        .addOnSuccessListener(unused -> {
+                                            Log.d(TAG, "Activity deleted because no participants remain: " + activityId);
+                                            if (listener != null) listener.onSuccess(null);
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e(TAG, "Error deleting empty activity", e);
+                                            if (listener != null) listener.onError(e);
+                                        });
+                            } else {
+                                if (listener != null) listener.onSuccess(null);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Log.e(TAG, "Error checking remaining participants", error.toException());
+                            if (listener != null) listener.onError(error.toException());
+                        }
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error leaving activity", e);
+                    if (listener != null) listener.onError(e);
+                });
     }
 
     /**
@@ -493,6 +687,25 @@ public class FirebaseActivityManager {
                 }
             });
     }
+
+    public void deleteIfNoParticipants(String activityId) {
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.hasChildren()) {
+                            activitiesRef.child(activityId).removeValue();
+                            Log.d(TAG, "Empty activity deleted: " + activityId);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error checking participants", error.toException());
+                    }
+                });
+    }
+
 
     /**
      * Increment/decrement participant count

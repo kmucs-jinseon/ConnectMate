@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.connectmate.models.ChatMessage;
 import com.example.connectmate.models.ChatRoom;
+import com.example.connectmate.utils.FirebaseActivityManager;
 import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -127,14 +128,23 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         // Show confirmation dialog
         new AlertDialog.Builder(this)
-            .setTitle("채팅방 나가기")
-            .setMessage("정말 채팅방을 나가시겠습니까?")
-            .setPositiveButton("나가기", (dialog, which) -> {
-                // Note: Implement remove member from Firebase when needed
-                // For now, just close the activity
-                Toast.makeText(this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
-                finish();
-            })
+                .setTitle("채팅방 나가기")
+                .setMessage("정말 채팅방을 나가시겠습니까?")
+                .setPositiveButton("나가기", (dialog, which) -> {
+
+                    // ✅ FirebaseActivityManager 통해 멤버 제거
+                    FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ChatRoomActivity.this, "채팅방 나가기 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
             .setNegativeButton("취소", null)
             .show();
     }
