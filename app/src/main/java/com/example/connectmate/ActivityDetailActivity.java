@@ -322,7 +322,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
             userId = firebaseUser.getUid();
             userName = (firebaseUser.getDisplayName() != null) ?
                 firebaseUser.getDisplayName() : firebaseUser.getEmail();
-        } else {
+         } else {
             // Try SharedPreferences for social login
             SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
             userId = prefs.getString("user_id", "");
@@ -338,29 +338,43 @@ public class ActivityDetailActivity extends AppCompatActivity {
         final String finalUserId = userId;
         final String finalUserName = userName;
 
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+
         chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
             @Override
             public void onSuccess(ChatRoom chatRoom) {
-                // Add user as member
-                chatManager.addMemberToChatRoom(chatRoom.getId(), finalUserId, finalUserName, new FirebaseChatManager.OnCompleteListener<Void>() {
+                // First, add user as participant to the activity
+                activityManager.addParticipant(activity.getId(), finalUserId, finalUserName, new FirebaseActivityManager.OnCompleteListener<Void>() {
                     @Override
                     public void onSuccess(Void result) {
-                        // Send join notification message
-                        String joinMessage = finalUserName + "님이 입장하셨습니다";
-                        ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
-                        chatManager.sendMessage(systemMessage, null);
+                        // Then add user as member to chat room
+                        chatManager.addMemberToChatRoom(chatRoom.getId(), finalUserId, finalUserName, new FirebaseChatManager.OnCompleteListener<Void>() {
+                            @Override
+                            public void onSuccess(Void memberResult) {
+                                // Send join notification message
+                                String joinMessage = finalUserName + "님이 입장하셨습니다";
+                                ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
+                                chatManager.sendMessage(systemMessage, null);
 
-                        Log.d(TAG, "User joined activity chat: " + finalUserName);
+                                Log.d(TAG, "User joined activity and chat: " + finalUserName);
 
-                        // Navigate to chat room
-                        navigateToChatRoom(chatRoom);
+                                // Navigate to chat room
+                                navigateToChatRoom(chatRoom);
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "Failed to add member to chat room", e);
+                                navigateToChatRoom(chatRoom);
+                            }
+                        });
                     }
 
                     @Override
                     public void onError(Exception e) {
-                        Log.e(TAG, "Failed to add member to chat room", e);
-                        navigateToChatRoom(chatRoom);
+                        Log.e(TAG, "Failed to add participant to activity", e);
+                        Toast.makeText(ActivityDetailActivity.this, "참여 실패", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

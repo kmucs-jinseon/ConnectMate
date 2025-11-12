@@ -45,11 +45,14 @@ public class MapFragment extends Fragment {
     private MapView mapView;
     private KakaoMap kakaoMap;
     private ProgressBar loadingIndicator;
+    private View emulatorWarning;
 
     // Data
     private List<ActivityMarker> activityMarkers;
     private Map<String, Label> labelMap; // Map activity ID to label
+    private Label currentLocationLabel; // Label for current location marker
     private LocationManager locationManager;
+    private boolean isEmulator = false;
 
     @Nullable
     @Override
@@ -60,6 +63,26 @@ public class MapFragment extends Fragment {
         // Initialize views
         mapView = view.findViewById(R.id.map_view);
         loadingIndicator = view.findViewById(R.id.loading_indicator);
+        emulatorWarning = view.findViewById(R.id.emulator_warning);
+
+        // Detect if running on emulator
+        isEmulator = isRunningOnEmulator();
+
+        if (isEmulator) {
+            // Show emulator warning and hide map
+            Log.w(TAG, "Running on emulator - Kakao Maps may not work properly");
+            if (emulatorWarning != null) {
+                emulatorWarning.setVisibility(View.VISIBLE);
+            }
+            if (mapView != null) {
+                mapView.setVisibility(View.GONE);
+            }
+            // Still initialize data for when switching to real device
+            activityMarkers = new ArrayList<>();
+            labelMap = new HashMap<>();
+            locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            return view;
+        }
 
         // Ensure MapView is visible from the start
         if (mapView != null) {
@@ -309,6 +332,56 @@ public class MapFragment extends Fragment {
     }
 
     /**
+     * Add or update current location marker on the map
+     */
+    private void addCurrentLocationMarker(double latitude, double longitude) {
+        if (kakaoMap == null) {
+            Log.e(TAG, "KakaoMap is null, cannot add current location marker");
+            return;
+        }
+
+        try {
+            // Remove existing current location marker if present
+            if (currentLocationLabel != null && kakaoMap.getLabelManager() != null) {
+                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+                if (labelLayer != null) {
+                    labelLayer.remove(currentLocationLabel);
+                }
+            }
+
+            // Add new current location marker
+            if (kakaoMap.getLabelManager() != null) {
+                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+
+                if (labelLayer != null) {
+                    // Create marker style for current location (using a different drawable if available)
+                    // For now, we'll use the same map pin, but you could create a custom icon
+                    LabelStyles styles = kakaoMap.getLabelManager()
+                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
+
+                    // Create label options
+                    LabelOptions options = LabelOptions.from(
+                        "current_location",
+                        LatLng.from(latitude, longitude)
+                    ).setStyles(styles);
+
+                    // Add label to map
+                    currentLocationLabel = labelLayer.addLabel(options);
+
+                    Log.d(TAG, "Current location marker added at (" + latitude + ", " + longitude + ")");
+
+                    // Show toast to user
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), "📍 현재 위치", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to add current location marker", e);
+        }
+    }
+
+    /**
      * Move camera to current location or default location
      */
     private void moveToCurrentLocation() {
@@ -342,6 +415,10 @@ public class MapFragment extends Fragment {
                 LatLng currentLocation = LatLng.from(latitude, longitude);
 
                 kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(currentLocation, 15));
+
+                // Add current location marker
+                addCurrentLocationMarker(latitude, longitude);
+
                 Log.d(TAG, "Camera moved to current location: " + latitude + ", " + longitude);
             } else {
                 Log.d(TAG, "Location is null, using default location");
@@ -537,6 +614,29 @@ public class MapFragment extends Fragment {
         Log.d(TAG, "Route display requested - full implementation pending");
     }
 
+    /**
+     * Detect if running on an Android emulator
+     * This is important because Kakao Maps may not work properly on emulators
+     */
+    private boolean isRunningOnEmulator() {
+        return (android.os.Build.BRAND.startsWith("generic") && android.os.Build.DEVICE.startsWith("generic"))
+            || android.os.Build.FINGERPRINT.startsWith("generic")
+            || android.os.Build.FINGERPRINT.startsWith("unknown")
+            || android.os.Build.HARDWARE.contains("goldfish")
+            || android.os.Build.HARDWARE.contains("ranchu")
+            || android.os.Build.MODEL.contains("google_sdk")
+            || android.os.Build.MODEL.contains("Emulator")
+            || android.os.Build.MODEL.contains("Android SDK built for x86")
+            || android.os.Build.MANUFACTURER.contains("Genymotion")
+            || android.os.Build.PRODUCT.contains("sdk_google")
+            || android.os.Build.PRODUCT.contains("google_sdk")
+            || android.os.Build.PRODUCT.contains("sdk")
+            || android.os.Build.PRODUCT.contains("sdk_x86")
+            || android.os.Build.PRODUCT.contains("vbox86p")
+            || android.os.Build.PRODUCT.contains("emulator")
+            || android.os.Build.PRODUCT.contains("simulator");
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -576,6 +676,7 @@ public class MapFragment extends Fragment {
         if (activityMarkers != null) {
             activityMarkers.clear();
         }
+        currentLocationLabel = null;
 
         Log.d(TAG, "MapFragment view destroyed");
     }

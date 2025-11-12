@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Kakao Map View - fills entire fragment -->
+    <!-- Kakao Map View -->
     <com.kakao.vectormap.MapView
         android:id="@+id/map_view"
         android:layout_width="match_parent"
@@ -17,6 +17,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Emulator Warning -->
+    <TextView
+        android:id="@+id/emulator_warning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="16dp"
+        android:text="지도는 실제 기기에서만 사용할 수 있습니다.\n\nKakao Maps requires a physical device to work properly."
+        android:textSize="14sp"
+        android:textColor="@android:color/black"
+        android:background="@drawable/rounded_background"
+        android:padding="16dp"
+        android:gravity="center"
         android:visibility="gone" />
 
     <!-- Search Bar Container -->

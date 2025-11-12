@@ -292,13 +292,13 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     /**
-     * Listen for chat room updates (member count, etc.)
+     * Listen for chat room updates (member count, etc.) in real-time
      */
     private void listenForChatRoomUpdates() {
         if (chatRoom == null) return;
 
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-        chatManager.getChatRoomById(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+        chatManager.listenToChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
             @Override
             public void onSuccess(ChatRoom updatedRoom) {
                 chatRoom = updatedRoom;
@@ -306,13 +306,14 @@ public class ChatRoomActivity extends AppCompatActivity {
                     if (getSupportActionBar() != null) {
                         int memberCount = chatRoom.getMemberCount();
                         getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
+                        Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
                 });
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Error updating chat room", e);
+                Log.e(TAG, "Error listening to chat room updates", e);
             }
         });
     }

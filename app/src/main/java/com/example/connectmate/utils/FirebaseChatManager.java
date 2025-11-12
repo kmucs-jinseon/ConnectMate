@@ -238,6 +238,28 @@ public class FirebaseChatManager {
     }
 
     /**
+     * Listen to a specific chat room for real-time updates (member count, etc.)
+     */
+    public void listenToChatRoom(String chatRoomId, OnCompleteListener<ChatRoom> listener) {
+        chatRoomsRef.child(chatRoomId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                ChatRoom chatRoom = snapshot.getValue(ChatRoom.class);
+                if (chatRoom != null && listener != null) {
+                    listener.onSuccess(chatRoom);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                if (listener != null) {
+                    listener.onError(error.toException());
+                }
+            }
+        });
+    }
+
+    /**
      * Add member to chat room
      */
     public void addMemberToChatRoom(String chatRoomId, String memberId, String memberName,
