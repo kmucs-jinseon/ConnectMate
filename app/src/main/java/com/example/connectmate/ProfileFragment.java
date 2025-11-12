@@ -39,6 +39,8 @@ public class ProfileFragment extends Fragment {
 
     private FirebaseAuth mAuth;
     private DatabaseReference databaseRef;
+    private DatabaseReference userRef;
+    private ValueEventListener userListener;
 
     // UI elements - Profile Card
     private ImageButton moreButton;
@@ -175,6 +177,7 @@ public class ProfileFragment extends Fragment {
         android.util.Log.d("ProfileFragment", "loadUserData - userId: " + userId);
 
         if (userId == null) {
+            clearUserListener();
             // Fallback to SharedPreferences if no user ID found
             android.util.Log.d("ProfileFragment", "No userId found, loading from SharedPreferences");
             loadUserDataFromSharedPreferences();
@@ -183,36 +186,36 @@ public class ProfileFragment extends Fragment {
 
         // Load user data from Realtime Database
         android.util.Log.d("ProfileFragment", "Loading user data from Firebase for userId: " + userId);
-        databaseRef.child("users").child(userId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        android.util.Log.d("ProfileFragment", "Firebase snapshot exists: " + snapshot.exists());
-                        if (!snapshot.exists()) {
-                            android.util.Log.d("ProfileFragment", "Snapshot doesn't exist, falling back to SharedPreferences");
-                            loadUserDataFromSharedPreferences();
-                            return;
-                        }
+        clearUserListener();
+        userRef = databaseRef.child("users").child(userId);
+        userListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                android.util.Log.d("ProfileFragment", "Firebase snapshot exists: " + snapshot.exists());
+                if (!snapshot.exists()) {
+                    android.util.Log.d("ProfileFragment", "Snapshot doesn't exist, falling back to SharedPreferences");
+                    loadUserDataFromSharedPreferences();
+                    return;
+                }
 
-                        User u = snapshot.getValue(User.class);
-                        android.util.Log.d("ProfileFragment", "User object from Firebase: " + (u != null ? "not null" : "null"));
-                        if (u != null) {
-                            android.util.Log.d("ProfileFragment", "User email from Firebase: " + u.email);
-                        }
-                        if (u == null) {
-                            loadUserDataFromSharedPreferences();
-                            return;
-                        }
+                User u = snapshot.getValue(User.class);
+                android.util.Log.d("ProfileFragment", "User object from Firebase: " + (u != null ? "not null" : "null"));
+                if (u != null) {
+                    android.util.Log.d("ProfileFragment", "User email from Firebase: " + u.email);
+                    bindUserToUi(u);
+                } else {
+                    loadUserDataFromSharedPreferences();
+                }
+            }
 
-                        bindUserToUi(u);
-                    }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                android.util.Log.e("ProfileFragment", "Firebase error: " + error.getMessage());
+                loadUserDataFromSharedPreferences();
+            }
+        };
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-                        android.util.Log.e("ProfileFragment", "Firebase error: " + error.getMessage());
-                        loadUserDataFromSharedPreferences();
-                    }
-                });
+        userRef.addValueEventListener(userListener);
     }
 
     private void bindUserToUi(User u){
@@ -349,6 +352,20 @@ public class ProfileFragment extends Fragment {
         super.onResume();
         // Reload user data when returning from edit profile
         loadUserData();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        clearUserListener();
+    }
+
+    private void clearUserListener() {
+        if (userRef != null && userListener != null) {
+            userRef.removeEventListener(userListener);
+        }
+        userRef = null;
+        userListener = null;
     }
 
     private void showLogoutConfirmationDialog() {

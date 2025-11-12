@@ -71,6 +71,12 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".ProfileSetupActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:label="프로필 만들기" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:hardwareAccelerated="true"
