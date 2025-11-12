@@ -205,8 +205,12 @@ public class SignUpActivity extends AppCompatActivity {
 
                         // Save login state with user ID
                         saveLoginState("email", uid);
+
+                        markProfileIncomplete();
+                        navigateToProfileSetup(uid, mail, name, "email");
+                    } else {
+                        navigateToMain();
                     }
-                    navigateToMain();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "createUserWithEmail failed", e);
@@ -258,6 +262,32 @@ public class SignUpActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    private void markProfileIncomplete() {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("profile_completed", false).apply();
+    }
+
+    private void navigateToProfileSetup(String userId, String email, String displayName, String loginMethod) {
+        markProfileIncomplete();
+        Intent intent = new Intent(SignUpActivity.this, ProfileSetupActivity.class);
+        if (userId != null && !userId.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
+        }
+        if (email != null && !email.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_EMAIL, email);
+        }
+        if (displayName != null && !displayName.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_NAME, displayName);
+        }
+        if (loginMethod != null && !loginMethod.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_LOGIN_METHOD, loginMethod);
+        } else {
+            intent.putExtra(ProfileSetupActivity.EXTRA_LOGIN_METHOD, "email");
+        }
+        startActivity(intent);
+        finish();
     }
 
     private void navigateToMain() {
@@ -320,7 +350,13 @@ public class SignUpActivity extends AppCompatActivity {
                 saveLoginState("google", userId);
 
                 Toast.makeText(this, "Google sign up successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
-                navigateToMain();
+                markProfileIncomplete();
+                navigateToProfileSetup(
+                        userId,
+                        account.getEmail(),
+                        account.getDisplayName(),
+                        "google"
+                );
             }
         } catch (ApiException e) {
             Log.w(TAG, "Google sign in failed", e);
@@ -362,7 +398,13 @@ public class SignUpActivity extends AppCompatActivity {
                         }
 
                         Toast.makeText(SignUpActivity.this, "Google sign up successful!", Toast.LENGTH_SHORT).show();
-                        navigateToMain();
+                        markProfileIncomplete();
+                        navigateToProfileSetup(
+                                user != null ? user.getUid() : null,
+                                user != null ? user.getEmail() : null,
+                                user != null ? user.getDisplayName() : "Google User",
+                                "google"
+                        );
                     } else {
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
                         String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
@@ -436,13 +478,15 @@ public class SignUpActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     // Save user to Realtime Database
                     String userId = "kakao_" + user.getId();
-                    saveUserToRealtimeDatabase(userId, email, nickname, profileImageUrl, "kakao");
+                    String displayName = nickname;
+                    saveUserToRealtimeDatabase(userId, email, displayName, profileImageUrl, "kakao");
 
                     // Save login state with user ID
                     saveLoginState("kakao", userId);
 
                     Toast.makeText(SignUpActivity.this, "Kakao signup successful!", Toast.LENGTH_SHORT).show();
-                    navigateToMain();
+                    markProfileIncomplete();
+                    navigateToProfileSetup(userId, email, displayName, "kakao");
                 });
             }
             return Unit.INSTANCE;
@@ -558,7 +602,8 @@ public class SignUpActivity extends AppCompatActivity {
                             saveLoginState("naver", realtimeUserId);
 
                             Toast.makeText(SignUpActivity.this, "Naver signup successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
-                            navigateToMain();
+                            markProfileIncomplete();
+                            navigateToProfileSetup(realtimeUserId, email, displayName, "naver");
                         });
                     } else {
                         Log.e(TAG, "Naver API error: Invalid result code " + resultCode);

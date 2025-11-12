@@ -9,6 +9,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     private android.os.Handler searchHandler;
     private Runnable searchRunnable;
     private static final long SEARCH_DELAY_MS = 800;
+    private boolean profileSetupRedirectPending = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +124,10 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "User authenticated successfully, proceeding with MainActivity setup");
 
         setContentView(R.layout.activity_main);
+
+        if (maybeRedirectToProfileSetup()) {
+            return;
+        }
 
         Log.d(TAG, "MainActivity onCreate started");
 
@@ -185,6 +191,45 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    private boolean maybeRedirectToProfileSetup() {
+        if (profileSetupRedirectPending) {
+            return true;
+        }
+
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        boolean profileCompleted = prefs.getBoolean("profile_completed", true);
+        if (profileCompleted) {
+            return false;
+        }
+
+        profileSetupRedirectPending = true;
+
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        String userId = prefs.getString("user_id", firebaseUser != null ? firebaseUser.getUid() : null);
+        String email = prefs.getString("user_email", firebaseUser != null ? firebaseUser.getEmail() : null);
+        String displayName = prefs.getString("user_name", firebaseUser != null ? firebaseUser.getDisplayName() : null);
+        String loginMethod = prefs.getString("login_method", "email");
+
+        prefs.edit().putBoolean("profile_completed", false).apply();
+
+        Intent intent = new Intent(this, ProfileSetupActivity.class);
+        if (!TextUtils.isEmpty(userId)) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
+        }
+        if (!TextUtils.isEmpty(email)) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_EMAIL, email);
+        }
+        if (!TextUtils.isEmpty(displayName)) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_NAME, displayName);
+        }
+        if (!TextUtils.isEmpty(loginMethod)) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_LOGIN_METHOD, loginMethod);
+        }
+        startActivity(intent);
+        finish();
+        return true;
     }
 
     /**

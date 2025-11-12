@@ -15,13 +15,18 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class SettingsFragment extends Fragment {
 
     private FirebaseAuth mAuth;
     private DatabaseReference dbRef;
+    private DatabaseReference userRef;
+    private ValueEventListener userListener;
 
     // UI elements
     private ImageView ivAvatar;
@@ -77,6 +82,7 @@ public class SettingsFragment extends Fragment {
         String userId = getUserId();
 
         if (userId == null) {
+            clearUserListener();
             // Fallback to SharedPreferences if no user ID found
             // But also log this for debugging
             android.util.Log.d("SettingsFragment", "No user ID found, loading from SharedPreferences only");
@@ -86,58 +92,65 @@ public class SettingsFragment extends Fragment {
 
         android.util.Log.d("SettingsFragment", "Loading user data for userId: " + userId);
 
-        // Load user data from Realtime Database
-        dbRef.child("users").child(userId)
-                .get()
-                .addOnSuccessListener(dataSnapshot -> {
-                    if (dataSnapshot.exists()) {
-                        android.util.Log.d("SettingsFragment", "User data found in database");
-                        // Load data from Realtime Database
-                        User user = dataSnapshot.getValue(User.class);
-                        if (user == null) {
-                            loadUserDataFromSharedPreferences();
-                            return;
-                        }
-
-                        // Update UI
-                        if (tvName != null && user.getDisplayName() != null) {
-                            tvName.setText(user.getDisplayName());
-                        }
-
-                        if (tvUsername != null && user.getUsername() != null) {
-                            tvUsername.setText("@" + user.getUsername());
-                        }
-
-                        if (tvEmail != null && user.getEmail() != null) {
-                            tvEmail.setText(user.getEmail());
-                        }
-
-                        // Sync data to SharedPreferences for offline access
+        clearUserListener();
+        userRef = dbRef.child("users").child(userId);
+        userListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    android.util.Log.d("SettingsFragment", "User data found in database");
+                    User user = dataSnapshot.getValue(User.class);
+                    if (user != null) {
+                        bindUser(user);
                         syncToSharedPreferences(user);
-
-                        // Load profile image from URL if available
-                        String profileImageUrl = user.getProfileImageUrl();
-                        if (profileImageUrl != null && !profileImageUrl.isEmpty() && ivAvatar != null) {
-                            // Use Glide to load remote or local images
-                            Glide.with(requireContext())
-                                    .load(profileImageUrl)
-                                    .placeholder(R.drawable.circle_logo)
-                                    .error(R.drawable.circle_logo)
-                                    .circleCrop()
-                                    .into(ivAvatar);
-                        } else {
-                            // Check for local profile image
-                            loadLocalProfileImage();
-                        }
                     } else {
-                        // User not found in database, fallback to SharedPreferences
                         loadUserDataFromSharedPreferences();
                     }
-                })
-                .addOnFailureListener(e -> {
-                    // Error loading from database, fallback to SharedPreferences
+                } else {
                     loadUserDataFromSharedPreferences();
-                });
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                android.util.Log.e("SettingsFragment", "Failed to load user data: " + error.getMessage());
+                loadUserDataFromSharedPreferences();
+            }
+        };
+
+        userRef.addValueEventListener(userListener);
+    }
+
+    private void bindUser(User user) {
+        if (user == null) return;
+
+        if (tvName != null) {
+            tvName.setText(user.getDisplayName() != null ? user.getDisplayName() : "사용자");
+        }
+
+        if (tvUsername != null) {
+            String username = user.getUsername();
+            if (username == null || username.isEmpty()) {
+                username = user.getUserId() != null ? user.getUserId() : "user";
+            }
+            tvUsername.setText("@" + username);
+        }
+
+        if (tvEmail != null) {
+            tvEmail.setText(user.getEmail() != null ? user.getEmail() : "이메일 정보 없음");
+        }
+
+        String profileImageUrl = user.getProfileImageUrl();
+        if (profileImageUrl != null && !profileImageUrl.isEmpty() && ivAvatar != null) {
+            Glide.with(requireContext())
+                    .load(profileImageUrl)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .circleCrop()
+                    .into(ivAvatar);
+        } else {
+            loadLocalProfileImage();
+        }
     }
 
     /**
@@ -236,6 +249,14 @@ public class SettingsFragment extends Fragment {
         loadLocalProfileImage();
     }
 
+    private void clearUserListener() {
+        if (userRef != null && userListener != null) {
+            userRef.removeEventListener(userListener);
+        }
+        userListener = null;
+        userRef = null;
+    }
+
     /**
      * Load profile image from local storage
      */
@@ -279,5 +300,11 @@ public class SettingsFragment extends Fragment {
      */
     public void refreshUserData() {
         loadUserData();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        clearUserListener();
     }
 }
