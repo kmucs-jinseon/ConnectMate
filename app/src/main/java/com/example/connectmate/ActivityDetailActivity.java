@@ -317,6 +317,11 @@ public class ActivityDetailActivity extends AppCompatActivity {
             return;
         }
 
+        if (activity.getCurrentParticipants() >= activity.getMaxParticipants()) {
+            Toast.makeText(this, "인원이 가득 찬 방입니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Get current user ID
         String userId = "";
 
