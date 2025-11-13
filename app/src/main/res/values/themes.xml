@@ -10,6 +10,10 @@
         <item name="android:statusBarColor">@color/primary_blue_dark</item>
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowBackground">@color/white</item>
+
+        <!-- Default Font Family - Noto Sans KR -->
+        <item name="android:fontFamily">@font/noto_sans_kr</item>
+        <item name="fontFamily">@font/noto_sans_kr</item>
     </style>
 
     <!-- Main Application Theme -->

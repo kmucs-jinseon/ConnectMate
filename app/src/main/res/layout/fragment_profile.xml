@@ -579,9 +579,7 @@
             android:textAllCaps="false"
             app:cornerRadius="12dp"
             app:backgroundTint="@color/gray_400"
-            android:textColor="@color/white"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp" />
+            android:textColor="@color/white" />
 
         <!-- Delete Account Button -->
         <com.google.android.material.button.MaterialButton
@@ -590,15 +588,13 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="80dp"
+            android:layout_marginBottom="72dp"
             android:text="회원 탈퇴"
             android:textSize="15sp"
             android:textAllCaps="false"
             app:cornerRadius="12dp"
             app:backgroundTint="@color/red_500"
-            android:textColor="@color/white"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp" />
+            android:textColor="@color/white" />
 
     </LinearLayout>
 </ScrollView>

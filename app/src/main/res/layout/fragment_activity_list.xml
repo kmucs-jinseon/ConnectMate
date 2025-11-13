@@ -224,19 +224,21 @@
             android:layout_height="match_parent">
 
             <!-- Activity List RecyclerView -->
+
+            <!-- Empty State View -->
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/activity_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/white"
                 android:clipToPadding="false"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="120dp"
                 android:scrollbars="vertical"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_activity" />
 
-            <!-- Empty State View -->
             <LinearLayout
                 android:id="@+id/empty_state"
                 android:layout_width="match_parent"

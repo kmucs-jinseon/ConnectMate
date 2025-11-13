@@ -60,19 +60,19 @@
     <string name="events_attended">Events attended</string>
 
     <!-- Create Activity Screen -->
-    <string name="create_activity">Create Activity</string>
-    <string name="share_your_idea">Share your idea with the community</string>
-    <string name="activity_title">Activity Title</string>
-    <string name="description">Description</string>
-    <string name="category">Category</string>
-    <string name="date">Date</string>
-    <string name="time">Time</string>
-    <string name="location_optional">Location (Optional)</string>
-    <string name="participant_limit">Participant Limit</string>
-    <string name="visibility">Visibility</string>
-    <string name="public_visibility">Public</string>
-    <string name="private_visibility">Private</string>
-    <string name="hashtags">Hashtags</string>
+    <string name="create_activity">새로운 활동 생성</string>
+    <string name="share_your_idea">함께 하고 싶은 활동을 생성해 주세요</string>
+    <string name="activity_title">활동 이름</string>
+    <string name="description">활동 내용</string>
+    <string name="category">카테고리</string>
+    <string name="date">날짜</string>
+    <string name="time">시간</string>
+    <string name="location_optional">장소 (선택)</string>
+    <string name="participant_limit">최대 참여자 수</string>
+    <string name="visibility">공개 여부</string>
+    <string name="public_visibility">공개</string>
+    <string name="private_visibility">비공개</string>
+    <string name="hashtags">해시태그</string>
 
     <!-- Settings -->
     <string name="account">Account</string>

@@ -272,16 +272,26 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Fixed Create Button -->
-    <Button
-        android:id="@+id/create_button"
-        style="@style/GradientButton"
+    <!-- Fixed Create Button Container with Gray Background -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_margin="@dimen/spacing_medium"
-        android:background="@drawable/gradient_blue"
-        android:text="@string/create_activity"
-        android:textColor="@color/white"
-        android:textSize="18sp" />
+        android:layout_height="wrap_content"
+        android:background="@color/primary_blue"
+        android:elevation="4dp"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_tiny">
+
+        <Button
+            android:id="@+id/create_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="0dp"
+            android:text="+ 새로운 활동 생성하기"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:background="@drawable/bg_button_container"
+            android:textStyle="bold"/>
+
+    </LinearLayout>
 
 </LinearLayout>
