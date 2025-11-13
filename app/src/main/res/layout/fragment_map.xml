@@ -40,43 +40,19 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_margin="16dp"
-        android:background="@android:color/transparent">
-
-        <!-- Material Design Search Bar -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/search_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:boxBackgroundColor="@color/white"
-            app:boxStrokeColor="@color/primary_blue"
-            app:boxStrokeWidth="2dp"
-            app:hintEnabled="false"
-            app:endIconMode="clear_text"
-            app:endIconTint="@color/gray_500"
-            app:startIconDrawable="@drawable/ic_search"
-            app:startIconTint="@color/primary_blue">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/search_input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="장소를 검색하세요"
-                android:imeOptions="actionSearch"
-                android:inputType="text"
-                android:maxLines="1"
-                android:textSize="16sp" />
-        </com.google.android.material.textfield.TextInputLayout>
+        android:background="@android:color/transparent"
+        android:elevation="100dp">
 
         <!-- Search Results List -->
         <androidx.cardview.widget.CardView
             android:id="@+id/search_results_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:maxHeight="300dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:maxHeight="400dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
+            app:cardElevation="8dp"
             android:visibility="gone">
 
             <androidx.recyclerview.widget.RecyclerView

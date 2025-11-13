@@ -39,6 +39,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/profile_setup_name_input"
+                style="@style/InputEditTextStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName" />
@@ -54,6 +55,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/profile_setup_username_input"
+                style="@style/InputEditTextStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textNoSuggestions" />
@@ -68,6 +70,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/profile_setup_mbti_input"
+                style="@style/InputEditTextStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapCharacters"
@@ -85,6 +88,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/profile_setup_bio_input"
+                style="@style/InputEditTextStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="top"

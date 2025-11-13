@@ -11,9 +11,9 @@
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowBackground">@color/white</item>
 
-        <!-- Default Font Family - Noto Sans KR -->
-        <item name="android:fontFamily">@font/noto_sans_kr</item>
-        <item name="fontFamily">@font/noto_sans_kr</item>
+        <!-- Default Font Family - Open Sans -->
+        <item name="android:fontFamily">@font/open_sans</item>
+        <item name="fontFamily">@font/open_sans</item>
     </style>
 
     <!-- Main Application Theme -->

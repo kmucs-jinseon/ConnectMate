@@ -78,6 +78,7 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/name_input"
+                    style="@style/InputEditTextStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="이름을 입력하세요"
@@ -107,6 +108,7 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/username_input"
+                    style="@style/InputEditTextStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="사용자 이름"
@@ -135,6 +137,7 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/mbti_input"
+                    style="@style/InputEditTextStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="예: ENFP"
@@ -166,6 +169,7 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/bio_input"
+                    style="@style/InputEditTextStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="자기소개를 입력하세요"

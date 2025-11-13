@@ -64,26 +64,6 @@
             android:layout_height="match_parent"
             android:orientation="vertical" />
 
-        <!-- Search bar -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/search_input_layout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:background="@android:color/white"
-            android:visibility="gone"
-            app:boxStrokeColor="@color/primary_blue"
-            app:hintTextColor="@color/primary_blue">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/search_edit_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/search"
-                android:imeOptions="actionSearch"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
     </FrameLayout>
 
 
@@ -115,7 +95,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
-                tools:listitem="@layout/item_map_location" />
+                tools:listitem="@layout/item_map_location"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

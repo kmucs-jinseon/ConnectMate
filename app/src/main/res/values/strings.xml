@@ -121,7 +121,7 @@
     <string name="채팅">채팅</string>
 
     <!-- Map Fragment -->
-    <string name="search_activities_or_places">Search activities or places…</string>
+    <string name="search_activities_or_places">장소를 검색하세요...</string>
     <string name="filter">Filter</string>
     <string name="all">All</string>
     <string name="sports">Sports</string>

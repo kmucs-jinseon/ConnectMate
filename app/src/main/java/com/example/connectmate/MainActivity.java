@@ -507,6 +507,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     /**
      * Set up bottom navigation bar to switch between fragments
      */

@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputLayout;
 
 /**
  * MapActivity - Displays a full-screen Kakao Map with location features
@@ -29,7 +28,6 @@ public class MapActivity extends AppCompatActivity {
     // UI Components
     private FloatingActionButton fabCreateActivity;
     private ImageButton searchButton;
-    private TextInputLayout searchInputLayout;
     private RecyclerView locationsRecyclerView;
     private CardView bottomSheet;
     private BottomSheetBehavior<CardView> bottomSheetBehavior;
@@ -66,7 +64,6 @@ public class MapActivity extends AppCompatActivity {
     private void initializeViews() {
         fabCreateActivity = findViewById(R.id.fab_create_activity);
         searchButton = findViewById(R.id.search_button);
-        searchInputLayout = findViewById(R.id.search_input_layout);
         locationsRecyclerView = findViewById(R.id.locations_recycler_view);
         bottomSheet = findViewById(R.id.bottom_sheet);
 
@@ -76,9 +73,6 @@ public class MapActivity extends AppCompatActivity {
         }
         if (searchButton == null) {
             Log.e(TAG, "Search button not found in layout");
-        }
-        if (searchInputLayout == null) {
-            Log.e(TAG, "Search input layout not found in layout");
         }
         if (locationsRecyclerView == null) {
             Log.e(TAG, "Locations RecyclerView not found in layout");
@@ -120,27 +114,8 @@ public class MapActivity extends AppCompatActivity {
         if (searchButton != null) {
             searchButton.setOnClickListener(v -> {
                 Log.d(TAG, "Search button clicked");
-                toggleSearchVisibility();
+                // TODO: Implement search functionality
             });
-        }
-    }
-
-    /**
-     * Toggle search input visibility
-     */
-    private void toggleSearchVisibility() {
-        if (searchInputLayout == null) {
-            Log.w(TAG, "Cannot toggle search - search input layout is null");
-            return;
-        }
-
-        if (searchInputLayout.getVisibility() == View.VISIBLE) {
-            searchInputLayout.setVisibility(View.GONE);
-            Log.d(TAG, "Search hidden");
-        } else {
-            searchInputLayout.setVisibility(View.VISIBLE);
-            searchInputLayout.requestFocus();
-            Log.d(TAG, "Search shown");
         }
     }
 
