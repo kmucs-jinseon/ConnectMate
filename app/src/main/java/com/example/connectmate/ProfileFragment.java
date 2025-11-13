@@ -21,6 +21,8 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -69,6 +71,7 @@ public class ProfileFragment extends Fragment {
 
     // UI elements - Logout
     private MaterialButton logoutButton;
+    private MaterialButton deleteAccountButton;
 
     public ProfileFragment() {
         super(R.layout.fragment_profile);
@@ -116,6 +119,7 @@ public class ProfileFragment extends Fragment {
 
         // Logout button
         logoutButton = view.findViewById(R.id.logout_button);
+        deleteAccountButton = view.findViewById(R.id.delete_account_button);
     }
 
     private void setupClickListeners() {
@@ -167,6 +171,10 @@ public class ProfileFragment extends Fragment {
         // Logout button
         if (logoutButton != null) {
             logoutButton.setOnClickListener(v -> showLogoutConfirmationDialog());
+        }
+
+        if (deleteAccountButton != null) {
+            deleteAccountButton.setOnClickListener(v -> showDeleteAccountConfirmationDialog());
         }
     }
 
@@ -377,16 +385,84 @@ public class ProfileFragment extends Fragment {
                 .show();
     }
 
-    private void performLogout() {
-        // Get SharedPreferences
+    private void showDeleteAccountConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("회원 탈퇴")
+                .setMessage("정말 ConnectMate 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+                .setPositiveButton("탈퇴", (dialog, which) -> performAccountDeletion())
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    private void performAccountDeletion() {
+        String userId = getUserId();
+        if (userId == null) {
+            Toast.makeText(requireContext(), "사용자 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        deleteFirebaseAccount(userId);
+    }
+
+    private void deleteFirebaseAccount(String userId) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            android.util.Log.d("ProfileFragment", "No Firebase user, removing database entry directly");
+            removeUserDataFromDatabase(userId);
+            return;
+        }
+
+        currentUser.delete().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                android.util.Log.d("ProfileFragment", "Firebase account deleted");
+                removeUserDataFromDatabase(userId);
+            } else {
+                Exception exception = task.getException();
+                if (exception != null) {
+                    android.util.Log.e("ProfileFragment", "Failed to delete Firebase account", exception);
+                }
+                if (exception instanceof FirebaseAuthRecentLoginRequiredException) {
+                    Toast.makeText(requireContext(), "보안을 위해 다시 로그인한 뒤 탈퇴를 진행해주세요.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(requireContext(), "계정을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void removeUserDataFromDatabase(String userId) {
+        databaseRef.child("users").child(userId).removeValue().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                android.util.Log.d("ProfileFragment", "User data removed for userId: " + userId);
+                clearLocalSessionAfterDeletion();
+            } else {
+                Exception exception = task.getException();
+                if (exception != null) {
+                    android.util.Log.e("ProfileFragment", "Failed to delete user data", exception);
+                }
+                Toast.makeText(requireContext(), "계정 정보를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void clearLocalSessionAfterDeletion() {
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        logoutFromProviders(prefs);
+        finalizeSessionTermination(prefs, "계정이 삭제되었습니다");
+    }
+
+    private void performLogout() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        logoutFromProviders(prefs);
+        finalizeSessionTermination(prefs, "로그아웃 되었습니다");
+    }
+
+    private void logoutFromProviders(SharedPreferences prefs) {
         String loginMethod = prefs.getString("login_method", "");
 
-        // Sign out from social providers based on login method
         try {
             switch (loginMethod) {
                 case "google":
-                    // Sign out from Google
                     GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                             .requestEmail()
                             .build();
@@ -395,9 +471,7 @@ public class ProfileFragment extends Fragment {
                         android.util.Log.d("ProfileFragment", "Google sign out completed");
                     });
                     break;
-
                 case "kakao":
-                    // Sign out from Kakao
                     UserApiClient.getInstance().logout(error -> {
                         if (error != null) {
                             android.util.Log.e("ProfileFragment", "Kakao logout failed", error);
@@ -407,19 +481,14 @@ public class ProfileFragment extends Fragment {
                         return null;
                     });
                     break;
-
                 case "naver":
-                    // Sign out from Naver
                     NaverIdLoginSDK.INSTANCE.logout();
                     android.util.Log.d("ProfileFragment", "Naver logout completed");
                     break;
-
                 case "firebase":
                 case "email":
-                    // Firebase Auth only login
-                    android.util.Log.d("ProfileFragment", "Firebase email login logout");
+                    android.util.Log.d("ProfileFragment", "Firebase/email login logout");
                     break;
-
                 default:
                     android.util.Log.w("ProfileFragment", "Unknown login method: " + loginMethod);
                     break;
@@ -427,20 +496,19 @@ public class ProfileFragment extends Fragment {
         } catch (Exception e) {
             android.util.Log.e("ProfileFragment", "Error during social provider logout", e);
         }
+    }
 
-        // Sign out from Firebase Auth (for all login methods)
+    private void finalizeSessionTermination(SharedPreferences prefs, String toastMessage) {
         mAuth.signOut();
 
-        // Clear ALL user data from SharedPreferences
         SharedPreferences.Editor editor = prefs.edit();
-        editor.clear(); // Clear everything
+        editor.clear();
         editor.apply();
 
-        android.util.Log.d("ProfileFragment", "Logout completed - All data cleared");
+        android.util.Log.d("ProfileFragment", "Session terminated - " + toastMessage);
 
-        Toast.makeText(requireContext(), "로그아웃 되었습니다", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), toastMessage, Toast.LENGTH_SHORT).show();
 
-        // Navigate to LoginActivity
         Intent intent = new Intent(requireActivity(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
