@@ -470,20 +470,31 @@ public class MainActivity extends AppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
 
         if (savedInstanceState == null) {
-            // First time - create MapFragment as default
-            Log.d(TAG, "Creating MapFragment as default");
+            // First time - create fragments
+            Log.d(TAG, "Creating fragments");
 
+            // Create MapFragment as default visible fragment
             mapFragment = new MapFragment();
 
-            // Use replace to ensure only one fragment is active at a time
+            // Pre-initialize ActivityListFragment so it starts loading data from Firebase
+            activityFragment = new ActivityListFragment();
+
+            // Use FragmentTransaction to add fragments
             FragmentTransaction transaction = fm.beginTransaction();
-            transaction.replace(R.id.main_container, mapFragment, TAG_MAP);
+
+            // Add MapFragment as visible
+            transaction.add(R.id.main_container, mapFragment, TAG_MAP);
+
+            // Add ActivityListFragment as hidden (will start loading data in background)
+            transaction.add(R.id.main_container, activityFragment, TAG_ACTIVITY);
+            transaction.hide(activityFragment);
+
             transaction.commit();
 
             // Set MapFragment as active
             activeFragment = mapFragment;
 
-            Log.d(TAG, "MapFragment set as default - Kakao Map initialized");
+            Log.d(TAG, "MapFragment set as default, ActivityListFragment pre-initialized");
         } else {
             // Restore active fragment after configuration change
             Log.d(TAG, "Restoring fragments after configuration change");
@@ -502,6 +513,11 @@ public class MainActivity extends AppCompatActivity {
                 } else if (TAG_SETTING.equals(currentFragment.getTag())) {
                     settingFragment = currentFragment;
                 }
+            }
+
+            // Also restore hidden fragments
+            if (activityFragment == null) {
+                activityFragment = fm.findFragmentByTag(TAG_ACTIVITY);
             }
         }
     }
@@ -550,7 +566,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Switch to fragment by tag
-     * Uses replace() to ensure complete isolation between fragments
+     * Uses show/hide to preserve fragment state and enable pre-initialization
      */
     private void switchFragmentByTag(String tag) {
         FragmentManager fm = getSupportFragmentManager();
@@ -576,9 +592,24 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Use replace to completely swap fragments for better isolation
+        // Don't switch if already active
+        if (activeFragment == targetFragment) {
+            return;
+        }
+
         FragmentTransaction transaction = fm.beginTransaction();
-        transaction.replace(R.id.main_container, targetFragment, tag);
+
+        // Hide current fragment if it exists
+        if (activeFragment != null) {
+            transaction.hide(activeFragment);
+        }
+
+        // Show target fragment if already added, otherwise add it
+        if (targetFragment.isAdded()) {
+            transaction.show(targetFragment);
+        } else {
+            transaction.add(R.id.main_container, targetFragment, tag);
+        }
 
         // For MapFragment, update current location display after view is created
         if (TAG_MAP.equals(tag)) {

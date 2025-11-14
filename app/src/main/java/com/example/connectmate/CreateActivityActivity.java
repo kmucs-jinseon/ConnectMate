@@ -161,7 +161,7 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         // Update button text for edit mode
         if (createButton != null) {
-            createButton.setText("Update Activity");
+            createButton.setText("활동 수정 완료");
         }
     }
 

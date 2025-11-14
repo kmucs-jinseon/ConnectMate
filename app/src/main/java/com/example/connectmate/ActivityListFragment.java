@@ -85,9 +85,18 @@ public class ActivityListFragment extends Fragment {
         searchLayout = view.findViewById(R.id.search_layout);
         searchInput = view.findViewById(R.id.search_input);
 
-        // Filter chips
+        // Filter chips - use MainActivity's chips if this fragment is in MainActivity
         filterScrollView = view.findViewById(R.id.filter_scroll_view);
         filterChips = view.findViewById(R.id.filter_chips);
+
+        // Try to get MainActivity's filter chips if available
+        if (getActivity() != null && getActivity() instanceof MainActivity) {
+            ChipGroup mainActivityChips = getActivity().findViewById(R.id.activity_filter_chips);
+            if (mainActivityChips != null) {
+                filterChips = mainActivityChips;
+                Log.d(TAG, "Using MainActivity's filter chips");
+            }
+        }
 
         // Activity list
         activityRecyclerView = view.findViewById(R.id.activity_recycler_view);
@@ -185,44 +194,115 @@ public class ActivityListFragment extends Fragment {
     }
 
     private void filterActivities() {
-        if (filterChips == null) return;
+        applyFiltersAndSearch();
+    }
+
+    private void searchActivities(String query) {
+        applyFiltersAndSearch();
+    }
+
+    private void applyFiltersAndSearch() {
+        filteredActivities.clear();
+
+        // Get current search query
+        String searchQuery = "";
+        if (searchInput != null && searchInput.getText() != null) {
+            searchQuery = searchInput.getText().toString().toLowerCase();
+        }
 
         // Get selected categories from chips
-        List<String> selectedCategories = new ArrayList<>();
-        if (filterChips.findViewById(R.id.chip_all) != null && filterChips.findViewById(R.id.chip_all).isSelected() ||
-            filterChips.getCheckedChipIds().isEmpty()) {
-            // Show all
-            filteredActivities.clear();
-            filteredActivities.addAll(allActivities);
-        } else {
-            filteredActivities.clear();
-            // Filter by selected categories
-            // TODO: Implement actual filtering logic based on chips
-            filteredActivities.addAll(allActivities);
+        List<String> selectedCategories = getSelectedCategories();
+
+        // Apply both filters
+        for (Activity activity : allActivities) {
+            // Check category filter
+            boolean matchesCategory = false;
+            if (selectedCategories.isEmpty()) {
+                // No category filter or "All" selected - show all categories
+                matchesCategory = true;
+            } else {
+                String activityCategory = activity.getCategory();
+                matchesCategory = activityCategory != null && selectedCategories.contains(activityCategory);
+            }
+
+            // Check search filter
+            boolean matchesSearch = false;
+            if (searchQuery.isEmpty()) {
+                matchesSearch = true;
+            } else {
+                String title = activity.getTitle() != null ? activity.getTitle().toLowerCase() : "";
+                String location = activity.getLocation() != null ? activity.getLocation().toLowerCase() : "";
+                String description = activity.getDescription() != null ? activity.getDescription().toLowerCase() : "";
+                matchesSearch = title.contains(searchQuery) ||
+                              location.contains(searchQuery) ||
+                              description.contains(searchQuery);
+            }
+
+            // Add activity if it matches both filters
+            if (matchesCategory && matchesSearch) {
+                filteredActivities.add(activity);
+            }
         }
 
         activityAdapter.notifyDataSetChanged();
         updateUI();
     }
 
-    private void searchActivities(String query) {
-        filteredActivities.clear();
+    private List<String> getSelectedCategories() {
+        List<String> selectedCategories = new ArrayList<>();
 
-        if (query.isEmpty()) {
-            filteredActivities.addAll(allActivities);
-        } else {
-            String lowerQuery = query.toLowerCase();
-            for (Activity activity : allActivities) {
-                if (activity.getTitle().toLowerCase().contains(lowerQuery) ||
-                    activity.getLocation().toLowerCase().contains(lowerQuery) ||
-                    activity.getDescription().toLowerCase().contains(lowerQuery)) {
-                    filteredActivities.add(activity);
-                }
+        if (filterChips == null) {
+            return selectedCategories;
+        }
+
+        List<Integer> checkedChipIds = filterChips.getCheckedChipIds();
+
+        // If "All" is checked or no chips are checked, return empty list (show all)
+        if (checkedChipIds.contains(R.id.chip_all) ||
+            checkedChipIds.contains(R.id.activity_chip_all) ||
+            checkedChipIds.isEmpty()) {
+            return selectedCategories;
+        }
+
+        // Map chip IDs to category names
+        for (Integer chipId : checkedChipIds) {
+            String category = getCategoryFromChipId(chipId);
+            if (category != null) {
+                selectedCategories.add(category);
             }
         }
 
-        activityAdapter.notifyDataSetChanged();
-        updateUI();
+        return selectedCategories;
+    }
+
+    private String getCategoryFromChipId(int chipId) {
+        // Fragment's chip IDs
+        if (chipId == R.id.chip_sports) return "운동";
+        if (chipId == R.id.chip_outdoor) return "야외활동";
+        if (chipId == R.id.chip_study) return "스터디";
+        if (chipId == R.id.chip_culture) return "문화";
+        if (chipId == R.id.chip_social) return "소셜";
+        if (chipId == R.id.chip_food) return "맛집";
+        if (chipId == R.id.chip_travel) return "여행";
+        if (chipId == R.id.chip_game) return "게임";
+        if (chipId == R.id.chip_hobby) return "취미";
+        if (chipId == R.id.chip_volunteer) return "봉사";
+        if (chipId == R.id.chip_other) return "기타";
+
+        // MainActivity's chip IDs (activity_chip_ prefix)
+        if (chipId == R.id.activity_chip_sports) return "운동";
+        if (chipId == R.id.activity_chip_outdoor) return "야외활동";
+        if (chipId == R.id.activity_chip_study) return "스터디";
+        if (chipId == R.id.activity_chip_culture) return "문화";
+        if (chipId == R.id.activity_chip_social) return "소셜";
+        if (chipId == R.id.activity_chip_food) return "맛집";
+        if (chipId == R.id.activity_chip_travel) return "여행";
+        if (chipId == R.id.activity_chip_game) return "게임";
+        if (chipId == R.id.activity_chip_hobby) return "취미";
+        if (chipId == R.id.activity_chip_volunteer) return "봉사";
+        if (chipId == R.id.activity_chip_other) return "기타";
+
+        return null;
     }
 
     private void updateUI() {
@@ -247,17 +327,9 @@ public class ActivityListFragment extends Fragment {
                 if (!allActivities.contains(activity)) {
                     allActivities.add(0, activity);
 
-                    // Update filtered list if no search/filter is active
-                    String currentSearch = searchInput != null && searchInput.getText() != null ?
-                        searchInput.getText().toString() : "";
-                    if (currentSearch.isEmpty()) {
-                        filteredActivities.add(0, activity);
-                    } else {
-                        searchActivities(currentSearch);
-                    }
+                    // Re-apply filters and search to update the filtered list
+                    applyFiltersAndSearch();
 
-                    activityAdapter.notifyDataSetChanged();
-                    updateUI();
                     Log.d(TAG, "Activity added: " + activity.getTitle());
                 }
             }
@@ -272,15 +344,9 @@ public class ActivityListFragment extends Fragment {
                     }
                 }
 
-                // Update filtered list
-                for (int i = 0; i < filteredActivities.size(); i++) {
-                    if (filteredActivities.get(i).getId().equals(activity.getId())) {
-                        filteredActivities.set(i, activity);
-                        break;
-                    }
-                }
+                // Re-apply filters and search to update the filtered list
+                applyFiltersAndSearch();
 
-                activityAdapter.notifyDataSetChanged();
                 Log.d(TAG, "Activity updated: " + activity.getTitle());
             }
 
