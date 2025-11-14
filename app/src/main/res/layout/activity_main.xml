@@ -77,7 +77,7 @@
                     android:inputType="text"
                     android:maxLines="1"
                     android:textColor="@color/gray_900"
-                    android:textColorHint="@color/gray_500"
+                    android:textColorHint="@color/gray_900"
                     android:textSize="16sp" />
 
                 <ImageButton

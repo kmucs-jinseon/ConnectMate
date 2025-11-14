@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:background="@color/white"
         android:elevation="4dp"
-        app:title="프로필 만들기"
+        app:title="프로필 생성"
         app:navigationIcon="@drawable/ic_arrow_left"
         app:titleTextColor="@color/text_primary" />
 

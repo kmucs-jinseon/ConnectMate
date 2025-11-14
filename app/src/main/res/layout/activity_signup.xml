@@ -39,10 +39,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Connect Mate"
+        android:fontFamily="@font/pretendard_extrabold"
         android:textColor="#4479CE"
         android:textSize="24sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
         android:layout_marginBottom="4dp"
         tools:ignore="HardcodedText" />
 
@@ -50,7 +49,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Create Account"
+        android:text="계정 생성"
         android:textColor="#666666"
         android:textSize="14sp"
         android:layout_marginBottom="24dp"
@@ -62,7 +61,7 @@
         style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Email"
+        android:hint="이메일"
         tools:ignore="HardcodedText">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -79,7 +78,7 @@
         style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password"
+        android:hint="비밀번호"
         app:endIconMode="password_toggle"
         tools:ignore="HardcodedText">
 
@@ -97,7 +96,7 @@
         style="@style/InputLayoutStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Confirm Password"
+        android:hint="비밀번호 확인"
         app:endIconMode="password_toggle"
         tools:ignore="HardcodedText">
 
@@ -121,18 +120,18 @@
         android:layout_marginTop="22dp"
         android:backgroundTint="@color/primary_blue"
         android:elevation="2dp"
-        android:text="Sign Up"
+        android:text="회원가입"
         tools:ignore="HardcodedText" />
 
     <TextView
         android:id="@+id/loginTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Already have an account? Login"
+        android:text="이미 계정이 있으신가요? 로그인"
         android:textColor="@color/primary_blue"
         android:textSize="14sp"
         android:layout_marginTop="16dp"
-        android:fontFamily="sans-serif-medium"
+        android:fontFamily="@font/pretendard_medium"
         tools:ignore="HardcodedText" />
 
     <!-- Divider with "OR" text -->
@@ -153,7 +152,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="OR"
+            android:text="또는"
             android:textColor="#666666"
             android:textSize="14sp"
             android:paddingStart="16dp"
@@ -171,7 +170,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sign up with"
+        android:text="계속하기"
         android:textColor="#666666"
         android:textSize="14sp"
         android:layout_marginBottom="16dp"
@@ -193,11 +192,13 @@
             android:layout_height="64dp"
             android:layout_marginStart="0dp"
             android:layout_marginEnd="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/circle_google_bg"
             android:src="@drawable/ic_google"
             android:scaleType="fitCenter"
             android:padding="14dp"
-            android:contentDescription="Sign up with Google"
+            android:contentDescription="Google 계정으로 로그인"
             android:elevation="3dp"
             tools:ignore="HardcodedText" />
 
@@ -208,11 +209,13 @@
             android:layout_height="64dp"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/circle_kakao_bg"
             android:src="@drawable/ic_kakao"
             android:scaleType="fitCenter"
             android:padding="14dp"
-            android:contentDescription="Sign up with Kakao"
+            android:contentDescription="Kakao 계정으로 로그인"
             android:elevation="3dp"
             tools:ignore="HardcodedText" />
 
@@ -223,11 +226,13 @@
             android:layout_height="64dp"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
             android:background="@drawable/circle_naver_bg"
             android:src="@drawable/ic_naver"
             android:scaleType="fitCenter"
             android:padding="14dp"
-            android:contentDescription="Sign up with Naver"
+            android:contentDescription="Naver 계정으로 로그인"
             android:elevation="3dp"
             tools:ignore="HardcodedText" />
 
