@@ -458,8 +458,19 @@ public class ProfileFragment extends Fragment {
     }
 
     private void performLogout() {
+        android.util.Log.d("ProfileFragment", "=== Starting logout process ===");
+
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+
+        // Explicitly disable auto-login before clearing session
+        prefs.edit().putBoolean("auto_login", false).apply();
+        prefs.edit().putBoolean("is_logged_in", false).apply();
+        android.util.Log.d("ProfileFragment", "Disabled auto-login and is_logged_in flags");
+
+        // Logout from social providers
         logoutFromProviders(prefs);
+
+        // Finalize logout and redirect to login
         finalizeSessionTermination(prefs, "로그아웃 되었습니다");
     }
 
@@ -488,8 +499,52 @@ public class ProfileFragment extends Fragment {
                     });
                     break;
                 case "naver":
+                    android.util.Log.d("ProfileFragment", "=== Starting Naver logout process ===");
+
+                    // Log current token status
+                    String naverAccessToken = com.navercorp.nid.NaverIdLoginSDK.INSTANCE.getAccessToken();
+                    String naverRefreshToken = com.navercorp.nid.NaverIdLoginSDK.INSTANCE.getRefreshToken();
+                    android.util.Log.d("ProfileFragment", "Naver access token: " + (naverAccessToken != null ? "EXISTS" : "NULL"));
+                    android.util.Log.d("ProfileFragment", "Naver refresh token: " + (naverRefreshToken != null ? "EXISTS" : "NULL"));
+
+                    // Logout from Naver (invalidates session)
                     NaverIdLoginSDK.INSTANCE.logout();
-                    android.util.Log.d("ProfileFragment", "Naver logout completed");
+                    android.util.Log.d("ProfileFragment", "Called NaverIdLoginSDK.logout()");
+
+                    // Clear ALL possible Naver SDK SharedPreferences files
+                    try {
+                        // Clear main OAuth preferences
+                        SharedPreferences naverOAuth = requireContext().getSharedPreferences("NaverOAuthSDK", Context.MODE_PRIVATE);
+                        naverOAuth.edit().clear().apply();
+                        android.util.Log.d("ProfileFragment", "Cleared NaverOAuthSDK prefs");
+
+                        // Clear additional Naver preferences that might exist
+                        String[] possibleNaverPrefs = {
+                            "NaverOAuth",
+                            "naver_oauth",
+                            "com.naver.nid.oauth",
+                            "com.navercorp.nid.oauth"
+                        };
+
+                        for (String prefName : possibleNaverPrefs) {
+                            try {
+                                SharedPreferences naverPrefs = requireContext().getSharedPreferences(prefName, Context.MODE_PRIVATE);
+                                naverPrefs.edit().clear().apply();
+                                android.util.Log.d("ProfileFragment", "Cleared " + prefName + " prefs");
+                            } catch (Exception e) {
+                                // Ignore if doesn't exist
+                            }
+                        }
+
+                        // Verify token is cleared
+                        String tokenAfterLogout = com.navercorp.nid.NaverIdLoginSDK.INSTANCE.getAccessToken();
+                        android.util.Log.d("ProfileFragment", "Token after logout: " + (tokenAfterLogout != null ? "STILL EXISTS (ERROR!)" : "NULL (SUCCESS)"));
+
+                    } catch (Exception e) {
+                        android.util.Log.e("ProfileFragment", "Error clearing Naver SDK prefs", e);
+                    }
+
+                    android.util.Log.d("ProfileFragment", "=== Naver logout completed ===");
                     break;
                 case "firebase":
                 case "email":
@@ -505,19 +560,42 @@ public class ProfileFragment extends Fragment {
     }
 
     private void finalizeSessionTermination(SharedPreferences prefs, String toastMessage) {
-        mAuth.signOut();
+        android.util.Log.d("ProfileFragment", "=== Finalizing session termination ===");
 
+        // Sign out from Firebase Auth
+        if (mAuth != null && mAuth.getCurrentUser() != null) {
+            android.util.Log.d("ProfileFragment", "Signing out Firebase user: " + mAuth.getCurrentUser().getEmail());
+            mAuth.signOut();
+        }
+
+        // Clear ALL SharedPreferences data
         SharedPreferences.Editor editor = prefs.edit();
         editor.clear();
         editor.apply();
+        android.util.Log.d("ProfileFragment", "Cleared all SharedPreferences data");
+
+        // Clean up Firebase listeners
+        clearUserListener();
+
+        // Clean up chat listeners
+        try {
+            com.example.connectmate.utils.FirebaseChatManager.getInstance().removeAllListeners();
+            android.util.Log.d("ProfileFragment", "Removed Firebase chat listeners");
+        } catch (Exception e) {
+            android.util.Log.e("ProfileFragment", "Error removing chat listeners", e);
+        }
 
         android.util.Log.d("ProfileFragment", "Session terminated - " + toastMessage);
 
         Toast.makeText(requireContext(), toastMessage, Toast.LENGTH_SHORT).show();
 
+        // Redirect to LoginActivity with flags to clear activity stack
         Intent intent = new Intent(requireActivity(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.putExtra("from_logout", true); // Flag to indicate this is from logout
         startActivity(intent);
         requireActivity().finish();
+
+        android.util.Log.d("ProfileFragment", "=== Logout complete - redirected to LoginActivity ===");
     }
 }

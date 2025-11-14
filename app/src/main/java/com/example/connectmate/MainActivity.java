@@ -1009,6 +1009,31 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
 
+            // Additional check for Naver: verify token still exists
+            if ("naver".equals(loginMethod)) {
+                Log.d(TAG, "=== Checking Naver token validity ===");
+                try {
+                    String naverAccessToken = com.navercorp.nid.NaverIdLoginSDK.INSTANCE.getAccessToken();
+                    String naverRefreshToken = com.navercorp.nid.NaverIdLoginSDK.INSTANCE.getRefreshToken();
+
+                    Log.d(TAG, "Naver access token: " + (naverAccessToken != null ? "EXISTS (length: " + naverAccessToken.length() + ")" : "NULL"));
+                    Log.d(TAG, "Naver refresh token: " + (naverRefreshToken != null ? "EXISTS" : "NULL"));
+
+                    if (naverAccessToken == null || naverAccessToken.isEmpty()) {
+                        Log.w(TAG, "Naver token is null/empty - session invalid!");
+                        Log.d(TAG, "Clearing invalid Naver session and redirecting to login");
+                        // Clear invalid session
+                        prefs.edit().clear().apply();
+                        return false;
+                    }
+                    Log.d(TAG, "Naver token verified - session valid");
+                } catch (Exception e) {
+                    Log.e(TAG, "Error checking Naver token - clearing session", e);
+                    prefs.edit().clear().apply();
+                    return false;
+                }
+            }
+
             Log.d(TAG, "Social login session found with auto-login enabled: " + loginMethod);
             return true;
         }

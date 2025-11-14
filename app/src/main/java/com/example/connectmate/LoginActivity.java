@@ -560,6 +560,20 @@ public class LoginActivity extends AppCompatActivity {
         // Disable button during sign-in
         naverSignInButton.setEnabled(false);
 
+        // IMPORTANT: Logout first to clear cached session
+        // This forces Naver OAuth to show the login screen and allow account selection
+        Log.d(TAG, "Clearing Naver session to allow account selection...");
+        NaverIdLoginSDK.INSTANCE.logout();
+
+        // Clear Naver SDK SharedPreferences to ensure fresh login
+        try {
+            SharedPreferences naverOAuth = getSharedPreferences("NaverOAuthSDK", Context.MODE_PRIVATE);
+            naverOAuth.edit().clear().apply();
+            Log.d(TAG, "Cleared Naver SDK SharedPreferences");
+        } catch (Exception e) {
+            Log.w(TAG, "Could not clear Naver SharedPreferences", e);
+        }
+
         OAuthLoginCallback callback = new OAuthLoginCallback() {
             @Override
             public void onSuccess() {
@@ -870,12 +884,13 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean("is_logged_in", true);
+        editor.putBoolean("auto_login", false); // Disable auto-login - user must login every time
         editor.putString("login_method", loginMethod);
         if (userId != null) {
             editor.putString("user_id", userId);
         }
         editor.apply();
-        Log.d(TAG, "Login state saved: " + loginMethod + (userId != null ? " (ID: " + userId + ")" : ""));
+        Log.d(TAG, "Login state saved: " + loginMethod + (userId != null ? " (ID: " + userId + ")" : "") + ", auto_login DISABLED");
     }
 
     /**
