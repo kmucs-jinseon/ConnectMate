@@ -198,11 +198,16 @@ public class EditProfileActivity extends AppCompatActivity {
     private void setupClickListeners() {
         // Change photo button
         changePhotoButton.setOnClickListener(v -> {
-            // Check and request permission if needed
-            if (checkStoragePermission()) {
+            // Android 13+ Photo Picker doesn't require permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 launchImagePicker();
             } else {
-                requestStoragePermission();
+                // Check and request permission for older Android versions
+                if (checkStoragePermission()) {
+                    launchImagePicker();
+                } else {
+                    requestStoragePermission();
+                }
             }
         });
 
@@ -240,23 +245,38 @@ public class EditProfileActivity extends AppCompatActivity {
 
     /**
      * Launch image picker with chooser for gallery and file manager
+     * On Android 13+, uses the modern Photo Picker with built-in search
      */
     private void launchImagePicker() {
-        // Create intent to pick image from gallery
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        galleryIntent.setType("image/*");
+        Intent pickIntent;
 
-        // Create intent to pick image from file manager
-        Intent fileIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
-        fileIntent.setType("image/*");
+        // Android 13+ (API 33+): Use modern Photo Picker with built-in search
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Use ACTION_PICK_IMAGES for Android 13+
+            // This provides a modern UI with search, filtering, and cloud photo support
+            pickIntent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            pickIntent.setType("image/*");
 
-        // Create chooser to let user select between gallery and file manager
-        Intent chooserIntent = Intent.createChooser(galleryIntent, "사진 선택");
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{fileIntent});
+            // Launch directly without chooser - Photo Picker handles everything
+            imagePickerLauncher.launch(pickIntent);
+        } else {
+            // Android 12 and below: Use traditional picker with chooser
+            // Create intent to pick image from gallery
+            Intent galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            galleryIntent.setType("image/*");
 
-        // Launch the chooser
-        imagePickerLauncher.launch(chooserIntent);
+            // Create intent to pick image from file manager
+            Intent fileIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            fileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            fileIntent.setType("image/*");
+
+            // Create chooser to let user select between gallery and file manager
+            Intent chooserIntent = Intent.createChooser(galleryIntent, "사진 선택");
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{fileIntent});
+
+            // Launch the chooser
+            imagePickerLauncher.launch(chooserIntent);
+        }
     }
 
     private void saveProfile() {

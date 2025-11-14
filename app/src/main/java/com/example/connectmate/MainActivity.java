@@ -496,29 +496,30 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "MapFragment set as default, ActivityListFragment pre-initialized");
         } else {
-            // Restore active fragment after configuration change
+            // Restore fragments after configuration change
             Log.d(TAG, "Restoring fragments after configuration change");
 
-            Fragment currentFragment = fm.findFragmentById(R.id.main_container);
-            if (currentFragment != null) {
-                activeFragment = currentFragment;
+            // Restore all fragment references
+            mapFragment = fm.findFragmentByTag(TAG_MAP);
+            chatFragment = fm.findFragmentByTag(TAG_CHAT);
+            activityFragment = fm.findFragmentByTag(TAG_ACTIVITY);
+            settingFragment = fm.findFragmentByTag(TAG_SETTING);
 
-                // Restore fragment references based on tag
-                if (TAG_MAP.equals(currentFragment.getTag())) {
-                    mapFragment = currentFragment;
-                } else if (TAG_CHAT.equals(currentFragment.getTag())) {
-                    chatFragment = currentFragment;
-                } else if (TAG_ACTIVITY.equals(currentFragment.getTag())) {
-                    activityFragment = currentFragment;
-                } else if (TAG_SETTING.equals(currentFragment.getTag())) {
-                    settingFragment = currentFragment;
-                }
+            // Find the currently visible fragment
+            if (mapFragment != null && mapFragment.isVisible()) {
+                activeFragment = mapFragment;
+            } else if (chatFragment != null && chatFragment.isVisible()) {
+                activeFragment = chatFragment;
+            } else if (activityFragment != null && activityFragment.isVisible()) {
+                activeFragment = activityFragment;
+            } else if (settingFragment != null && settingFragment.isVisible()) {
+                activeFragment = settingFragment;
+            } else {
+                // Default to map if nothing visible
+                activeFragment = mapFragment;
             }
 
-            // Also restore hidden fragments
-            if (activityFragment == null) {
-                activityFragment = fm.findFragmentByTag(TAG_ACTIVITY);
-            }
+            Log.d(TAG, "Restored active fragment: " + (activeFragment != null ? activeFragment.getTag() : "null"));
         }
     }
 
@@ -539,20 +540,28 @@ public class MainActivity extends AppCompatActivity {
             // Determine which fragment to show based on tag
             if (itemId == R.id.nav_map) {
                 targetTag = TAG_MAP;
+                Log.d(TAG, "Bottom nav: Map clicked");
             } else if (itemId == R.id.nav_chat) {
                 targetTag = TAG_CHAT;
+                Log.d(TAG, "Bottom nav: Chat clicked");
             } else if (itemId == R.id.nav_activity) {
                 targetTag = TAG_ACTIVITY;
+                Log.d(TAG, "Bottom nav: Activity clicked");
             } else if (itemId == R.id.nav_settings) {
                 targetTag = TAG_SETTING;
+                Log.d(TAG, "Bottom nav: Settings clicked");
             }
 
             // Switch fragments if target is different from active
             if (targetTag != null) {
                 String currentTag = (activeFragment != null) ? activeFragment.getTag() : null;
+                Log.d(TAG, "Current active fragment tag: " + currentTag);
+                Log.d(TAG, "Target fragment tag: " + targetTag);
                 if (!targetTag.equals(currentTag)) {
                     Log.d(TAG, "Switching from " + currentTag + " to " + targetTag);
                     switchFragmentByTag(targetTag);
+                } else {
+                    Log.d(TAG, "Already on " + targetTag + ", skipping switch");
                 }
             }
 
@@ -570,20 +579,51 @@ public class MainActivity extends AppCompatActivity {
      */
     private void switchFragmentByTag(String tag) {
         FragmentManager fm = getSupportFragmentManager();
+
+        // CRITICAL FIX: Clear back stack first to remove any overlaying fragments (like ProfileFragment)
+        // This is necessary because SettingsFragment can add ProfileFragment via replace(),
+        // which creates a back stack entry that overlays other fragments
+        int backStackCount = fm.getBackStackEntryCount();
+        if (backStackCount > 0) {
+            Log.d(TAG, "Clearing " + backStackCount + " fragments from back stack");
+            for (int i = 0; i < backStackCount; i++) {
+                fm.popBackStackImmediate();
+            }
+        }
+
         Fragment targetFragment = null;
+
+        // First, try to find existing fragment by tag
+        Fragment existingFragment = fm.findFragmentByTag(tag);
 
         // Create or get the target fragment based on tag
         if (TAG_MAP.equals(tag)) {
-            if (mapFragment == null) mapFragment = new MapFragment();
+            if (existingFragment != null) {
+                mapFragment = existingFragment;
+            } else if (mapFragment == null) {
+                mapFragment = new MapFragment();
+            }
             targetFragment = mapFragment;
         } else if (TAG_CHAT.equals(tag)) {
-            if (chatFragment == null) chatFragment = new ChatListFragment();
+            if (existingFragment != null) {
+                chatFragment = existingFragment;
+            } else if (chatFragment == null) {
+                chatFragment = new ChatListFragment();
+            }
             targetFragment = chatFragment;
         } else if (TAG_ACTIVITY.equals(tag)) {
-            if (activityFragment == null) activityFragment = new ActivityListFragment();
+            if (existingFragment != null) {
+                activityFragment = existingFragment;
+            } else if (activityFragment == null) {
+                activityFragment = new ActivityListFragment();
+            }
             targetFragment = activityFragment;
         } else if (TAG_SETTING.equals(tag)) {
-            if (settingFragment == null) settingFragment = new SettingsFragment();
+            if (existingFragment != null) {
+                settingFragment = existingFragment;
+            } else if (settingFragment == null) {
+                settingFragment = new SettingsFragment();
+            }
             targetFragment = settingFragment;
         }
 
@@ -594,48 +634,66 @@ public class MainActivity extends AppCompatActivity {
 
         // Don't switch if already active
         if (activeFragment == targetFragment) {
+            Log.d(TAG, "Target fragment is already active, skipping switch");
             return;
         }
 
         FragmentTransaction transaction = fm.beginTransaction();
+        transaction.setReorderingAllowed(true);
 
-        // Hide current fragment if it exists
-        if (activeFragment != null) {
-            transaction.hide(activeFragment);
+        // Hide ALL fragments first to ensure no overlap
+        if (mapFragment != null && mapFragment.isAdded()) {
+            Log.d(TAG, "Hiding mapFragment");
+            transaction.hide(mapFragment);
+        }
+        if (chatFragment != null && chatFragment.isAdded()) {
+            Log.d(TAG, "Hiding chatFragment");
+            transaction.hide(chatFragment);
+        }
+        if (activityFragment != null && activityFragment.isAdded()) {
+            Log.d(TAG, "Hiding activityFragment");
+            transaction.hide(activityFragment);
+        }
+        if (settingFragment != null && settingFragment.isAdded()) {
+            Log.d(TAG, "Hiding settingFragment");
+            transaction.hide(settingFragment);
         }
 
         // Show target fragment if already added, otherwise add it
         if (targetFragment.isAdded()) {
+            Log.d(TAG, "Showing existing fragment: " + tag);
             transaction.show(targetFragment);
         } else {
+            Log.d(TAG, "Adding new fragment: " + tag);
             transaction.add(R.id.main_container, targetFragment, tag);
         }
 
-        // For MapFragment, update current location display after view is created
-        if (TAG_MAP.equals(tag)) {
-            transaction.runOnCommit(() -> {
-                // Use Handler to post location update after fragment is fully attached
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                    updateCurrentLocationDisplay();
-                }, 500); // Small delay to ensure map is loaded
-            });
-        }
-
-        // For SettingsFragment, add a callback to refresh data after view is created
-        if (TAG_SETTING.equals(tag) && targetFragment instanceof SettingsFragment) {
-            final SettingsFragment settingsFragment = (SettingsFragment) targetFragment;
-            transaction.runOnCommit(() -> {
-                // Use Handler to post refresh after fragment is fully attached
-                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-                    settingsFragment.refreshUserData();
-                });
-            });
-        }
-
-        transaction.commit();
+        transaction.commitNow(); // Use commitNow for immediate execution
 
         // Update active fragment reference
         activeFragment = targetFragment;
+
+        // Log visibility state of all fragments after switch
+        Log.d(TAG, "After switch - Fragment visibility:");
+        if (mapFragment != null) Log.d(TAG, "  mapFragment isVisible: " + mapFragment.isVisible() + ", isAdded: " + mapFragment.isAdded() + ", isHidden: " + mapFragment.isHidden());
+        if (chatFragment != null) Log.d(TAG, "  chatFragment isVisible: " + chatFragment.isVisible() + ", isAdded: " + chatFragment.isAdded() + ", isHidden: " + chatFragment.isHidden());
+        if (activityFragment != null) Log.d(TAG, "  activityFragment isVisible: " + activityFragment.isVisible() + ", isAdded: " + activityFragment.isAdded() + ", isHidden: " + activityFragment.isHidden());
+        if (settingFragment != null) Log.d(TAG, "  settingFragment isVisible: " + settingFragment.isVisible() + ", isAdded: " + settingFragment.isAdded() + ", isHidden: " + settingFragment.isHidden());
+
+        // For MapFragment, update current location display
+        if (TAG_MAP.equals(tag)) {
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                updateCurrentLocationDisplay();
+            }, 500);
+        }
+
+        // For SettingsFragment, refresh data
+        if (TAG_SETTING.equals(tag) && targetFragment instanceof SettingsFragment) {
+            final SettingsFragment settingsFrag = (SettingsFragment) targetFragment;
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                settingsFrag.refreshUserData();
+            });
+        }
 
         // Show/hide UI overlays based on selected fragment
         updateMapUIVisibility(targetFragment);

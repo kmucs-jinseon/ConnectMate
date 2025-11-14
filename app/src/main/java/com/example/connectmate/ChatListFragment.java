@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -22,6 +24,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,21 +41,16 @@ public class ChatListFragment extends Fragment {
     private View filterScrollView;
     private ChipGroup filterChips;
 
-    private LinearLayout favoritesSection;
-    private View favoritesDivider;
-    private RecyclerView favoritesRecyclerView;
     private RecyclerView chatRecyclerView;
     private LinearLayout emptyState;
     private MaterialButton btnStartChat;
 
     // Adapters
     private ChatRoomAdapter chatRoomAdapter;
-    private FavoriteChatAdapter favoriteChatAdapter;
 
     // Data
     private List<ChatRoom> allChatRooms;
     private List<ChatRoom> filteredChatRooms;
-    private List<FavoriteChat> favoriteChatList;
 
     public ChatListFragment() {
         super(R.layout.fragment_chat);
@@ -72,7 +71,6 @@ public class ChatListFragment extends Fragment {
         setupRecyclerViews();
         setupClickListeners();
         loadChatRoomsFromFirebase();
-        loadFavorites();
         updateUI();
     }
 
@@ -89,11 +87,6 @@ public class ChatListFragment extends Fragment {
         filterScrollView = view.findViewById(R.id.filter_scroll_view);
         filterChips = view.findViewById(R.id.filter_chips);
 
-        // Favorites section
-        favoritesSection = view.findViewById(R.id.favorites_section);
-        favoritesDivider = view.findViewById(R.id.favorites_divider);
-        favoritesRecyclerView = view.findViewById(R.id.favorites_recycler_view);
-
         // Chat list
         chatRecyclerView = view.findViewById(R.id.chat_recycler_view);
         emptyState = view.findViewById(R.id.empty_state);
@@ -104,18 +97,11 @@ public class ChatListFragment extends Fragment {
         // Initialize data lists
         allChatRooms = new ArrayList<>();
         filteredChatRooms = new ArrayList<>();
-        favoriteChatList = new ArrayList<>();
 
         // Setup main chat RecyclerView
         chatRoomAdapter = new ChatRoomAdapter(filteredChatRooms, this::onChatRoomClick);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         chatRecyclerView.setAdapter(chatRoomAdapter);
-
-        // Setup favorites RecyclerView (horizontal)
-        favoriteChatAdapter = new FavoriteChatAdapter(favoriteChatList, this::onFavoriteChatClick);
-        favoritesRecyclerView.setLayoutManager(
-            new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        favoritesRecyclerView.setAdapter(favoriteChatAdapter);
     }
 
     private void setupClickListeners() {
@@ -274,15 +260,6 @@ public class ChatListFragment extends Fragment {
             emptyState.setVisibility(View.GONE);
             chatRecyclerView.setVisibility(View.VISIBLE);
         }
-
-        // Show/hide favorites section
-        if (favoriteChatList.isEmpty()) {
-            favoritesSection.setVisibility(View.GONE);
-            favoritesDivider.setVisibility(View.GONE);
-        } else {
-            favoritesSection.setVisibility(View.VISIBLE);
-            favoritesDivider.setVisibility(View.VISIBLE);
-        }
     }
 
     /**
@@ -307,8 +284,8 @@ public class ChatListFragment extends Fragment {
                 if (!exists) {
                     allChatRooms.add(0, chatRoom); // Add to beginning (newest first)
 
-                    // Re-apply filters and search to update the filtered list
-                    applyFiltersAndSearch();
+                    // Load unread count for this chat room
+                    loadUnreadCountForChatRoom(chatRoom);
 
                     Log.d(TAG, "Chat room added: " + chatRoom.getName());
                 }
@@ -324,8 +301,8 @@ public class ChatListFragment extends Fragment {
                     }
                 }
 
-                // Re-apply filters and search to update the filtered list
-                applyFiltersAndSearch();
+                // Load unread count for this chat room
+                loadUnreadCountForChatRoom(chatRoom);
 
                 Log.d(TAG, "Chat room updated: " + chatRoom.getName());
             }
@@ -352,17 +329,60 @@ public class ChatListFragment extends Fragment {
     }
 
     /**
-     * Load favorite chats
+     * Load unread count for a specific chat room for the current user
      */
-    private void loadFavorites() {
-        // Clear and reload favorites to prevent duplicates
-        favoriteChatList.clear();
-        // Sample favorites - using circle_logo as default profile image
-        favoriteChatList.add(new FavoriteChat("1", "Jane", null));
-        favoriteChatList.add(new FavoriteChat("2", "Mom", null));
-        // Note: Users can customize these with their own profile images
+    private void loadUnreadCountForChatRoom(ChatRoom chatRoom) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Log.w(TAG, "Cannot load unread count - no current user ID");
+            return;
+        }
 
-        favoriteChatAdapter.notifyDataSetChanged();
+        FirebaseChatManager.getInstance().getUnreadCount(
+            chatRoom.getId(),
+            currentUserId,
+            new FirebaseChatManager.OnCompleteListener<Integer>() {
+                @Override
+                public void onSuccess(Integer unreadCount) {
+                    // Update the chat room's unread count
+                    chatRoom.setUnreadCount(unreadCount);
+
+                    // Notify adapter to update the UI
+                    if (chatRoomAdapter != null) {
+                        chatRoomAdapter.notifyDataSetChanged();
+                    }
+
+                    // Re-apply filters and search to update the filtered list
+                    applyFiltersAndSearch();
+
+                    Log.d(TAG, "Unread count for " + chatRoom.getName() + ": " + unreadCount);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Error loading unread count for chat room: " + chatRoom.getName(), e);
+                }
+            }
+        );
+    }
+
+    /**
+     * Get current user ID from Firebase Auth or SharedPreferences
+     */
+    private String getCurrentUserId() {
+        // Try Firebase Auth first
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            return firebaseUser.getUid();
+        }
+
+        // Fall back to SharedPreferences for social login
+        if (getContext() != null) {
+            SharedPreferences prefs = getContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            return prefs.getString("user_id", "");
+        }
+
+        return "";
     }
 
     private void onChatRoomClick(ChatRoom chatRoom) {
@@ -373,9 +393,13 @@ public class ChatListFragment extends Fragment {
         startActivity(intent);
     }
 
-    private void onFavoriteChatClick(FavoriteChat favorite) {
-        Toast.makeText(requireContext(), "Clicked favorite: " + favorite.getName(), Toast.LENGTH_SHORT).show();
-        // TODO: Open chat with favorite
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload unread counts when fragment resumes (e.g., after returning from chat room)
+        for (ChatRoom chatRoom : allChatRooms) {
+            loadUnreadCountForChatRoom(chatRoom);
+        }
     }
 
     @Override
@@ -383,22 +407,5 @@ public class ChatListFragment extends Fragment {
         super.onDestroyView();
         // Clean up Firebase listeners
         FirebaseChatManager.getInstance().removeAllListeners();
-    }
-
-    // Inner class for FavoriteChat data
-    public static class FavoriteChat {
-        private final String id;
-        private final String name;
-        private final String profileImageUrl;
-
-        public FavoriteChat(String id, String name, String profileImageUrl) {
-            this.id = id;
-            this.name = name;
-            this.profileImageUrl = profileImageUrl;
-        }
-
-        public String getId() { return id; }
-        public String getName() { return name; }
-        public String getProfileImageUrl() { return profileImageUrl; }
     }
 }

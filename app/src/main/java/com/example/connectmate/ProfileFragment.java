@@ -245,8 +245,16 @@ public class ProfileFragment extends Fragment {
                     .placeholder(R.drawable.circle_logo)
                     .error(R.drawable.circle_logo)
                     .into(profileAvatar);
+
+                // Save profile URL to SharedPreferences for use in chat
+                SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                prefs.edit().putString("profile_image_url", url).apply();
             } else {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
+
+                // Clear profile URL from SharedPreferences if not available
+                SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                prefs.edit().remove("profile_image_url").apply();
             }
         }
     }

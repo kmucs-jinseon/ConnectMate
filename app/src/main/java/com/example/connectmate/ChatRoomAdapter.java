@@ -7,6 +7,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import com.example.connectmate.models.ChatRoom;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.text.SimpleDateFormat;
@@ -81,8 +82,8 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
                 lastMessage.setText("새로운 채팅방");
             }
 
-            // Format timestamp
-            SimpleDateFormat timeFormat = new SimpleDateFormat("MM/dd HH:mm", Locale.getDefault());
+            // Format timestamp in Korean local time format (오전/오후 h:mm)
+            SimpleDateFormat timeFormat = new SimpleDateFormat("a h:mm", Locale.KOREAN);
             String timeStr = timeFormat.format(new Date(chatRoom.getLastMessageTime()));
             timestamp.setText(timeStr);
 
@@ -101,8 +102,18 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
                 }
             });
 
-            // Set default profile image (you can later add image loading with Glide/Picasso)
-            profileImage.setImageResource(R.drawable.circle_logo);
+            // Load last message sender's profile image
+            String profileUrl = chatRoom.getLastMessageSenderProfileUrl();
+            if (profileUrl != null && !profileUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(profileUrl)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(profileImage);
+            } else {
+                // Fallback to main logo
+                profileImage.setImageResource(R.drawable.circle_logo);
+            }
         }
     }
 }

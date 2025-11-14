@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.connectmate.models.ChatMessage;
 
 import java.text.SimpleDateFormat;
@@ -116,13 +117,25 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             senderName.setText(message.getSenderName());
             messageText.setText(message.getMessage());
 
-            // Format timestamp
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            // Format timestamp in Korean format
+            SimpleDateFormat timeFormat = new SimpleDateFormat("a h:mm", Locale.KOREAN);
             String time = timeFormat.format(new Date(message.getTimestamp()));
             messageTime.setText(time);
 
-            // Set profile image (use circle_logo as default)
-            profileImage.setImageResource(R.drawable.circle_logo);
+            // Load profile image with Glide
+            String profileUrl = message.getSenderProfileUrl();
+            android.util.Log.d("ChatMessageAdapter", "SENT message - Sender: " + message.getSenderName() + ", Profile URL: " + profileUrl);
+
+            if (profileUrl != null && !profileUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(profileUrl)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(profileImage);
+            } else {
+                android.util.Log.w("ChatMessageAdapter", "No profile URL for sent message, using default");
+                profileImage.setImageResource(R.drawable.circle_logo);
+            }
         }
     }
 
@@ -145,13 +158,25 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             senderName.setText(message.getSenderName());
             messageText.setText(message.getMessage());
 
-            // Format timestamp
-            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            // Format timestamp in Korean format
+            SimpleDateFormat timeFormat = new SimpleDateFormat("a h:mm", Locale.KOREAN);
             String time = timeFormat.format(new Date(message.getTimestamp()));
             messageTime.setText(time);
 
-            // Set profile image (use circle_logo as default)
-            profileImage.setImageResource(R.drawable.circle_logo);
+            // Load profile image with Glide
+            String profileUrl = message.getSenderProfileUrl();
+            android.util.Log.d("ChatMessageAdapter", "RECEIVED message - Sender: " + message.getSenderName() + ", Profile URL: " + profileUrl);
+
+            if (profileUrl != null && !profileUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(profileUrl)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(profileImage);
+            } else {
+                android.util.Log.w("ChatMessageAdapter", "No profile URL for received message, using default");
+                profileImage.setImageResource(R.drawable.circle_logo);
+            }
         }
     }
 }

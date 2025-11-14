@@ -361,8 +361,18 @@ public class FirebaseChatManager {
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("lastMessage", message.getMessage());
                 updates.put("lastMessageTime", message.getTimestamp());
+                updates.put("lastMessageSenderId", message.getSenderId());
+                updates.put("lastMessageSenderName", message.getSenderName());
+
+                // Include sender profile URL if available
+                if (message.getSenderProfileUrl() != null) {
+                    updates.put("lastMessageSenderProfileUrl", message.getSenderProfileUrl());
+                }
 
                 chatRoomsRef.child(message.getChatRoomId()).updateChildren(updates);
+
+                // Increment unread count for all members except the sender
+                incrementUnreadCountForOthers(message.getChatRoomId(), message.getSenderId());
 
                 if (listener != null) {
                     listener.onSuccess(message);
@@ -372,6 +382,89 @@ public class FirebaseChatManager {
                 Log.e(TAG, "Error sending message", e);
                 if (listener != null) {
                     listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Increment unread count for all members except the specified user (sender)
+     */
+    private void incrementUnreadCountForOthers(String chatRoomId, String senderId) {
+        chatRoomsRef.child(chatRoomId).child("members")
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Map<String, Object> updates = new HashMap<>();
+
+                    for (DataSnapshot memberSnapshot : snapshot.getChildren()) {
+                        String memberId = memberSnapshot.getKey();
+
+                        // Skip the sender - they don't need unread count incremented
+                        if (memberId != null && !memberId.equals(senderId)) {
+                            Long currentUnreadCount = memberSnapshot.child("unreadCount").getValue(Long.class);
+                            int newUnreadCount = (currentUnreadCount != null ? currentUnreadCount.intValue() : 0) + 1;
+                            updates.put(memberId + "/unreadCount", newUnreadCount);
+                        }
+                    }
+
+                    if (!updates.isEmpty()) {
+                        chatRoomsRef.child(chatRoomId).child("members").updateChildren(updates)
+                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Unread counts incremented for chat room: " + chatRoomId))
+                            .addOnFailureListener(e -> Log.e(TAG, "Failed to increment unread counts", e));
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error incrementing unread counts", error.toException());
+                }
+            });
+    }
+
+    /**
+     * Mark all messages as read for a specific user in a chat room
+     * Resets their unread count to 0
+     */
+    public void markMessagesAsRead(String chatRoomId, String userId) {
+        if (chatRoomId == null || userId == null || userId.isEmpty()) {
+            Log.w(TAG, "Cannot mark messages as read - invalid chatRoomId or userId");
+            return;
+        }
+
+        chatRoomsRef.child(chatRoomId).child("members").child(userId).child("unreadCount")
+            .setValue(0)
+            .addOnSuccessListener(aVoid -> Log.d(TAG, "Marked all messages as read for user " + userId + " in chat room: " + chatRoomId))
+            .addOnFailureListener(e -> Log.e(TAG, "Failed to mark messages as read", e));
+    }
+
+    /**
+     * Get unread count for a specific user in a chat room
+     */
+    public void getUnreadCount(String chatRoomId, String userId, OnCompleteListener<Integer> listener) {
+        if (chatRoomId == null || userId == null || userId.isEmpty()) {
+            if (listener != null) {
+                listener.onSuccess(0);
+            }
+            return;
+        }
+
+        chatRoomsRef.child(chatRoomId).child("members").child(userId).child("unreadCount")
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Long unreadCount = snapshot.getValue(Long.class);
+                    int count = unreadCount != null ? unreadCount.intValue() : 0;
+                    if (listener != null) {
+                        listener.onSuccess(count);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error getting unread count", error.toException());
+                    if (listener != null) {
+                        listener.onError(error.toException());
+                    }
                 }
             });
     }

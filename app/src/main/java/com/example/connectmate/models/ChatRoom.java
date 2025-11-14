@@ -16,6 +16,9 @@ public class ChatRoom implements Serializable {
     private String activityId;
     private String category; // Category of the associated activity
     private String lastMessage;
+    private String lastMessageSenderId; // ID of user who sent last message
+    private String lastMessageSenderName; // Name of user who sent last message
+    private String lastMessageSenderProfileUrl; // Profile image of user who sent last message
     private long lastMessageTime;
     private List<String> memberIds;
     private List<String> memberNames;
@@ -113,6 +116,30 @@ public class ChatRoom implements Serializable {
 
     public void setLastMessage(String lastMessage) {
         this.lastMessage = lastMessage;
+    }
+
+    public String getLastMessageSenderId() {
+        return lastMessageSenderId;
+    }
+
+    public void setLastMessageSenderId(String lastMessageSenderId) {
+        this.lastMessageSenderId = lastMessageSenderId;
+    }
+
+    public String getLastMessageSenderName() {
+        return lastMessageSenderName;
+    }
+
+    public void setLastMessageSenderName(String lastMessageSenderName) {
+        this.lastMessageSenderName = lastMessageSenderName;
+    }
+
+    public String getLastMessageSenderProfileUrl() {
+        return lastMessageSenderProfileUrl;
+    }
+
+    public void setLastMessageSenderProfileUrl(String lastMessageSenderProfileUrl) {
+        this.lastMessageSenderProfileUrl = lastMessageSenderProfileUrl;
     }
 
     public long getLastMessageTime() {

@@ -42,6 +42,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ChatRoom chatRoom;
     private String currentUserId;
     private String currentUserName;
+    private String currentUserProfileUrl;
 
     // UI Components
     private Toolbar toolbar;
@@ -85,7 +86,21 @@ public class ChatRoomActivity extends AppCompatActivity {
             setupToolbar();
             loadMessagesFromFirebase();
             listenForChatRoomUpdates();
+            markMessagesAsRead();
         }
+    }
+
+    /**
+     * Mark all messages in this chat room as read for the current user
+     */
+    private void markMessagesAsRead() {
+        if (chatRoom == null || currentUserId == null || currentUserId.isEmpty()) {
+            Log.w(TAG, "Cannot mark messages as read - chatRoom or currentUserId is null");
+            return;
+        }
+
+        FirebaseChatManager.getInstance().markMessagesAsRead(chatRoom.getId(), currentUserId);
+        Log.d(TAG, "Marking messages as read for user: " + currentUserId);
     }
 
     @Override
@@ -159,12 +174,66 @@ public class ChatRoomActivity extends AppCompatActivity {
             currentUserId = firebaseUser.getUid();
             currentUserName = (firebaseUser.getDisplayName() != null) ?
                 firebaseUser.getDisplayName() : firebaseUser.getEmail();
+            currentUserProfileUrl = (firebaseUser.getPhotoUrl() != null) ?
+                firebaseUser.getPhotoUrl().toString() : null;
+            Log.d(TAG, "Firebase Auth - User: " + currentUserName + ", Profile URL: " + currentUserProfileUrl);
         } else {
             // Try SharedPreferences for social login
             SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
             currentUserId = prefs.getString("user_id", "");
             currentUserName = prefs.getString("user_name", "Guest");
+            currentUserProfileUrl = prefs.getString("profile_image_url", null);
+            Log.d(TAG, "SharedPreferences - User: " + currentUserName + ", Profile URL: " + currentUserProfileUrl);
         }
+
+        // If no profile URL from auth, try to fetch from SharedPreferences as fallback
+        if (currentUserProfileUrl == null || currentUserProfileUrl.isEmpty()) {
+            SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            currentUserProfileUrl = prefs.getString("profile_image_url", null);
+            Log.d(TAG, "Fallback SharedPreferences - Profile URL: " + currentUserProfileUrl);
+
+            // Also try to load from Firebase user profile
+            if ((currentUserProfileUrl == null || currentUserProfileUrl.isEmpty()) && !currentUserId.isEmpty()) {
+                Log.d(TAG, "Attempting to load profile URL from Firebase for user: " + currentUserId);
+                loadProfileUrlFromFirebase(currentUserId);
+            }
+        }
+
+        Log.d(TAG, "=== Final getUserInfo result ===");
+        Log.d(TAG, "User ID: " + currentUserId);
+        Log.d(TAG, "User Name: " + currentUserName);
+        Log.d(TAG, "Profile URL: " + currentUserProfileUrl);
+        Log.d(TAG, "Profile URL is " + (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty() ? "VALID" : "NULL/EMPTY"));
+    }
+
+    /**
+     * Load profile URL from Firebase Realtime Database
+     */
+    private void loadProfileUrlFromFirebase(String userId) {
+        com.google.firebase.database.FirebaseDatabase.getInstance()
+            .getReference("users")
+            .child(userId)
+            .child("profileImageUrl")
+            .get()
+            .addOnSuccessListener(dataSnapshot -> {
+                if (dataSnapshot.exists()) {
+                    String profileUrl = dataSnapshot.getValue(String.class);
+                    if (profileUrl != null && !profileUrl.isEmpty()) {
+                        currentUserProfileUrl = profileUrl;
+                        // Save to SharedPreferences for future use
+                        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                        prefs.edit().putString("profile_image_url", profileUrl).apply();
+                        Log.d(TAG, "Loaded profile URL from Firebase: " + profileUrl);
+                    } else {
+                        Log.d(TAG, "Profile URL exists in Firebase but is null/empty");
+                    }
+                } else {
+                    Log.d(TAG, "No profileImageUrl found in Firebase for user: " + userId);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Failed to load profile URL from Firebase", e);
+            });
     }
 
     private void initializeViews() {
@@ -239,6 +308,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 setupToolbar();
                 loadMessagesFromFirebase();
                 listenForChatRoomUpdates();
+                markMessagesAsRead();
             }
 
             @Override
@@ -381,6 +451,20 @@ public class ChatRoomActivity extends AppCompatActivity {
             currentUserName,
             messageText
         );
+
+        // Set profile URL if available
+        if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
+            message.setSenderProfileUrl(currentUserProfileUrl);
+            Log.d(TAG, "Setting profile URL on message: " + currentUserProfileUrl);
+        } else {
+            Log.w(TAG, "No profile URL available to set on message - will use default image");
+        }
+
+        Log.d(TAG, "=== Sending message ===");
+        Log.d(TAG, "Sender ID: " + currentUserId);
+        Log.d(TAG, "Sender Name: " + currentUserName);
+        Log.d(TAG, "Sender Profile URL: " + message.getSenderProfileUrl());
+        Log.d(TAG, "Message Text: " + messageText);
 
         // Send message to Firebase
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();

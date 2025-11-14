@@ -17,12 +17,12 @@
         android:id="@+id/profile_image"
         android:layout_width="54dp"
         android:layout_height="54dp"
-        android:src="@drawable/ic_profile"
+        android:src="@drawable/circle_logo"
         app:civ_border_color="@color/gray_200"
         app:civ_border_width="1dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/ic_profile" />
+        tools:src="@drawable/circle_logo" />
 
 
     <!-- Chat Room Name -->
@@ -40,21 +40,30 @@
         app:layout_constraintEnd_toStartOf="@id/member_count"
         app:layout_constraintStart_toEndOf="@id/profile_image"
         app:layout_constraintTop_toTopOf="@id/profile_image"
-        tools:text="@string/nick_name" />
+        tools:text="채팅방 이름" />
 
-    <!-- Member Count -->
+    <!-- Member Count Badge -->
+
+    <!-- Last Message -->
+
     <TextView
         android:id="@+id/member_count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="4dp"
-        android:textColor="@color/gray_500"
-        android:textSize="12sp"
-        app:layout_constraintBaseline_toBaselineOf="@id/chat_name"
+        android:background="@drawable/bg_participant_count"
+        android:paddingStart="8dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="3dp"
+        android:textColor="@color/primary_blue"
+        android:textSize="11sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@id/timestamp"
+        app:layout_constraintTop_toTopOf="@id/timestamp"
+        app:layout_constraintBottom_toBottomOf="@id/timestamp"
         tools:text="5명" />
 
-    <!-- Last Message -->
     <TextView
         android:id="@+id/last_message"
         android:layout_width="0dp"

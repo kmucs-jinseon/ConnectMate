@@ -15,6 +15,7 @@ public class ChatMessage implements Serializable {
     private String chatRoomId;
     private String senderId;
     private String senderName;
+    private String senderProfileUrl;
     private String message;
     private int messageType;
     private long timestamp;
@@ -80,6 +81,14 @@ public class ChatMessage implements Serializable {
 
     public void setSenderName(String senderName) {
         this.senderName = senderName;
+    }
+
+    public String getSenderProfileUrl() {
+        return senderProfileUrl;
+    }
+
+    public void setSenderProfileUrl(String senderProfileUrl) {
+        this.senderProfileUrl = senderProfileUrl;
     }
 
     public String getMessage() {
