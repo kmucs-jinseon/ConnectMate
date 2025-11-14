@@ -252,7 +252,6 @@ public class MainActivity extends AppCompatActivity {
         currentLocationCard = findViewById(R.id.current_location_card);
         currentLocationText = findViewById(R.id.current_location_text);
         btnCurrentLocation = findViewById(R.id.btn_current_location);
-        btnMapType = findViewById(R.id.btn_map_type);
         btnZoomIn = findViewById(R.id.btn_zoom_in);
         btnZoomOut = findViewById(R.id.btn_zoom_out);
 
