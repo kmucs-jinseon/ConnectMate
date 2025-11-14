@@ -173,40 +173,96 @@ public class ChatListFragment extends Fragment {
     }
 
     private void filterChatsByCategory() {
+        applyFiltersAndSearch();
+    }
+
+    private void filterChats(String query) {
+        applyFiltersAndSearch();
+    }
+
+    private void applyFiltersAndSearch() {
+        filteredChatRooms.clear();
+
+        // Get current search query
+        String searchQuery = "";
+        if (searchInput != null && searchInput.getText() != null) {
+            searchQuery = searchInput.getText().toString().toLowerCase();
+        }
+
         // Get selected categories from chips
-        if (filterChips.findViewById(R.id.chip_all).isSelected() ||
-            filterChips.getCheckedChipIds().isEmpty()) {
-            // Show all
-            filteredChatRooms.clear();
-            filteredChatRooms.addAll(allChatRooms);
-        } else {
-            filteredChatRooms.clear();
-            // Filter by selected categories
-            // TODO: Implement actual filtering logic based on chat room categories
-            filteredChatRooms.addAll(allChatRooms);
+        List<String> selectedCategories = getSelectedCategories();
+
+        // Apply both filters
+        for (ChatRoom chatRoom : allChatRooms) {
+            // Check category filter
+            boolean matchesCategory = false;
+            if (selectedCategories.isEmpty()) {
+                // No category filter or "All" selected - show all categories
+                matchesCategory = true;
+            } else {
+                String roomCategory = chatRoom.getCategory();
+                matchesCategory = roomCategory != null && selectedCategories.contains(roomCategory);
+            }
+
+            // Check search filter
+            boolean matchesSearch = false;
+            if (searchQuery.isEmpty()) {
+                matchesSearch = true;
+            } else {
+                String name = chatRoom.getName() != null ? chatRoom.getName().toLowerCase() : "";
+                String lastMsg = chatRoom.getLastMessage() != null ? chatRoom.getLastMessage().toLowerCase() : "";
+                matchesSearch = name.contains(searchQuery) || lastMsg.contains(searchQuery);
+            }
+
+            // Add chat room if it matches both filters
+            if (matchesCategory && matchesSearch) {
+                filteredChatRooms.add(chatRoom);
+            }
         }
 
         chatRoomAdapter.notifyDataSetChanged();
         updateUI();
     }
 
-    private void filterChats(String query) {
-        filteredChatRooms.clear();
+    private List<String> getSelectedCategories() {
+        List<String> selectedCategories = new ArrayList<>();
 
-        if (query.isEmpty()) {
-            filteredChatRooms.addAll(allChatRooms);
-        } else {
-            String lowerQuery = query.toLowerCase();
-            for (ChatRoom room : allChatRooms) {
-                if (room.getName().toLowerCase().contains(lowerQuery) ||
-                    room.getLastMessage().toLowerCase().contains(lowerQuery)) {
-                    filteredChatRooms.add(room);
-                }
+        if (filterChips == null) {
+            return selectedCategories;
+        }
+
+        List<Integer> checkedChipIds = filterChips.getCheckedChipIds();
+
+        // If "All" is checked or no chips are checked, return empty list (show all)
+        if (checkedChipIds.contains(R.id.chip_all) || checkedChipIds.isEmpty()) {
+            return selectedCategories;
+        }
+
+        // Map chip IDs to category names
+        for (Integer chipId : checkedChipIds) {
+            String category = getCategoryFromChipId(chipId);
+            if (category != null) {
+                selectedCategories.add(category);
             }
         }
 
-        chatRoomAdapter.notifyDataSetChanged();
-        updateUI();
+        return selectedCategories;
+    }
+
+    private String getCategoryFromChipId(int chipId) {
+        if (chipId == R.id.chip_sports) return "운동";
+        if (chipId == R.id.chip_outdoor) return "야외활동";
+        if (chipId == R.id.chip_study) return "스터디";
+        if (chipId == R.id.chip_culture) return "문화";
+        if (chipId == R.id.chip_social) return "소셜";
+        if (chipId == R.id.chip_food) return "맛집";
+        if (chipId == R.id.chip_travel) return "여행";
+        if (chipId == R.id.chip_game) return "게임";
+        if (chipId == R.id.chip_hobby) return "취미";
+        if (chipId == R.id.chip_volunteer) return "봉사";
+        if (chipId == R.id.chip_other) return "기타";
+
+        return null;
     }
 
     private void updateUI() {
@@ -251,17 +307,9 @@ public class ChatListFragment extends Fragment {
                 if (!exists) {
                     allChatRooms.add(0, chatRoom); // Add to beginning (newest first)
 
-                    // Update filtered list if no search/filter is active
-                    String currentSearch = searchInput != null && searchInput.getText() != null ?
-                        searchInput.getText().toString() : "";
-                    if (currentSearch.isEmpty()) {
-                        filteredChatRooms.add(0, chatRoom);
-                    } else {
-                        filterChats(currentSearch);
-                    }
+                    // Re-apply filters and search to update the filtered list
+                    applyFiltersAndSearch();
 
-                    chatRoomAdapter.notifyDataSetChanged();
-                    updateUI();
                     Log.d(TAG, "Chat room added: " + chatRoom.getName());
                 }
             }
@@ -276,15 +324,9 @@ public class ChatListFragment extends Fragment {
                     }
                 }
 
-                // Update filtered list
-                for (int i = 0; i < filteredChatRooms.size(); i++) {
-                    if (filteredChatRooms.get(i).getId().equals(chatRoom.getId())) {
-                        filteredChatRooms.set(i, chatRoom);
-                        break;
-                    }
-                }
+                // Re-apply filters and search to update the filtered list
+                applyFiltersAndSearch();
 
-                chatRoomAdapter.notifyDataSetChanged();
                 Log.d(TAG, "Chat room updated: " + chatRoom.getName());
             }
 
@@ -292,10 +334,10 @@ public class ChatListFragment extends Fragment {
             public void onChatRoomRemoved(ChatRoom chatRoom) {
                 // Remove chat room from lists
                 allChatRooms.removeIf(room -> room.getId().equals(chatRoom.getId()));
-                filteredChatRooms.removeIf(room -> room.getId().equals(chatRoom.getId()));
 
-                chatRoomAdapter.notifyDataSetChanged();
-                updateUI();
+                // Re-apply filters and search to update the filtered list
+                applyFiltersAndSearch();
+
                 Log.d(TAG, "Chat room removed: " + chatRoom.getName());
             }
 

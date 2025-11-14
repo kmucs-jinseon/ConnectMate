@@ -73,7 +73,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
             if (activityId != null) {
                 loadActivityFromFirebase(activityId);
             } else {
-                Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
                 finish();
                 return;
             }
@@ -110,7 +110,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            getSupportActionBar().setTitle("Activity Details");
+            getSupportActionBar().setTitle("활동 상세 내용");
         }
 
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -134,7 +134,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         if (activity.getDescription() != null && !activity.getDescription().isEmpty()) {
             detailDescription.setText(activity.getDescription());
         } else {
-            detailDescription.setText("No description provided.");
+            detailDescription.setText("작성된 설명이 없습니다.");
         }
 
         // Date & Time
@@ -142,7 +142,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         if (dateTime != null && !dateTime.isEmpty()) {
             detailDateTime.setText(dateTime);
         } else {
-            detailDateTime.setText("Date & time to be announced");
+            detailDateTime.setText("날짜와 시간은 추후 발표됩니다");
         }
 
         // Location
@@ -232,7 +232,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Error loading activity", e);
-                Toast.makeText(ActivityDetailActivity.this, "Failed to load activity", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ActivityDetailActivity.this, "활동을 불러오는 데 실패했습니다", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -280,31 +280,31 @@ public class ActivityDetailActivity extends AppCompatActivity {
      */
     private void deleteActivity() {
         if (activity == null) {
-            Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Show confirmation dialog
         new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Delete Activity")
-            .setMessage("Are you sure you want to delete this activity?")
-            .setPositiveButton("Delete", (dialog, which) -> {
+            .setTitle("활동 삭제")
+            .setMessage("이 활동을 정말 삭제하시겠습니까?")
+            .setPositiveButton("삭제", (dialog, which) -> {
                 FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
                 activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
                     @Override
                     public void onSuccess(Void result) {
-                        Toast.makeText(ActivityDetailActivity.this, "Activity deleted", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ActivityDetailActivity.this, "활동 삭제됨", Toast.LENGTH_SHORT).show();
                         finish();  // Close the activity detail page
                     }
 
                     @Override
                     public void onError(Exception e) {
                         Log.e(TAG, "Failed to delete activity", e);
-                        Toast.makeText(ActivityDetailActivity.this, "Failed to delete activity", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ActivityDetailActivity.this, "활동 삭제에 실패했습니다", Toast.LENGTH_SHORT).show();
                     }
                 });
             })
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("취소", null)
             .show();
     }
 
@@ -313,7 +313,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
      */
     private void joinActivity() {
         if (activity == null) {
-            Toast.makeText(this, "Activity not found", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -354,7 +354,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
                             displayName = snapshot.child("email").getValue(String.class);
                         }
                         if (displayName == null) {
-                            displayName = "Guest";
+                            displayName = "게스트";
                         }
                     }
 
@@ -480,7 +480,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 break;
             case "소셜":
             case "Social":
-                color = Color.parseColor("#FFD93D"); // Yellow
+                color = Color.parseColor("#FFD300"); // Yellow
                 break;
             case "맛집":
                 color = Color.parseColor("#FF6B9D"); // Pink

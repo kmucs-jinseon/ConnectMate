@@ -34,6 +34,8 @@
     <color name="teal_500">#14B8A6</color>
     <color name="cyan_500">#06B6D4</color>
     <color name="amber_500">#F59E0B</color>
+    <color name="yellow_500">#FFD300</color>
+    <color name="yellow_100">#FFF9E6</color>
 
     <!-- Neutral Colors -->
     <color name="white">#FFFFFF</color>

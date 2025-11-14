@@ -196,7 +196,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
                     break;
                 case "소셜":
                 case "Social":
-                    color = Color.parseColor("#FFD93D"); // Yellow
+                    color = Color.parseColor("#FFD300"); // Yellow
                     break;
                 case "맛집":
                     color = Color.parseColor("#FF6B9D"); // Pink

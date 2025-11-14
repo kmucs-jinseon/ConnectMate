@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -44,6 +45,8 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     // UI Components
     private Toolbar toolbar;
+    private TextView toolbarTitle;
+    private TextView toolbarParticipantCount;
     private RecyclerView messagesRecyclerView;
     private LinearLayout emptyState;
     private TextInputEditText messageInput;
@@ -166,6 +169,8 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
+        toolbarTitle = findViewById(R.id.toolbar_chat_room_title);
+        toolbarParticipantCount = findViewById(R.id.toolbar_participant_count);
         messagesRecyclerView = findViewById(R.id.messages_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         messageInput = findViewById(R.id.message_input);
@@ -177,10 +182,16 @@ public class ChatRoomActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            getSupportActionBar().setTitle(chatRoom.getName());
-            // Display member count as subtitle
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
+        // Set custom toolbar title and participant count
+        if (toolbarTitle != null) {
+            toolbarTitle.setText(chatRoom.getName());
+        }
+        if (toolbarParticipantCount != null) {
             int memberCount = chatRoom.getMemberCount();
-            getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
+            toolbarParticipantCount.setText(memberCount + "명 참여중");
         }
 
         // Set navigation icon tint to white using DrawableCompat for compatibility
@@ -189,6 +200,14 @@ public class ChatRoomActivity extends AppCompatActivity {
             Drawable wrappedIcon = DrawableCompat.wrap(navigationIcon);
             DrawableCompat.setTint(wrappedIcon, ContextCompat.getColor(this, R.color.white));
             toolbar.setNavigationIcon(wrappedIcon);
+        }
+
+        // Set overflow icon tint to white
+        Drawable overflowIcon = toolbar.getOverflowIcon();
+        if (overflowIcon != null) {
+            Drawable wrappedOverflow = DrawableCompat.wrap(overflowIcon);
+            DrawableCompat.setTint(wrappedOverflow, ContextCompat.getColor(this, R.color.white));
+            toolbar.setOverflowIcon(wrappedOverflow);
         }
 
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -313,9 +332,9 @@ public class ChatRoomActivity extends AppCompatActivity {
             public void onSuccess(ChatRoom updatedRoom) {
                 chatRoom = updatedRoom;
                 runOnUiThread(() -> {
-                    if (getSupportActionBar() != null) {
+                    if (toolbarParticipantCount != null) {
                         int memberCount = chatRoom.getMemberCount();
-                        getSupportActionBar().setSubtitle(memberCount + "명 참여 중");
+                        toolbarParticipantCount.setText(memberCount + "명 참여중");
                         Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
                 });

@@ -14,6 +14,7 @@ public class ChatRoom implements Serializable {
     private String id;
     private String name;
     private String activityId;
+    private String category; // Category of the associated activity
     private String lastMessage;
     private long lastMessageTime;
     private List<String> memberIds;
@@ -96,6 +97,14 @@ public class ChatRoom implements Serializable {
 
     public void setActivityId(String activityId) {
         this.activityId = activityId;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getLastMessage() {

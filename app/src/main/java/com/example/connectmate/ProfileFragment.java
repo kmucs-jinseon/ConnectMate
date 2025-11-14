@@ -96,8 +96,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void initializeViews(View view) {
-        // Header
-        moreButton = view.findViewById(R.id.more_button);
 
         // Profile card
         profileAvatar = view.findViewById(R.id.profile_avatar);
