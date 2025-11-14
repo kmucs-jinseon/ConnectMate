@@ -45,7 +45,8 @@
         android:paddingBottom="8dp"
         android:clickable="false"
         android:focusable="false"
-        android:visibility="visible">
+        android:visibility="visible"
+        android:elevation="16dp">
 
         <!-- Search Card -->
         <androidx.cardview.widget.CardView
@@ -153,9 +154,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:maxHeight="300dp"
+            android:layout_marginBottom="96dp"
+            android:maxHeight="250dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
+            app:cardElevation="16dp"
             android:visibility="gone">
 
             <androidx.recyclerview.widget.RecyclerView

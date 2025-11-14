@@ -41,7 +41,7 @@
         android:orientation="vertical"
         android:layout_margin="16dp"
         android:background="@android:color/transparent"
-        android:elevation="100dp">
+        android:elevation="16dp">
 
         <!-- Search Results List -->
         <androidx.cardview.widget.CardView
@@ -49,16 +49,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:maxHeight="400dp"
+            android:layout_marginBottom="96dp"
+            android:maxHeight="250dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="8dp"
+            app:cardElevation="16dp"
             android:visibility="gone">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/search_results_recycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingBottom="16dp"
+                android:clipToPadding="false"
                 android:scrollbars="vertical" />
 
         </androidx.cardview.widget.CardView>
