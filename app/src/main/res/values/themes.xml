@@ -11,9 +11,9 @@
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowBackground">@color/white</item>
 
-        <!-- Default Font Family - Open Sans -->
-        <item name="android:fontFamily">@font/open_sans</item>
-        <item name="fontFamily">@font/open_sans</item>
+        <!-- Default Font Family - Pretendard -->
+        <item name="android:fontFamily">@font/pretendard</item>
+        <item name="fontFamily">@font/pretendard</item>
     </style>
 
     <!-- Main Application Theme -->
