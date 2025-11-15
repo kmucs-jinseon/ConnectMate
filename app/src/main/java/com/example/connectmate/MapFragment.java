@@ -37,6 +37,7 @@ import com.kakao.vectormap.label.LabelLayer;
 import com.kakao.vectormap.label.Label;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.PlaceSearchResult;
+import com.example.connectmate.utils.CategoryMapper;
 import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -582,7 +583,10 @@ public class MapFragment extends Fragment {
                         }
 
                         if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
-                            place.setCategoryName(doc.get("category_name").getAsString());
+                            String categoryName = doc.get("category_name").getAsString();
+                            place.setCategoryName(categoryName);
+                            // Map Kakao category to our activity category
+                            place.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
                         }
 
                         if (doc.has("phone") && !doc.get("phone").isJsonNull()) {
@@ -686,7 +690,10 @@ public class MapFragment extends Fragment {
                         }
 
                         if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
-                            place.setCategoryName(doc.get("category_name").getAsString());
+                            String categoryName = doc.get("category_name").getAsString();
+                            place.setCategoryName(categoryName);
+                            // Map Kakao category to our activity category
+                            place.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
                         }
 
                         if (doc.has("phone") && !doc.get("phone").isJsonNull()) {

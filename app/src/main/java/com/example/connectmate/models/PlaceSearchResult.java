@@ -16,6 +16,7 @@ public class PlaceSearchResult implements Serializable {
     private double longitude; // x coordinate
     private String placeUrl;
     private int distance;
+    private String mappedCategory; // Mapped to our activity categories (운동, 맛집, etc.)
 
     public PlaceSearchResult() {
     }
@@ -106,5 +107,13 @@ public class PlaceSearchResult implements Serializable {
 
     public void setDistance(int distance) {
         this.distance = distance;
+    }
+
+    public String getMappedCategory() {
+        return mappedCategory;
+    }
+
+    public void setMappedCategory(String mappedCategory) {
+        this.mappedCategory = mappedCategory;
     }
 }
