@@ -34,6 +34,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/create_activity"
+                android:fontFamily="@font/pretendard_medium"
+                app:fontFamily="@font/pretendard_medium"
                 android:textColor="@color/white"
                 android:textSize="20sp" />
 
@@ -74,7 +76,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="@string/activity_title">
+                android:hint="활동 제목 *">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/title_input"
@@ -90,7 +92,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="@string/description">
+                android:hint="활동 설명 *">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/description_input"
@@ -108,7 +110,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:text="@string/category"
+                android:text="카테고리 *"
                 android:textColor="@color/gray_700"
                 android:textSize="16sp" />
 
@@ -119,7 +121,7 @@
                 android:layout_marginBottom="@dimen/spacing_medium"
                 app:chipSpacingHorizontal="8dp"
                 app:chipSpacingVertical="4dp"
-                app:singleSelection="true"
+                app:singleSelection="false"
                 app:selectionRequired="false">
                 <!-- Chips will be added programmatically -->
             </com.google.android.material.chip.ChipGroup>
@@ -138,7 +140,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/spacing_small"
                     android:layout_weight="1"
-                    android:hint="@string/date"
+                    android:hint="날짜 *"
                     app:endIconDrawable="@drawable/ic_calendar"
                     app:endIconMode="custom">
 
@@ -157,7 +159,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/spacing_small"
                     android:layout_weight="1"
-                    android:hint="@string/time"
+                    android:hint="시간 *"
                     app:endIconDrawable="@drawable/ic_clock"
                     app:endIconMode="custom">
 
@@ -177,7 +179,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:hint="@string/location_optional"
+                android:hint="장소 *"
                 app:endIconDrawable="@drawable/ic_search"
                 app:endIconMode="custom">
 
@@ -215,7 +217,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="@string/participant_limit">
+                android:hint="참가 인원 제한 *">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/participant_limit_input"
@@ -276,29 +278,35 @@
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Create/Edit Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/create_button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="@dimen/spacing_medium"
+                android:text="+ 새로운 활동 생성하기"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/primary_blue"
+                app:cornerRadius="12dp"/>
+
+            <!-- Delete Button (Only visible in edit mode) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/delete_button"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="@dimen/spacing_small"
+                android:layout_marginBottom="@dimen/spacing_large"
+                android:text="활동 삭제"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:backgroundTint="@android:color/holo_red_dark"
+                app:cornerRadius="12dp"/>
+
         </LinearLayout>
     </ScrollView>
-
-    <!-- Fixed Create Button Container with Gray Background -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/primary_blue"
-        android:elevation="4dp"
-        android:orientation="vertical"
-        android:padding="@dimen/spacing_tiny">
-
-        <Button
-            android:id="@+id/create_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="0dp"
-            android:text="+ 새로운 활동 생성하기"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:background="@drawable/bg_button_container"
-            android:textStyle="bold"/>
-
-    </LinearLayout>
 
 </LinearLayout>

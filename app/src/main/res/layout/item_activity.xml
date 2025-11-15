@@ -39,22 +39,16 @@
                 android:textStyle="bold"
                 tools:text="Weekly Soccer Match" />
 
-            <!-- Category Badge -->
-            <com.google.android.material.chip.Chip
-                android:id="@+id/category_chip"
-                style="@style/Widget.MaterialComponents.Chip.Action"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:textSize="12sp"
-                android:textColor="@color/white"
-                app:chipBackgroundColor="@color/primary_blue"
-                app:chipMinHeight="28dp"
-                app:textEndPadding="8dp"
-                app:textStartPadding="8dp"
-                tools:text="Sports" />
-
         </LinearLayout>
+
+        <!-- Category Badges -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/category_chip_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:chipSpacingHorizontal="4dp"
+            app:singleLine="false" />
 
         <!-- Location -->
         <LinearLayout

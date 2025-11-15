@@ -1,5 +1,7 @@
 package com.example.connectmate.utils;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -109,14 +111,14 @@ public class FirebaseActivityManager {
     }
 
     private void joinActivityAndCreateChat(Activity activity, OnCompleteListener<Activity> finalListener) {
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) {
+        // Get user info from the activity (already set by the creator)
+        String userId = activity.getCreatorId();
+        String userName = activity.getCreatorName();
+
+        if (userId == null || userId.isEmpty()) {
             if (finalListener != null) finalListener.onError(new Exception("User not authenticated."));
             return;
         }
-
-        String userId = currentUser.getUid();
-        String userName = currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getEmail();
 
         // Step 2a: Add creator as a participant
         addParticipant(activity.getId(), userId, userName, new OnCompleteListener<Void>() {
@@ -124,9 +126,12 @@ public class FirebaseActivityManager {
             public void onSuccess(Void result) {
                 Log.d(TAG, "Creator successfully added as participant.");
 
+                // Update the activity object's participant count to reflect the creator being added
+                activity.setCurrentParticipants(1);
+
                 // Step 2b: Create the chat room and add the creator as a member
                 FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), activity.getCategory(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
                     @Override
                     public void onSuccess(ChatRoom chatRoom) {
                         Log.d(TAG, "Chat room created or retrieved: " + chatRoom.getId());
@@ -299,6 +304,7 @@ public class FirebaseActivityManager {
 
     /**
      * Update an existing activity
+     * Only updates editable fields, preserving currentParticipants and participants list
      */
     public void updateActivity(Activity activity, OnCompleteListener<Activity> listener) {
         if (activity.getId() == null) {
@@ -308,7 +314,23 @@ public class FirebaseActivityManager {
             return;
         }
 
-        activitiesRef.child(activity.getId()).setValue(activity)
+        // Create a map of only the fields that should be updated
+        // This preserves currentParticipants and participants list
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("title", activity.getTitle());
+        updates.put("description", activity.getDescription());
+        updates.put("category", activity.getCategory());
+        updates.put("date", activity.getDate());
+        updates.put("time", activity.getTime());
+        updates.put("location", activity.getLocation());
+        updates.put("maxParticipants", activity.getMaxParticipants());
+        updates.put("visibility", activity.getVisibility());
+        updates.put("hashtags", activity.getHashtags());
+        updates.put("latitude", activity.getLatitude());
+        updates.put("longitude", activity.getLongitude());
+        // Note: We do NOT update currentParticipants or participants - these are managed separately
+
+        activitiesRef.child(activity.getId()).updateChildren(updates)
             .addOnSuccessListener(aVoid -> {
                 Log.d(TAG, "Activity updated: " + activity.getTitle());
                 if (listener != null) {

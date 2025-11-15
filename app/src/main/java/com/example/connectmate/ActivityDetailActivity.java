@@ -39,7 +39,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     // UI Components
     private Toolbar toolbar;
     private TextView detailTitle;
-    private Chip detailCategory;
+    private com.google.android.material.chip.ChipGroup detailCategoryGroup;
     private TextView detailDescription;
     private TextView detailDateTime;
     private TextView detailLocation;
@@ -48,7 +48,6 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private TextView detailHashtags;
     private TextView detailCreator;
     private MaterialButton btnJoinActivity;
-    private MaterialButton btnDeleteActivity;
     private MaterialButton btnViewOnMap;
 
     // Cards (for visibility control)
@@ -88,7 +87,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar);
         detailTitle = findViewById(R.id.detail_title);
-        detailCategory = findViewById(R.id.detail_category);
+        detailCategoryGroup = findViewById(R.id.detail_category_group);
         detailDescription = findViewById(R.id.detail_description);
         detailDateTime = findViewById(R.id.detail_datetime);
         detailLocation = findViewById(R.id.detail_location);
@@ -97,7 +96,6 @@ public class ActivityDetailActivity extends AppCompatActivity {
         detailHashtags = findViewById(R.id.detail_hashtags);
         detailCreator = findViewById(R.id.detail_creator);
         btnJoinActivity = findViewById(R.id.btn_join_activity);
-        btnDeleteActivity = findViewById(R.id.btn_delete_activity);
         btnViewOnMap = findViewById(R.id.btn_view_on_map);
 
         locationCard = findViewById(R.id.location_card);
@@ -122,12 +120,38 @@ public class ActivityDetailActivity extends AppCompatActivity {
             detailTitle.setText(activity.getTitle());
         }
 
-        // Category
+        // Categories - split and display multiple chips
         if (activity.getCategory() != null && !activity.getCategory().isEmpty()) {
-            detailCategory.setText(activity.getCategory());
-            setCategoryColor(detailCategory, activity.getCategory());
+            detailCategoryGroup.removeAllViews();
+            String[] categories = activity.getCategory().split(",");
+            for (String category : categories) {
+                String trimmedCategory = category.trim();
+                if (!trimmedCategory.isEmpty()) {
+                    Chip chip = new Chip(this);
+                    chip.setText(trimmedCategory);
+                    chip.setTextColor(getResources().getColor(android.R.color.white, null));
+                    chip.setChipCornerRadius(50f); // Large radius for ellipse/pill shape
+                    chip.setClickable(false);
+                    chip.setChipMinHeight(40f);
+                    chip.setTextSize(13f);
+
+                    // Compact horizontal padding for shorter chips
+                    chip.setChipStartPadding(8f);
+                    chip.setChipEndPadding(8f);
+                    chip.setTextStartPadding(6f);
+                    chip.setTextEndPadding(6f);
+
+                    // Set color based on category
+                    int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(trimmedCategory);
+                    int color = getResources().getColor(colorRes, null);
+                    chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
+
+                    detailCategoryGroup.addView(chip);
+                }
+            }
+            detailCategoryGroup.setVisibility(View.VISIBLE);
         } else {
-            detailCategory.setVisibility(View.GONE);
+            detailCategoryGroup.setVisibility(View.GONE);
         }
 
         // Description
@@ -155,7 +179,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
         // Participants
         if (activity.getMaxParticipants() > 0) {
             String participantsText = activity.getCurrentParticipants() + " / " +
-                activity.getMaxParticipants() + " participants";
+                activity.getMaxParticipants() + " 명";
             detailParticipants.setText(participantsText);
         } else {
             participantsCard.setVisibility(View.GONE);
@@ -194,17 +218,6 @@ public class ActivityDetailActivity extends AppCompatActivity {
         btnJoinActivity.setOnClickListener(v -> {
             joinActivity();
         });
-
-        // Only show delete button if current user is the creator
-        String currentUserId = getCurrentUserId();
-        if (activity.getCreatorId() != null && activity.getCreatorId().equals(currentUserId)) {
-            btnDeleteActivity.setVisibility(View.VISIBLE);
-            btnDeleteActivity.setOnClickListener(v -> {
-                deleteActivity();
-            });
-        } else {
-            btnDeleteActivity.setVisibility(View.GONE);
-        }
 
         // Navigation button - only show if activity has coordinates
         if (activity.getLatitude() != 0.0 && activity.getLongitude() != 0.0) {
@@ -258,54 +271,6 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 Log.e(TAG, "Error listening to activity updates", e);
             }
         });
-    }
-
-    /**
-     * Get current user ID from Firebase Auth or SharedPreferences
-     */
-    private String getCurrentUserId() {
-        // Try Firebase Auth
-        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (firebaseUser != null) {
-            return firebaseUser.getUid();
-        }
-
-        // Try SharedPreferences for social login
-        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-        return prefs.getString("user_id", "");
-    }
-
-    /**
-     * Delete the activity
-     */
-    private void deleteActivity() {
-        if (activity == null) {
-            Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Show confirmation dialog
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("활동 삭제")
-            .setMessage("이 활동을 정말 삭제하시겠습니까?")
-            .setPositiveButton("삭제", (dialog, which) -> {
-                FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
-                activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        Toast.makeText(ActivityDetailActivity.this, "활동 삭제됨", Toast.LENGTH_SHORT).show();
-                        finish();  // Close the activity detail page
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        Log.e(TAG, "Failed to delete activity", e);
-                        Toast.makeText(ActivityDetailActivity.this, "활동 삭제에 실패했습니다", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            })
-            .setNegativeButton("취소", null)
-            .show();
     }
 
     /**
@@ -389,7 +354,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 }
 
                 // User is not a participant, proceed with joining
-                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), activity.getCategory(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
                     @Override
                     public void onSuccess(ChatRoom chatRoom) {
                         // First, add user as participant to the activity

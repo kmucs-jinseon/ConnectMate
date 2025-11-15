@@ -1,5 +1,6 @@
 package com.example.connectmate;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,8 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.connectmate.models.ChatRoom;
+import com.example.connectmate.utils.CategoryMapper;
+import com.google.android.material.chip.Chip;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -51,6 +54,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     static class ChatRoomViewHolder extends RecyclerView.ViewHolder {
         private final CircleImageView profileImage;
         private final TextView chatName;
+        private final Chip categoryChip;
         private final TextView memberCount;
         private final TextView lastMessage;
         private final TextView timestamp;
@@ -61,6 +65,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             super(itemView);
             profileImage = itemView.findViewById(R.id.profile_image);
             chatName = itemView.findViewById(R.id.chat_name);
+            categoryChip = itemView.findViewById(R.id.category_chip);
             memberCount = itemView.findViewById(R.id.member_count);
             lastMessage = itemView.findViewById(R.id.last_message);
             timestamp = itemView.findViewById(R.id.timestamp);
@@ -70,6 +75,9 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
 
         public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener) {
             chatName.setText(chatRoom.getName());
+
+            // Category chip is hidden but data is kept for filtering
+            // No need to set visibility or styling as it's hidden in XML
 
             // Display member count
             int count = chatRoom.getMemberCount();

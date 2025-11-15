@@ -74,7 +74,7 @@ public class FirebaseChatManager {
     /**
      * Create or get existing chat room for an activity
      */
-    public void createOrGetChatRoom(String activityId, String activityTitle, OnCompleteListener<ChatRoom> listener) {
+    public void createOrGetChatRoom(String activityId, String activityTitle, String activityCategory, OnCompleteListener<ChatRoom> listener) {
         // Query for existing chat room with this activity ID
         chatRoomsRef.orderByChild("activityId").equalTo(activityId)
             .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -92,8 +92,9 @@ public class FirebaseChatManager {
                         }
                     }
 
-                    // Create new chat room
+                    // Create new chat room with category
                     ChatRoom chatRoom = new ChatRoom(activityTitle, activityId);
+                    chatRoom.setCategory(activityCategory);
                     saveChatRoom(chatRoom, listener);
                 }
 

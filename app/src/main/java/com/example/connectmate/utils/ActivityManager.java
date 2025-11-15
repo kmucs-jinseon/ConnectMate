@@ -79,8 +79,8 @@ public class ActivityManager {
             Log.e(TAG, "Error loading activities", e);
         }
 
-        // Return sample data if no activities found
-        return getSampleActivities();
+        // Return empty list for new users
+        return new ArrayList<>();
     }
 
     /**
@@ -196,60 +196,5 @@ public class ActivityManager {
     public void clearAllActivities() {
         prefs.edit().remove(KEY_ACTIVITIES).apply();
         Log.d(TAG, "All activities cleared");
-    }
-
-    /**
-     * Get sample activities for first-time use - with Seoul coordinates
-     */
-    private List<Activity> getSampleActivities() {
-        List<Activity> sampleActivities = new ArrayList<>();
-
-        Activity activity1 = new Activity(
-            "1", "Weekly Soccer Match", "Seoul National Park",
-            "Today, 3:00 PM", "Join us for a friendly soccer match!",
-            5, 10, "운동"
-        );
-        activity1.setLatitude(37.5665);  // Seoul City Hall area
-        activity1.setLongitude(126.9780);
-        sampleActivities.add(activity1);
-
-        Activity activity2 = new Activity(
-            "2", "Study Group - Java", "Gangnam Library",
-            "Tomorrow, 2:00 PM", "Let's study Java together",
-            3, 8, "스터디"
-        );
-        activity2.setLatitude(37.5172);  // Gangnam area
-        activity2.setLongitude(127.0473);
-        sampleActivities.add(activity2);
-
-        Activity activity3 = new Activity(
-            "3", "Coffee Meetup", "Hongdae Cafe",
-            "Saturday, 4:00 PM", "Casual coffee and chat",
-            6, 12, "소셜"
-        );
-        activity3.setLatitude(37.5563);  // Hongdae area
-        activity3.setLongitude(126.9238);
-        sampleActivities.add(activity3);
-
-        Activity activity4 = new Activity(
-            "4", "Morning Yoga", "Han River Park",
-            "Sunday, 7:00 AM", "Start your day with yoga and meditation",
-            8, 15, "운동"
-        );
-        activity4.setLatitude(37.5286);  // Yeouido Han River Park
-        activity4.setLongitude(126.9260);
-        sampleActivities.add(activity4);
-
-        Activity activity5 = new Activity(
-            "5", "Python Workshop", "Tech Hub Seoul",
-            "Next Friday, 6:00 PM", "Learn Python basics and build a project",
-            12, 20, "스터디"
-        );
-        activity5.setLatitude(37.5642);  // Mapo/Tech area
-        activity5.setLongitude(126.9770);
-        sampleActivities.add(activity5);
-
-        Log.d(TAG, "Returning " + sampleActivities.size() + " sample activities with Seoul coordinates");
-        return sampleActivities;
     }
 }

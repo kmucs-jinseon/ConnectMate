@@ -90,7 +90,6 @@ public class ChatListFragment extends Fragment {
         // Chat list
         chatRecyclerView = view.findViewById(R.id.chat_recycler_view);
         emptyState = view.findViewById(R.id.empty_state);
-        btnStartChat = view.findViewById(R.id.btn_start_chat);
     }
 
     private void setupRecyclerViews() {
@@ -116,11 +115,13 @@ public class ChatListFragment extends Fragment {
             filterChatsByCategory();
         });
 
-        // Start chat button (in empty state)
-        btnStartChat.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Start new chat", Toast.LENGTH_SHORT).show();
-            // TODO: Implement start chat functionality
-        });
+        // Start chat button (in empty state) - only set listener if button exists
+        if (btnStartChat != null) {
+            btnStartChat.setOnClickListener(v -> {
+                Toast.makeText(requireContext(), "Start new chat", Toast.LENGTH_SHORT).show();
+                // TODO: Implement start chat functionality
+            });
+        }
 
         // Search input text watcher
         if (searchInput != null) {
@@ -287,6 +288,9 @@ public class ChatListFragment extends Fragment {
                     // Load unread count for this chat room
                     loadUnreadCountForChatRoom(chatRoom);
 
+                    // Re-apply filters to update the filtered list
+                    applyFiltersAndSearch();
+
                     Log.d(TAG, "Chat room added: " + chatRoom.getName());
                 }
             }
@@ -303,6 +307,9 @@ public class ChatListFragment extends Fragment {
 
                 // Load unread count for this chat room
                 loadUnreadCountForChatRoom(chatRoom);
+
+                // Re-apply filters to update the filtered list
+                applyFiltersAndSearch();
 
                 Log.d(TAG, "Chat room updated: " + chatRoom.getName());
             }

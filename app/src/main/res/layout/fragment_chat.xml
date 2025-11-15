@@ -277,16 +277,7 @@
                         android:textColor="@color/gray_400"
                         android:textSize="14sp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_start_chat"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="24dp"
-                        android:text="@string/start_chat"
-                        app:icon="@android:drawable/ic_input_add"
-                        app:strokeColor="@color/primary_blue"
-                        app:strokeWidth="2dp" />
+
 
                 </LinearLayout>
 

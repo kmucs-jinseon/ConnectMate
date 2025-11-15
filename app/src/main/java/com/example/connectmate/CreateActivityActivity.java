@@ -1,14 +1,16 @@
 package com.example.connectmate;
+import android.Manifest;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
@@ -16,12 +18,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.PlaceSearchResult;
 import com.example.connectmate.utils.FirebaseActivityManager;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -53,8 +60,9 @@ public class CreateActivityActivity extends AppCompatActivity {
             locationInput, participantLimitInput, hashtagsInput;
     private ChipGroup categoryChipGroup;
     private MaterialButtonToggleGroup visibilityToggle;
-    private Button createButton;
-    private String selectedCategory = "";
+    private MaterialButton createButton;
+    private MaterialButton deleteButton;
+    private List<String> selectedCategories = new ArrayList<>();
 
     // Location data from map search
     private String locationName;
@@ -75,6 +83,10 @@ public class CreateActivityActivity extends AppCompatActivity {
     private Runnable searchRunnable;
     private static final long SEARCH_DELAY_MS = 800;
 
+    // Current location for sorting search results
+    private FusedLocationProviderClient fusedLocationClient;
+    private Location currentLocation;
+
     // Edit mode variables
     private boolean isEditMode = false;
     private Activity editingActivity = null;
@@ -83,6 +95,10 @@ public class CreateActivityActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fragment_create_activity); // 👉 XML 파일 이름에 맞게 수정하세요
+
+        // Initialize location client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        getCurrentUserLocation();
 
         initViews();
         setupLocationInput(); // Setup listener before handling intent
@@ -156,12 +172,24 @@ public class CreateActivityActivity extends AppCompatActivity {
             hashtagsInput.setText(editingActivity.getHashtags());
         }
 
-        // Set category (will be selected after chips are created)
-        selectedCategory = editingActivity.getCategory();
+        // Set categories (will be selected after chips are created)
+        // Split comma-separated categories
+        String categoryStr = editingActivity.getCategory();
+        if (categoryStr != null && !categoryStr.isEmpty()) {
+            String[] categories = categoryStr.split(",");
+            for (String cat : categories) {
+                selectedCategories.add(cat.trim());
+            }
+        }
 
         // Update button text for edit mode
         if (createButton != null) {
             createButton.setText("활동 수정 완료");
+        }
+
+        // Show delete button in edit mode
+        if (deleteButton != null) {
+            deleteButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -328,6 +356,7 @@ public class CreateActivityActivity extends AppCompatActivity {
         hashtagsInput = findViewById(R.id.hashtags_input);
         visibilityToggle = findViewById(R.id.visibility_toggle);
         createButton = findViewById(R.id.create_button);
+        deleteButton = findViewById(R.id.delete_button);
 
         // Location search components
         locationSearchResultsCard = findViewById(R.id.location_search_results_card);
@@ -351,16 +380,35 @@ public class CreateActivityActivity extends AppCompatActivity {
         }
 
         for (String category : categories) {
-            // Create chip with FilterChipStyle
+            // Create chip with category-specific color
             Chip chip = new Chip(this);
-            chip.setChipBackgroundColorResource(R.color.filter_chip_background);
-            chip.setTextColor(getResources().getColorStateList(R.color.filter_chip_text, null));
+
+            // Get category color from CategoryMapper
+            int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
+            int categoryColor = getResources().getColor(colorRes, null);
+
+            // Set background color based on category
+            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(categoryColor));
+            chip.setTextColor(getResources().getColor(android.R.color.white, null));
             chip.setCheckedIconVisible(false);
             chip.setChipStrokeWidth(0f);
-            chip.setChipCornerRadius(getResources().getDimension(R.dimen.chip_corner_radius));
+            chip.setChipCornerRadius(12f); // Rounded corners like participant count badge
             chip.setText(category);
             chip.setCheckable(true);
             chip.setClickable(true);
+
+            // Add padding similar to toolbar participant count
+            chip.setChipMinHeight(40f);
+            chip.setTextSize(12f);
+            chip.setChipStartPadding(10f);
+            chip.setChipEndPadding(10f);
+            chip.setTextStartPadding(10f);
+            chip.setTextEndPadding(10f);
+
+            // Add vertical padding (top and bottom) - 8dp
+            int horizontalPadding = chip.getPaddingLeft();
+            chip.setPadding(horizontalPadding, 8, horizontalPadding, 8);
+
             Log.d(TAG, "Created chip: " + category);
 
             categoryChipGroup.addView(chip);
@@ -368,29 +416,27 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         Log.d(TAG, "Finished adding chips. ChipGroup child count: " + categoryChipGroup.getChildCount());
 
-        // Handle chip selection
+        // Handle chip selection (now supports multiple selections)
         categoryChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (!checkedIds.isEmpty()) {
-                int chipId = checkedIds.get(0);
+            selectedCategories.clear();
+            for (int chipId : checkedIds) {
                 Chip selectedChip = findViewById(chipId);
                 if (selectedChip != null) {
-                    selectedCategory = selectedChip.getText().toString();
-                    Log.d(TAG, "Category selected: " + selectedCategory);
+                    selectedCategories.add(selectedChip.getText().toString());
                 }
-            } else {
-                selectedCategory = "";
             }
+            Log.d(TAG, "Categories selected: " + selectedCategories);
         });
 
-        // If in edit mode, select the appropriate category chip
-        if (isEditMode && selectedCategory != null && !selectedCategory.isEmpty()) {
+        // If in edit mode, select the appropriate category chips
+        if (isEditMode && !selectedCategories.isEmpty()) {
             for (int i = 0; i < categoryChipGroup.getChildCount(); i++) {
                 View view = categoryChipGroup.getChildAt(i);
                 if (view instanceof Chip) {
                     Chip chip = (Chip) view;
-                    if (chip.getText().toString().equals(selectedCategory)) {
+                    String chipText = chip.getText().toString();
+                    if (selectedCategories.contains(chipText)) {
                         chip.setChecked(true);
-                        break;
                     }
                 }
             }
@@ -434,6 +480,21 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         closeButton.setOnClickListener(v -> finish());
 
+        // Delete button click listener (only visible in edit mode)
+        deleteButton.setOnClickListener(v -> {
+            if (isEditMode && editingActivity != null) {
+                // Show confirmation dialog
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("활동 삭제")
+                    .setMessage("이 활동을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.")
+                    .setPositiveButton("삭제", (dialog, which) -> {
+                        deleteActivity();
+                    })
+                    .setNegativeButton("취소", null)
+                    .show();
+            }
+        });
+
         createButton.setOnClickListener(v -> {
             Log.d(TAG, "Create button clicked");
 
@@ -443,46 +504,87 @@ public class CreateActivityActivity extends AppCompatActivity {
             try {
                 String title = (titleInput.getText() != null) ? titleInput.getText().toString().trim() : "";
                 String description = (descriptionInput.getText() != null) ? descriptionInput.getText().toString().trim() : "";
-                String category = selectedCategory;
+                // Join selected categories with comma
+                String category = String.join(",", selectedCategories);
                 String date = (dateInput.getText() != null) ? dateInput.getText().toString().trim() : "";
                 String time = (timeInput.getText() != null) ? timeInput.getText().toString().trim() : "";
                 String location = (locationInput.getText() != null) ? locationInput.getText().toString().trim() : "";
                 String participantsStr = (participantLimitInput.getText() != null) ? participantLimitInput.getText().toString().trim() : "";
                 String hashtags = (hashtagsInput.getText() != null) ? hashtagsInput.getText().toString().trim() : "";
 
-                Log.d(TAG, "Validating fields - Title: " + title + ", Category: " + category);
+                Log.d(TAG, "Validating fields - Title: " + title + ", Categories: " + category);
 
                 // Validate required fields
                 if (title.isEmpty()) {
-                    Toast.makeText(this, "제목을 입력하세요.", Toast.LENGTH_LONG).show();
+                    titleInput.setError("제목을 입력하세요");
+                    Toast.makeText(this, "제목을 입력하세요", Toast.LENGTH_LONG).show();
                     Log.w(TAG, "Validation failed: Title is empty");
                     createButton.setEnabled(true);
                     return;
                 }
 
+                if (description.isEmpty()) {
+                    descriptionInput.setError("활동 설명을 입력하세요");
+                    Toast.makeText(this, "활동 설명을 입력하세요", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Description is empty");
+                    createButton.setEnabled(true);
+                    return;
+                }
+
                 if (category == null || category.isEmpty()) {
-                    Toast.makeText(this, "카테고리를 선택하세요.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "카테고리를 선택하세요", Toast.LENGTH_LONG).show();
                     Log.w(TAG, "Validation failed: Category is empty");
                     createButton.setEnabled(true);
                     return;
                 }
 
-                // Parse participant limit
+                if (date.isEmpty()) {
+                    dateInput.setError("날짜를 선택하세요");
+                    Toast.makeText(this, "날짜를 선택하세요", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Date is empty");
+                    createButton.setEnabled(true);
+                    return;
+                }
+
+                if (time.isEmpty()) {
+                    timeInput.setError("시간을 선택하세요");
+                    Toast.makeText(this, "시간을 선택하세요", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Time is empty");
+                    createButton.setEnabled(true);
+                    return;
+                }
+
+                if (location.isEmpty()) {
+                    locationInput.setError("장소를 입력하세요");
+                    Toast.makeText(this, "장소를 입력하세요", Toast.LENGTH_LONG).show();
+                    Log.w(TAG, "Validation failed: Location is empty");
+                    createButton.setEnabled(true);
+                    return;
+                }
+
+                // Parse and validate participant limit
                 int maxParticipants = 0;
-                if (!participantsStr.isEmpty()) {
-                    try {
-                        maxParticipants = Integer.parseInt(participantsStr);
-                        if (maxParticipants < 0) {
-                            Toast.makeText(this, "참가 인원은 0보다 커야 합니다.", Toast.LENGTH_LONG).show();
-                            createButton.setEnabled(true);
-                            return;
-                        }
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(this, "올바른 인원 수를 입력하세요.", Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "Invalid participant number: " + participantsStr, e);
+                if (participantsStr.isEmpty()) {
+                    participantLimitInput.setError("참가 인원을 입력하세요");
+                    Toast.makeText(this, "참가 인원을 입력하세요", Toast.LENGTH_LONG).show();
+                    createButton.setEnabled(true);
+                    return;
+                }
+
+                try {
+                    maxParticipants = Integer.parseInt(participantsStr);
+                    if (maxParticipants <= 0) {
+                        participantLimitInput.setError("참가 인원은 1명 이상이어야 합니다");
+                        Toast.makeText(this, "참가 인원은 1명 이상이어야 합니다", Toast.LENGTH_LONG).show();
                         createButton.setEnabled(true);
                         return;
                     }
+                } catch (NumberFormatException e) {
+                    participantLimitInput.setError("올바른 숫자를 입력하세요");
+                    Toast.makeText(this, "올바른 숫자를 입력하세요", Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Invalid participant number: " + participantsStr, e);
+                    createButton.setEnabled(true);
+                    return;
                 }
 
                 // Get visibility
@@ -637,9 +739,21 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         Log.d(TAG, "Searching for location: " + query);
 
-        // Use Seoul as default location for search
+        // Build API URL with current location for proximity-based search
         String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
-            android.net.Uri.encode(query) + "&x=126.9780&y=37.5665&radius=20000";
+            android.net.Uri.encode(query);
+
+        // Add current location for proximity search (Kakao API will return sorted by distance)
+        if (currentLocation != null) {
+            double longitude = currentLocation.getLongitude();
+            double latitude = currentLocation.getLatitude();
+            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000"; // 20km radius
+            Log.d(TAG, "Using current location for search: lat=" + latitude + ", lng=" + longitude);
+        } else {
+            // Fallback to Seoul center if no location available
+            apiUrl += "&x=126.9780&y=37.5665&radius=20000";
+            Log.d(TAG, "Using default Seoul location for search");
+        }
 
         Request request = new Request.Builder()
             .url(apiUrl)
@@ -711,10 +825,25 @@ public class CreateActivityActivity extends AppCompatActivity {
     }
 
     /**
-     * Display location search results
+     * Display location search results (sorted by distance)
      */
     private void displayLocationSearchResults(List<PlaceSearchResult> results) {
         locationSearchResults.clear();
+
+        // Sort results by distance (nearest first)
+        // Results from Kakao API already include distance when current location is provided
+        results.sort((a, b) -> {
+            // If both have distance values, sort by distance
+            if (a.getDistance() > 0 && b.getDistance() > 0) {
+                return Integer.compare(a.getDistance(), b.getDistance());
+            }
+            // If only one has distance, prioritize it
+            if (a.getDistance() > 0) return -1;
+            if (b.getDistance() > 0) return 1;
+            // If neither has distance, maintain original order
+            return 0;
+        });
+
         locationSearchResults.addAll(results);
         if (locationSearchAdapter != null) {
             locationSearchAdapter.updateResults(locationSearchResults);
@@ -722,7 +851,7 @@ public class CreateActivityActivity extends AppCompatActivity {
         if (locationSearchResultsCard != null) {
             locationSearchResultsCard.setVisibility(View.VISIBLE);
         }
-        Log.d(TAG, "Displaying " + results.size() + " location search results");
+        Log.d(TAG, "Displaying " + results.size() + " location search results (sorted by distance)");
     }
 
     /**
@@ -736,6 +865,73 @@ public class CreateActivityActivity extends AppCompatActivity {
         if (locationSearchAdapter != null) {
             locationSearchAdapter.updateResults(locationSearchResults);
         }
+    }
+
+    /**
+     * Get current user location for proximity-based search
+     */
+    private void getCurrentUserLocation() {
+        // Check for location permission
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Location permission not granted, using default location");
+            return;
+        }
+
+        try {
+            fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    if (location != null) {
+                        currentLocation = location;
+                        Log.d(TAG, "Current location obtained: lat=" + location.getLatitude() + ", lng=" + location.getLongitude());
+                    } else {
+                        Log.w(TAG, "Current location is null, using default location");
+                    }
+                })
+                .addOnFailureListener(this, e -> {
+                    Log.e(TAG, "Failed to get current location", e);
+                });
+        } catch (Exception e) {
+            Log.e(TAG, "Exception while getting location", e);
+        }
+    }
+
+    /**
+     * Delete the current activity from Firebase
+     */
+    private void deleteActivity() {
+        if (editingActivity == null || editingActivity.getId() == null) {
+            Toast.makeText(this, "삭제할 활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Disable delete button to prevent double-click
+        deleteButton.setEnabled(false);
+
+        Toast.makeText(this, "활동 삭제 중...", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Deleting activity: " + editingActivity.getId());
+
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+        activityManager.deleteActivity(editingActivity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                runOnUiThread(() -> {
+                    Toast.makeText(CreateActivityActivity.this, "활동이 삭제되었습니다", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Activity deleted successfully");
+                    // Close activity and return to previous screen
+                    finish();
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
+                runOnUiThread(() -> {
+                    deleteButton.setEnabled(true);
+                    Toast.makeText(CreateActivityActivity.this, "활동 삭제에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Failed to delete activity", e);
+                });
+            }
+        });
     }
 
     /**

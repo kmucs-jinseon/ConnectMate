@@ -42,7 +42,7 @@
     <string name="favorites">즐겨찾기</string>
     <string name="no_chats">채팅방 없음</string>
     <string name="no_chats_yet">생성된 채팅방이 없습니다</string>
-    <string name="start_conversation">대화를 시작해 새로운 관계를 자연스럽게 이어가 보세요!</string>
+    <string name="start_conversation">활동을 만들어 채팅방에 참여해 보세요!</string>
     <string name="start_chat">채팅 시작</string>
 
     <!-- Profile Screen -->

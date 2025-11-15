@@ -37,10 +37,36 @@
         android:textColor="@color/gray_900"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@id/member_count"
+        app:layout_constraintEnd_toStartOf="@id/category_chip"
         app:layout_constraintStart_toEndOf="@id/profile_image"
         app:layout_constraintTop_toTopOf="@id/profile_image"
         tools:text="채팅방 이름" />
+
+    <!-- Category Chip (Hidden, kept for filtering) -->
+    <com.google.android.material.chip.Chip
+        android:id="@+id/category_chip"
+        style="@style/Widget.MaterialComponents.Chip.Action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:clickable="false"
+        android:focusable="false"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:visibility="gone"
+        app:chipBackgroundColor="@color/primary_blue"
+        app:chipCornerRadius="50dp"
+        app:chipMinHeight="40dp"
+        app:chipStartPadding="8dp"
+        app:chipEndPadding="8dp"
+        app:textStartPadding="6dp"
+        app:textEndPadding="6dp"
+        app:layout_constraintBottom_toBottomOf="@id/member_count"
+        app:layout_constraintEnd_toStartOf="@id/member_count"
+        app:layout_constraintStart_toEndOf="@id/chat_name"
+        app:layout_constraintTop_toTopOf="@id/chat_name"
+        tools:text="운동" />
 
     <!-- Member Count Badge -->
 

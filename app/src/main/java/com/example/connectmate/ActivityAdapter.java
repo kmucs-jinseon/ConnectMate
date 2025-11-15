@@ -55,7 +55,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
 
     static class ActivityViewHolder extends RecyclerView.ViewHolder {
         private final TextView activityTitle;
-        private final Chip categoryChip;
+        private final com.google.android.material.chip.ChipGroup categoryChipGroup;
         private final TextView activityLocation;
         private final TextView activityTime;
         private final TextView activityCreator;
@@ -67,7 +67,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
         public ActivityViewHolder(@NonNull View itemView) {
             super(itemView);
             activityTitle = itemView.findViewById(R.id.activity_title);
-            categoryChip = itemView.findViewById(R.id.category_chip);
+            categoryChipGroup = itemView.findViewById(R.id.category_chip_group);
             activityLocation = itemView.findViewById(R.id.activity_location);
             activityTime = itemView.findViewById(R.id.activity_time);
             activityCreator = itemView.findViewById(R.id.activity_creator);
@@ -136,10 +136,35 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
             // Show/hide edit button based on creator status
             btnEditActivity.setVisibility(isCreator ? View.VISIBLE : View.GONE);
 
-            // Set category chip
-            if (activity.getCategory() != null) {
-                categoryChip.setText(activity.getCategory());
-                setCategoryColor(categoryChip, activity.getCategory());
+            // Set category chips - split and display multiple chips
+            categoryChipGroup.removeAllViews();
+            if (activity.getCategory() != null && !activity.getCategory().isEmpty()) {
+                String[] categories = activity.getCategory().split(",");
+                for (String category : categories) {
+                    String trimmedCategory = category.trim();
+                    if (!trimmedCategory.isEmpty()) {
+                        Chip chip = new Chip(context);
+                        chip.setText(trimmedCategory);
+                        chip.setTextColor(Color.WHITE);
+                        chip.setChipCornerRadius(50f); // Large radius for ellipse/pill shape
+                        chip.setClickable(false);
+                        chip.setTextSize(13f);
+                        chip.setChipMinHeight(40f);
+
+                        // Compact horizontal padding for shorter chips
+                        chip.setChipStartPadding(8f);
+                        chip.setChipEndPadding(8f);
+                        chip.setTextStartPadding(6f);
+                        chip.setTextEndPadding(6f);
+
+                        // Set color based on category using CategoryMapper
+                        int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(trimmedCategory);
+                        int color = context.getResources().getColor(colorRes, null);
+                        chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
+
+                        categoryChipGroup.addView(chip);
+                    }
+                }
             }
 
             // Set click listeners
@@ -175,52 +200,6 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
             // Fallback to SharedPreferences for social login
             SharedPreferences prefs = context.getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
             return prefs.getString("user_id", null);
-        }
-
-        private void setCategoryColor(Chip chip, String category) {
-            int color;
-            switch (category) {
-                case "운동":
-                case "Sports":
-                    color = Color.parseColor("#FF6B6B"); // Red
-                    break;
-                case "야외활동":
-                    color = Color.parseColor("#FF8C42"); // Orange
-                    break;
-                case "스터디":
-                case "Study":
-                    color = Color.parseColor("#4ECDC4"); // Teal
-                    break;
-                case "문화":
-                    color = Color.parseColor("#A8E6CF"); // Light green
-                    break;
-                case "소셜":
-                case "Social":
-                    color = Color.parseColor("#FFD300"); // Yellow
-                    break;
-                case "맛집":
-                    color = Color.parseColor("#FF6B9D"); // Pink
-                    break;
-                case "여행":
-                    color = Color.parseColor("#95E1D3"); // Aqua
-                    break;
-                case "게임":
-                    color = Color.parseColor("#AA96DA"); // Light purple
-                    break;
-                case "취미":
-                    color = Color.parseColor("#FCBAD3"); // Light pink
-                    break;
-                case "봉사":
-                    color = Color.parseColor("#A8D8EA"); // Light blue
-                    break;
-                case "기타":
-                default:
-                    color = Color.parseColor("#6C5CE7"); // Purple
-                    break;
-            }
-            chip.setChipBackgroundColorResource(android.R.color.transparent);
-            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
-            chip.setTextColor(Color.WHITE);
         }
     }
 }

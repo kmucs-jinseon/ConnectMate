@@ -19,6 +19,8 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_left"
+            android:fontFamily="@font/pretendard_bold"
+            app:fontFamily="@font/pretendard_bold"
             app:title="활동 상세 내용"
             app:titleTextColor="@color/white"
             android:background="@color/primary_blue"/>
@@ -65,16 +67,14 @@
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
-                <!-- Category Chip -->
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/detail_category"
+                <!-- Category Chips -->
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/detail_category_group"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:text="Category"
-                    android:textColor="@color/white"
-                    app:chipBackgroundColor="@color/primary_blue"
-                    app:chipCornerRadius="16dp" />
+                    app:chipSpacingHorizontal="8dp"
+                    app:singleLine="false" />
 
                 <!-- Description -->
                 <TextView
@@ -315,26 +315,12 @@
             android:id="@+id/btn_join_activity"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginBottom="16dp"
-            android:text="참가하기"
+            android:layout_marginBottom="80dp"
+            android:text="참여 하기"
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="16sp"
             app:backgroundTint="@color/primary_blue"
-            app:cornerRadius="12dp" />
-
-        <!-- Delete Button (Only visible to creator) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_delete_activity"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginBottom="80dp"
-            android:text="활동 삭제"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            android:visibility="gone"
-            app:backgroundTint="@android:color/holo_red_dark"
             app:cornerRadius="12dp" />
 
         </LinearLayout>
