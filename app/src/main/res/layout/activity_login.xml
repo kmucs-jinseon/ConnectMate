@@ -39,6 +39,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp"
+        app:fontFamily="@font/pretendard_extrabold"
         android:fontFamily="@font/pretendard_extrabold"
         android:text="Connect Mate"
         android:textColor="#4479CE"
