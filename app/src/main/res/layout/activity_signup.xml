@@ -42,6 +42,7 @@
         android:fontFamily="@font/pretendard_extrabold"
         android:textColor="#4479CE"
         android:textSize="24sp"
+        app:fontFamily="@font/pretendard_extrabold"
         android:layout_marginBottom="4dp"
         tools:ignore="HardcodedText" />
 
@@ -80,6 +81,7 @@
         android:layout_height="wrap_content"
         android:hint="비밀번호"
         app:endIconMode="password_toggle"
+        app:endIconDrawable="@drawable/password_toggle"
         tools:ignore="HardcodedText">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -98,6 +100,7 @@
         android:layout_height="wrap_content"
         android:hint="비밀번호 확인"
         app:endIconMode="password_toggle"
+        app:endIconDrawable="@drawable/password_toggle"
         tools:ignore="HardcodedText">
 
         <com.google.android.material.textfield.TextInputEditText

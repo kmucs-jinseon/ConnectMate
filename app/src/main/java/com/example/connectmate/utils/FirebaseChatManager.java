@@ -373,7 +373,12 @@ public class FirebaseChatManager {
                 chatRoomsRef.child(message.getChatRoomId()).updateChildren(updates);
 
                 // Increment unread count for all members except the sender
-                incrementUnreadCountForOthers(message.getChatRoomId(), message.getSenderId());
+                // BUT only if this is not a system message
+                if (!message.isSystemMessage()) {
+                    incrementUnreadCountForOthers(message.getChatRoomId(), message.getSenderId());
+                } else {
+                    Log.d(TAG, "System message - skipping unread count increment");
+                }
 
                 if (listener != null) {
                     listener.onSuccess(message);

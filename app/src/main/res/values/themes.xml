@@ -14,6 +14,9 @@
         <!-- Default Font Family - Pretendard -->
         <item name="android:fontFamily">@font/pretendard</item>
         <item name="fontFamily">@font/pretendard</item>
+
+        <!-- Fix password toggle icons (swap them so they show correctly) -->
+        <item name="passwordToggleDrawable">@drawable/password_toggle</item>
     </style>
 
     <!-- Main Application Theme -->

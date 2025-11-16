@@ -1,21 +1,33 @@
 package com.example.connectmate;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -24,12 +36,16 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 public class ProfileSetupFragment extends Fragment {
+
+    private static final String TAG = "ProfileSetupFragment";
 
     interface ProfileSetupHost {
         void onProfileSetupCompleted();
@@ -42,9 +58,12 @@ public class ProfileSetupFragment extends Fragment {
 
     private FirebaseAuth mAuth;
     private DatabaseReference databaseReference;
+    private StorageReference storageReference;
     private SharedPreferences prefs;
     private ProfileSetupHost host;
 
+    private ImageView profileImage;
+    private android.widget.TextView editImageButton;
     private TextInputEditText nameInput;
     private TextInputEditText usernameInput;
     private TextInputEditText mbtiInput;
@@ -56,6 +75,12 @@ public class ProfileSetupFragment extends Fragment {
     private String email;
     private String initialName;
     private String loginMethod;
+    private Uri selectedImageUri;
+    private String profileImageUrl;
+
+    // Image picker launcher
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private ActivityResultLauncher<String> permissionLauncher;
 
     public ProfileSetupFragment() {
         super(R.layout.fragment_profile_setup);
@@ -92,11 +117,46 @@ public class ProfileSetupFragment extends Fragment {
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Initialize image picker launcher
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    selectedImageUri = result.getData().getData();
+                    if (selectedImageUri != null && profileImage != null) {
+                        Glide.with(this)
+                            .load(selectedImageUri)
+                            .circleCrop()
+                            .into(profileImage);
+                        Log.d(TAG, "Image selected: " + selectedImageUri);
+                    }
+                }
+            }
+        );
+
+        // Initialize permission launcher
+        permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    openImagePicker();
+                } else {
+                    Toast.makeText(requireContext(), "사진을 선택하려면 권한이 필요합니다", Toast.LENGTH_SHORT).show();
+                }
+            }
+        );
+    }
+
+    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         mAuth = FirebaseAuth.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference();
+        storageReference = FirebaseStorage.getInstance().getReference();
         prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
         if (getArguments() != null) {
@@ -121,6 +181,8 @@ public class ProfileSetupFragment extends Fragment {
     }
 
     private void initializeViews(View view) {
+        profileImage = view.findViewById(R.id.profile_setup_image);
+        editImageButton = view.findViewById(R.id.profile_setup_image_edit);
         nameInput = view.findViewById(R.id.profile_setup_name_input);
         usernameInput = view.findViewById(R.id.profile_setup_username_input);
         mbtiInput = view.findViewById(R.id.profile_setup_mbti_input);
@@ -152,6 +214,50 @@ public class ProfileSetupFragment extends Fragment {
         if (completeButton != null) {
             completeButton.setOnClickListener(v -> saveProfile());
         }
+
+        if (editImageButton != null) {
+            editImageButton.setOnClickListener(v -> checkPermissionAndPickImage());
+        }
+
+        if (profileImage != null) {
+            profileImage.setOnClickListener(v -> checkPermissionAndPickImage());
+        }
+    }
+
+    private void checkPermissionAndPickImage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ uses READ_MEDIA_IMAGES
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES)
+                == PackageManager.PERMISSION_GRANTED) {
+                openImagePicker();
+            } else {
+                permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
+            }
+        } else {
+            // Older Android versions use READ_EXTERNAL_STORAGE
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+                openImagePicker();
+            } else {
+                permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+        }
+    }
+
+    private void openImagePicker() {
+        // Create chooser intent that allows picking from multiple sources
+        Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        pickIntent.setType("image/*");
+
+        Intent getContentIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        getContentIntent.setType("image/*");
+        getContentIntent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        // Create chooser to show all available apps (Gallery, Google Photos, Files, etc.)
+        Intent chooserIntent = Intent.createChooser(getContentIntent, "사진 선택");
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
+
+        imagePickerLauncher.launch(chooserIntent);
     }
 
     private void loadExistingData() {
@@ -192,6 +298,14 @@ public class ProfileSetupFragment extends Fragment {
                             }
                             if (bioInput != null && !TextUtils.isEmpty(user.bio)) {
                                 bioInput.setText(user.bio);
+                            }
+                            if (profileImage != null && !TextUtils.isEmpty(user.profileImageUrl)) {
+                                profileImageUrl = user.profileImageUrl;
+                                Glide.with(ProfileSetupFragment.this)
+                                    .load(user.profileImageUrl)
+                                    .circleCrop()
+                                    .placeholder(R.drawable.ic_person_placeholder)
+                                    .into(profileImage);
                             }
                         } else {
                             loadFromPreferences();
@@ -267,33 +381,77 @@ public class ProfileSetupFragment extends Fragment {
         }
 
         toggleLoading(true);
-        DatabaseReference userRef = databaseReference.child("users").child(userId);
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("displayName", name);
-        updates.put("username", username);
-        if (email != null) updates.put("email", email);
-        if (!TextUtils.isEmpty(mbti)) updates.put("mbti", mbti);
-        if (!TextUtils.isEmpty(bio)) updates.put("bio", bio);
-        updates.put("loginMethod", loginMethod != null ? loginMethod : "email");
-        updates.put("profileCompleted", true);
-        updates.put("lastLoginAt", System.currentTimeMillis());
 
         final String finalName = name;
         final String finalUsername = username;
         final String finalMbti = mbti;
         final String finalBio = bio;
 
-        userRef.updateChildren(updates)
+        // If user selected a new image, upload it first
+        if (selectedImageUri != null) {
+            uploadImageAndSaveProfile(finalName, finalUsername, finalMbti, finalBio);
+        } else {
+            // No new image, just save profile with existing image URL (if any)
+            saveProfileToFirebase(finalName, finalUsername, finalMbti, finalBio, profileImageUrl);
+        }
+    }
+
+    private void uploadImageAndSaveProfile(String name, String username, String mbti, String bio) {
+        StorageReference imageRef = storageReference.child("profile_images/" + userId + ".jpg");
+
+        imageRef.putFile(selectedImageUri)
+            .addOnSuccessListener(taskSnapshot -> {
+                // Get download URL
+                imageRef.getDownloadUrl()
+                    .addOnSuccessListener(uri -> {
+                        profileImageUrl = uri.toString();
+                        Log.d(TAG, "Image uploaded successfully: " + profileImageUrl);
+                        saveProfileToFirebase(name, username, mbti, bio, profileImageUrl);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Failed to get download URL", e);
+                        // Continue saving profile without image
+                        saveProfileToFirebase(name, username, mbti, bio, null);
+                    });
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Failed to upload image", e);
+                Toast.makeText(requireContext(), "이미지 업로드 실패. 프로필만 저장합니다.", Toast.LENGTH_SHORT).show();
+                // Continue saving profile without image
+                saveProfileToFirebase(name, username, mbti, bio, null);
+            });
+    }
+
+    private void saveProfileToFirebase(String name, String username, String mbti, String bio, String imageUrl) {
+        DatabaseReference userRef = databaseReference.child("users").child(userId);
+
+        // Create User object to ensure all data is saved
+        User user = new User();
+        user.userId = userId;
+        user.displayName = name;
+        user.username = username;
+        user.email = email;
+        user.mbti = !TextUtils.isEmpty(mbti) ? mbti : "";
+        user.bio = !TextUtils.isEmpty(bio) ? bio : "";
+        user.profileImageUrl = imageUrl;
+        user.loginMethod = loginMethod != null ? loginMethod : "email";
+        user.profileCompleted = true;
+        user.lastLoginAt = System.currentTimeMillis();
+
+        // Use setValue to create/overwrite the user node completely
+        userRef.setValue(user)
                 .addOnSuccessListener(unused -> {
                     toggleLoading(false);
-                    persistToPreferences(finalName, finalUsername, finalMbti, finalBio);
+                    persistToPreferences(name, username, mbti, bio);
+                    Toast.makeText(requireContext(), "프로필이 저장되었습니다!", Toast.LENGTH_SHORT).show();
                     if (host != null) {
                         host.onProfileSetupCompleted();
                     }
                 })
                 .addOnFailureListener(e -> {
                     toggleLoading(false);
-                    Toast.makeText(requireContext(), "프로필 저장에 실패했습니다: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "프로필 저장에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Failed to save profile", e);
                 });
     }
 

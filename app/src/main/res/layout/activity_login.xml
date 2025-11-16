@@ -71,6 +71,7 @@
         android:layout_height="wrap_content"
         android:hint="비밀번호"
         app:endIconMode="password_toggle"
+        app:endIconDrawable="@drawable/password_toggle"
         tools:ignore="HardcodedText">
 
         <com.google.android.material.textfield.TextInputEditText

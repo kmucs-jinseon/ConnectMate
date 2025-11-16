@@ -13,6 +13,7 @@ public class User {
     public String loginMethod;      // "firebase", "google", "kakao", "naver"
     public String bio;
     public String mbti;
+    public boolean profileCompleted;  // Whether user has completed profile setup
     public double rating;
     public int activitiesCount;
     public int connectionsCount;
@@ -32,6 +33,7 @@ public class User {
         this.username = generateUsername(displayName);
         this.bio = "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨";
         this.mbti = "ENFP";
+        this.profileCompleted = false;
         this.rating = 4.8;
         this.activitiesCount = 0;
         this.connectionsCount = 0;
@@ -158,5 +160,13 @@ public class User {
 
     public void setLastLoginAt(long lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public boolean isProfileCompleted() {
+        return profileCompleted;
+    }
+
+    public void setProfileCompleted(boolean profileCompleted) {
+        this.profileCompleted = profileCompleted;
     }
 }
