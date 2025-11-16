@@ -84,6 +84,9 @@ public class MapFragment extends Fragment {
     private PlaceSearchResult selectedPlace;
     private PlaceSearchResult selectedPoi; // POI selected from map click
 
+    // POI Popup Window
+    private android.widget.PopupWindow poiPopupWindow;
+
     // POI Info Card UI components
     private com.google.android.material.card.MaterialCardView poiInfoCard;
     private TextView poiName;
@@ -133,19 +136,7 @@ public class MapFragment extends Fragment {
         searchResultsRecycler = view.findViewById(R.id.search_results_recycler);
         btnUseLocation = view.findViewById(R.id.btn_use_location);
 
-        // Initialize POI Info Card UI
-        poiInfoCard = view.findViewById(R.id.poi_info_card);
-        poiName = view.findViewById(R.id.poi_name);
-        poiCategory = view.findViewById(R.id.poi_category);
-        poiAddress = view.findViewById(R.id.poi_address);
-        poiPhone = view.findViewById(R.id.poi_phone);
-        poiDistance = view.findViewById(R.id.poi_distance);
-        poiWebsite = view.findViewById(R.id.poi_website);
-        poiPhoneLayout = view.findViewById(R.id.poi_phone_layout);
-        poiDistanceLayout = view.findViewById(R.id.poi_distance_layout);
-        poiWebsiteLayout = view.findViewById(R.id.poi_website_layout);
-        btnClosePoiInfo = view.findViewById(R.id.btn_close_poi_info);
-        btnUsePoiLocation = view.findViewById(R.id.btn_use_poi_location);
+        // POI Info Card will be shown as a PopupWindow - no need to initialize here
 
         // Debug: Check if search components were found
         if (searchInput == null) {
@@ -172,18 +163,7 @@ public class MapFragment extends Fragment {
             }
         });
 
-        // Setup POI Info Card buttons
-        if (btnClosePoiInfo != null) {
-            btnClosePoiInfo.setOnClickListener(v -> hidePoiInfo());
-        }
-
-        if (btnUsePoiLocation != null) {
-            btnUsePoiLocation.setOnClickListener(v -> {
-                if (selectedPoi != null) {
-                    openCreateActivityWithPoi();
-                }
-            });
-        }
+        // POI buttons are now handled in popup window initialization
 
         // Detect if running on emulator
         isEmulator = isRunningOnEmulator();
@@ -1446,10 +1426,10 @@ public class MapFragment extends Fragment {
     }
 
     /**
-     * Display POI information in the info card
+     * Display POI information in a popup window
      */
     private void displayPoiInfo(PlaceSearchResult poi) {
-        if (poi == null || poiInfoCard == null) {
+        if (poi == null || getContext() == null || getView() == null) {
             return;
         }
 
@@ -1461,6 +1441,59 @@ public class MapFragment extends Fragment {
         // Hide search results if visible
         hideSearchResults();
         hideUseLocationButton();
+
+        // Dismiss existing popup if any
+        if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+            poiPopupWindow.dismiss();
+        }
+
+        // Inflate popup layout - inflate just the fragment to get a fresh copy
+        android.view.LayoutInflater inflater = android.view.LayoutInflater.from(getContext());
+        android.view.View fullLayout = inflater.inflate(R.layout.fragment_map, null, false);
+        android.view.View popupView = fullLayout.findViewById(R.id.poi_info_card);
+
+        // Remove the popup view from its parent so it can be added to PopupWindow
+        if (popupView.getParent() != null) {
+            ((android.view.ViewGroup) popupView.getParent()).removeView(popupView);
+        }
+
+        // Make the popup view visible
+        popupView.setVisibility(View.VISIBLE);
+
+        // Enhance the card's shadow/elevation for clearer edges
+        if (popupView instanceof com.google.android.material.card.MaterialCardView) {
+            com.google.android.material.card.MaterialCardView cardView = (com.google.android.material.card.MaterialCardView) popupView;
+            cardView.setCardElevation(24f); // Increased elevation for more prominent shadow
+            cardView.setMaxCardElevation(24f);
+        }
+
+        // Initialize UI components from popup view
+        initializePoiPopupComponents(popupView);
+
+        // Calculate popup width with margins
+        int horizontalMarginDp = 16; // Left and right margins
+        int horizontalMarginPx = (int) (horizontalMarginDp * getResources().getDisplayMetrics().density);
+
+        // Get screen width and subtract margins
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int popupWidth = screenWidth - (horizontalMarginPx * 2);
+
+        // Create popup window with calculated width
+        poiPopupWindow = new android.widget.PopupWindow(
+            popupView,
+            popupWidth,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        );
+
+        // Set background (semi-transparent to allow shadow rendering)
+        poiPopupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        // Set high elevation to ensure it appears on top
+        poiPopupWindow.setElevation(100f);
+
+        // Allow outside touch to dismiss
+        poiPopupWindow.setOutsideTouchable(true);
 
         // Set POI name
         if (poiName != null) {
@@ -1524,23 +1557,72 @@ public class MapFragment extends Fragment {
             poiWebsiteLayout.setVisibility(View.GONE);
         }
 
-        // Show the POI info card
-        poiInfoCard.setVisibility(View.VISIBLE);
+        // Show popup window at bottom of screen, above the menu bar
+        // Convert dp to pixels for bottom margin
+        int bottomMarginDp = 140; // Height to clear the bottom navigation bar with extra spacing
+        int bottomMarginPx = (int) (bottomMarginDp * getResources().getDisplayMetrics().density);
 
-        Log.d(TAG, "POI info card displayed successfully");
+        poiPopupWindow.showAtLocation(
+            getView(),
+            android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL,
+            0,
+            bottomMarginPx
+        );
+
+        Log.d(TAG, "POI popup displayed successfully");
         Log.d(TAG, "POI Details - Name: " + poi.getPlaceName() + ", Category: " + poi.getCategoryName() +
                 ", Phone: " + poi.getPhone() + ", Distance: " + poi.getDistance() + "m");
     }
 
     /**
-     * Hide POI information card
+     * Initialize POI popup UI components
+     */
+    private void initializePoiPopupComponents(android.view.View popupView) {
+        // Find views in popup
+        poiName = popupView.findViewById(R.id.poi_name);
+        poiCategory = popupView.findViewById(R.id.poi_category);
+        poiAddress = popupView.findViewById(R.id.poi_address);
+        poiPhone = popupView.findViewById(R.id.poi_phone);
+        poiDistance = popupView.findViewById(R.id.poi_distance);
+        poiWebsite = popupView.findViewById(R.id.poi_website);
+        poiPhoneLayout = popupView.findViewById(R.id.poi_phone_layout);
+        poiDistanceLayout = popupView.findViewById(R.id.poi_distance_layout);
+        poiWebsiteLayout = popupView.findViewById(R.id.poi_website_layout);
+        btnClosePoiInfo = popupView.findViewById(R.id.btn_close_poi_info);
+        btnUsePoiLocation = popupView.findViewById(R.id.btn_use_poi_location);
+
+        // Setup close button
+        if (btnClosePoiInfo != null) {
+            btnClosePoiInfo.setOnClickListener(v -> {
+                if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+                    poiPopupWindow.dismiss();
+                }
+                selectedPoi = null;
+            });
+        }
+
+        // Setup use location button
+        if (btnUsePoiLocation != null) {
+            btnUsePoiLocation.setOnClickListener(v -> {
+                if (selectedPoi != null) {
+                    openCreateActivityWithPoi();
+                    if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+                        poiPopupWindow.dismiss();
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Hide POI information popup
      */
     private void hidePoiInfo() {
-        if (poiInfoCard != null) {
-            poiInfoCard.setVisibility(View.GONE);
+        if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+            poiPopupWindow.dismiss();
         }
         selectedPoi = null;
-        Log.d(TAG, "POI info card hidden");
+        Log.d(TAG, "POI popup hidden");
     }
 
     /**
@@ -1619,6 +1701,12 @@ public class MapFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
+
+        // Dismiss POI popup if showing
+        if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+            poiPopupWindow.dismiss();
+        }
+
         // Only pause if map has been fully initialized
         if (mapView != null && isMapInitialized) {
             try {
@@ -1634,6 +1722,12 @@ public class MapFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        // Dismiss POI popup if showing
+        if (poiPopupWindow != null && poiPopupWindow.isShowing()) {
+            poiPopupWindow.dismiss();
+        }
+        poiPopupWindow = null;
 
         // Clean up search handler to prevent memory leaks
         if (searchHandler != null && searchRunnable != null) {
