@@ -921,62 +921,51 @@ public class MapFragment extends Fragment {
      * Add or update current location marker on the map
      */
     private void addCurrentLocationMarker(double latitude, double longitude) {
-        if (kakaoMap == null) {
-            Log.e(TAG, "KakaoMap is null, cannot add current location marker");
+        if (kakaoMap == null || kakaoMap.getLabelManager() == null) {
+            Log.e(TAG, "Cannot add current location marker - map not ready");
             return;
         }
 
-        Log.d(TAG, "=== ADDING CURRENT LOCATION MARKER ===");
-        Log.d(TAG, "Latitude: " + latitude + ", Longitude: " + longitude);
-
         try {
-            // Remove existing current location marker if present
-            if (currentLocationLabel != null && kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-                if (labelLayer != null) {
-                    labelLayer.remove(currentLocationLabel);
-                    Log.d(TAG, "Removed old current location marker");
-                }
+            LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+            if (labelLayer == null) {
+                Log.e(TAG, "LabelLayer is null");
+                return;
             }
 
-            // Add new current location marker
-            if (kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+            // Remove existing marker if present
+            if (currentLocationLabel != null) {
+                labelLayer.remove(currentLocationLabel);
+                currentLocationLabel = null;
+            }
 
-                if (labelLayer != null) {
-                    Log.d(TAG, "LabelLayer is available");
+            // Create marker style for current location
+            LabelStyle labelStyle = LabelStyle.from(R.drawable.ic_location_marker)
+                .setAnchorPoint(0.5f, 1.0f)  // Anchor at bottom center
+                .setZoomLevel(0);  // Visible at all zoom levels
 
-                    // Create marker style for current location
-                    LabelStyles styles = kakaoMap.getLabelManager()
-                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_my_location)));
+            LabelStyles styles = kakaoMap.getLabelManager()
+                .addLabelStyles(LabelStyles.from(labelStyle));
 
-                    Log.d(TAG, "Created label styles");
+            // Create label options
+            LabelOptions options = LabelOptions.from(
+                "current_location",
+                LatLng.from(latitude, longitude)
+            ).setStyles(styles)
+             .setClickable(false)  // Not clickable
+             .setRank(1);  // Higher rank to appear on top of other markers
 
-                    // Create label options
-                    LabelOptions options = LabelOptions.from(
-                        "current_location",
-                        LatLng.from(latitude, longitude)
-                    ).setStyles(styles);
+            // Add marker to map
+            currentLocationLabel = labelLayer.addLabel(options);
 
-                    Log.d(TAG, "Created label options");
-
-                    // Add label to map
-                    currentLocationLabel = labelLayer.addLabel(options);
-
-                    if (currentLocationLabel != null) {
-                        Log.d(TAG, "✓ Current location marker SUCCESSFULLY added!");
-                        Log.d(TAG, "Label ID: " + currentLocationLabel.getLabelId());
-                    } else {
-                        Log.e(TAG, "✗ Current location marker is NULL after adding!");
-                    }
-                } else {
-                    Log.e(TAG, "✗ LabelLayer is NULL!");
-                }
+            if (currentLocationLabel != null) {
+                currentLocationLabel.show();  // Ensure marker is visible
+                Log.d(TAG, "Current location marker displayed at: " + latitude + ", " + longitude);
             } else {
-                Log.e(TAG, "✗ LabelManager is NULL!");
+                Log.e(TAG, "Failed to create current location marker");
             }
         } catch (Exception e) {
-            Log.e(TAG, "✗ EXCEPTION while adding current location marker", e);
+            Log.e(TAG, "Failed to add current location marker", e);
         }
     }
 

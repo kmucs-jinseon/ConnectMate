@@ -1,18 +1,22 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
@@ -113,6 +117,92 @@ public class ActivityDetailActivity extends AppCompatActivity {
         }
 
         toolbar.setNavigationOnClickListener(v -> finish());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Only show delete menu if user is the creator
+        if (activity != null && isCurrentUserCreator()) {
+            getMenuInflater().inflate(R.menu.activity_detail_menu, menu);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_delete_activity) {
+            showDeleteConfirmationDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Check if current user is the creator of this activity
+     */
+    private boolean isCurrentUserCreator() {
+        if (activity == null || activity.getCreatorId() == null) {
+            return false;
+        }
+
+        // Get current user ID
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            return activity.getCreatorId().equals(firebaseUser.getUid());
+        }
+
+        // Check SharedPreferences for social login
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String userId = prefs.getString("user_id", "");
+        return activity.getCreatorId().equals(userId);
+    }
+
+    /**
+     * Show confirmation dialog before deleting activity
+     */
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("활동 삭제")
+            .setMessage("이 활동을 삭제하시겠습니까? 관련된 채팅방도 함께 삭제됩니다.")
+            .setPositiveButton("삭제", (dialog, which) -> deleteActivity())
+            .setNegativeButton("취소", null)
+            .show();
+    }
+
+    /**
+     * Delete the activity and associated chat room
+     */
+    private void deleteActivity() {
+        if (activity == null) {
+            Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Log.d(TAG, "🗑️ User requested to delete activity: " + activity.getId());
+        Log.d(TAG, "Activity title: " + activity.getTitle());
+        Log.d(TAG, "Creator ID: " + activity.getCreatorId());
+
+        // Show progress
+        Toast.makeText(this, "삭제 중...", Toast.LENGTH_SHORT).show();
+
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+        activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d(TAG, "✅ Activity deleted successfully!");
+                Toast.makeText(ActivityDetailActivity.this, "활동이 삭제되었습니다", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "❌ Failed to delete activity: " + e.getMessage(), e);
+                Toast.makeText(ActivityDetailActivity.this,
+                    "활동 삭제에 실패했습니다: " + e.getMessage(),
+                    Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void displayActivityDetails() {
@@ -232,6 +322,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 displayActivityDetails();
                 setupButtons();
                 setupRealTimeListener(activityId);
+                invalidateOptionsMenu(); // Refresh menu to show delete option if user is creator
             }
 
             @Override

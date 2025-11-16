@@ -349,55 +349,100 @@ public class FirebaseActivityManager {
      * Delete an activity and its associated chat room.
      */
     public void deleteActivity(String activityId, OnCompleteListener<Void> listener) {
-        // Define the action to delete the activity node.
-        // This will be called after attempting to delete the chat room.
-        final Runnable deleteActivityAction = () -> {
-            activitiesRef.child(activityId).removeValue()
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Activity deleted: " + activityId);
-                    if (listener != null) {
-                        listener.onSuccess(null);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error deleting activity", e);
-                    if (listener != null) {
-                        listener.onError(e);
-                    }
-                });
-        };
+        Log.d(TAG, "🗑️ deleteActivity() called for activityId: " + activityId);
 
-        // First, try to find and delete the chat room associated with the activity.
+        // Step 1: Get all participants first so we can clean up userActivities
+        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    // Store participant IDs for cleanup
+                    List<String> participantIds = new ArrayList<>();
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        String userId = child.getKey();
+                        if (userId != null) {
+                            participantIds.add(userId);
+                        }
+                    }
+                    Log.d(TAG, "Found " + participantIds.size() + " participants to clean up");
+
+                    // Step 2: Delete the chat room
+                    deleteChatRoomForActivity(activityId, () -> {
+                        // Step 3: Delete the activity
+                        activitiesRef.child(activityId).removeValue()
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "✅ Activity deleted from Firebase: " + activityId);
+
+                                // Step 4: Clean up userActivities references
+                                for (String userId : participantIds) {
+                                    userActivitiesRef.child(userId).child(activityId).removeValue()
+                                        .addOnSuccessListener(v -> Log.d(TAG, "✅ Cleaned up userActivity for user: " + userId))
+                                        .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to clean up userActivity for user: " + userId, e));
+                                }
+
+                                if (listener != null) {
+                                    listener.onSuccess(null);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "❌ Error deleting activity from Firebase", e);
+                                if (listener != null) {
+                                    listener.onError(e);
+                                }
+                            });
+                    });
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "❌ Failed to get participants", error.toException());
+                    // Still try to delete even if we can't get participants
+                    deleteChatRoomForActivity(activityId, () -> {
+                        activitiesRef.child(activityId).removeValue()
+                            .addOnSuccessListener(aVoid -> {
+                                if (listener != null) listener.onSuccess(null);
+                            })
+                            .addOnFailureListener(e -> {
+                                if (listener != null) listener.onError(e);
+                            });
+                    });
+                }
+            });
+    }
+
+    /**
+     * Helper method to delete chat room associated with an activity
+     */
+    private void deleteChatRoomForActivity(String activityId, Runnable onComplete) {
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
         chatManager.getChatRoomByActivityId(activityId, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
             @Override
             public void onSuccess(ChatRoom chatRoom) {
                 if (chatRoom != null) {
-                    // Chat room found, delete it.
+                    Log.d(TAG, "Found chat room to delete: " + chatRoom.getId());
                     chatManager.deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
-                            Log.d(TAG, "Associated chat room deleted successfully: " + chatRoom.getId());
-                            deleteActivityAction.run();
+                            Log.d(TAG, "✅ Chat room deleted: " + chatRoom.getId());
+                            onComplete.run();
                         }
 
                         @Override
                         public void onError(Exception e) {
-                            Log.e(TAG, "Failed to delete associated chat room, but proceeding with activity deletion.", e);
-                            deleteActivityAction.run();
+                            Log.e(TAG, "❌ Failed to delete chat room, but continuing: " + e.getMessage());
+                            onComplete.run();
                         }
                     });
                 } else {
-                    // No chat room to delete.
-                    Log.d(TAG, "No associated chat room found for activity: " + activityId);
-                    deleteActivityAction.run();
+                    Log.d(TAG, "No chat room found for activity: " + activityId);
+                    onComplete.run();
                 }
             }
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Failed to check for associated chat room, but proceeding with activity deletion.", e);
-                deleteActivityAction.run();
+                Log.e(TAG, "❌ Error finding chat room, but continuing: " + e.getMessage());
+                onComplete.run();
             }
         });
     }

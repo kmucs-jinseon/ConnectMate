@@ -9,11 +9,13 @@
         android:id="@+id/profile_setup_toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/primary_blue"
         android:elevation="4dp"
+        android:fontFamily="@font/pretendard_bold"
         app:title="프로필 생성"
         app:navigationIcon="@drawable/ic_arrow_left"
-        app:titleTextColor="@color/text_primary" />
+        app:titleTextColor="@color/white"
+        app:fontFamily="@font/pretendard_bold"/>
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/profile_setup_container"

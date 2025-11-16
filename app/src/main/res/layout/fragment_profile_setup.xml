@@ -26,7 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="프로필을 완성하여 다른 메이트들에게 자신을 소개해 주세요."
+            android:text="프로필을 완성하여 다른 사용자들에게 자신을 소개해 주세요."
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
