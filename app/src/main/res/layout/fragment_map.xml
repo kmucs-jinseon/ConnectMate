@@ -67,6 +67,185 @@
 
     </LinearLayout>
 
+    <!-- POI Information Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/poi_info_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        android:layout_marginBottom="160dp"
+        android:visibility="gone"
+        android:elevation="36dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="36dp"
+        app:cardBackgroundColor="@color/white"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Close button -->
+            <ImageButton
+                android:id="@+id/btn_close_poi_info"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="end"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_close"
+                android:contentDescription="닫기"
+                app:tint="@color/gray_600" />
+
+            <!-- POI Name -->
+            <TextView
+                android:id="@+id/poi_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Place Name"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+
+            <!-- Category -->
+            <TextView
+                android:id="@+id/poi_category"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Category"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Address -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_map_pin"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/poi_address"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Address"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
+
+            <!-- Phone -->
+            <LinearLayout
+                android:id="@+id/poi_phone_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_phone"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/poi_phone"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Phone"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
+
+            <!-- Distance -->
+            <LinearLayout
+                android:id="@+id/poi_distance_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_location"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/poi_distance"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Distance"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
+
+            <!-- Website URL (if available) -->
+            <LinearLayout
+                android:id="@+id/poi_website_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_link"
+                    app:tint="@color/primary_blue" />
+
+                <TextView
+                    android:id="@+id/poi_website"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Website"
+                    android:textSize="14sp"
+                    android:textColor="@color/primary_blue"
+                    android:autoLink="web" />
+
+            </LinearLayout>
+
+            <!-- Action Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_use_poi_location"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:text="+ 이 장소로 활동 만들기"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/primary_blue"
+                app:cornerRadius="8dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Use This Location Button -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/btn_use_location"
@@ -78,7 +257,7 @@
         android:textColor="@color/white"
         app:icon="@drawable/ic_plus"
         app:iconTint="@color/white"
-        app:backgroundTint="@color/colorPrimary"
+        app:backgroundTint="@color/primary_blue"
         android:visibility="gone" />
 
 </FrameLayout>

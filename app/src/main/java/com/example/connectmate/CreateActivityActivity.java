@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -380,8 +381,11 @@ public class CreateActivityActivity extends AppCompatActivity {
         }
 
         for (String category : categories) {
-            // Create chip with category-specific color
-            Chip chip = new Chip(this);
+            // Create chip with CategoryChipStyle
+            Chip chip = new Chip(new ContextThemeWrapper(this, R.style.CategoryChipStyle));
+            chip.setText(category);
+            chip.setCheckable(true);
+            chip.setClickable(true);
 
             // Get category color from CategoryMapper
             int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
@@ -389,25 +393,6 @@ public class CreateActivityActivity extends AppCompatActivity {
 
             // Set background color based on category
             chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(categoryColor));
-            chip.setTextColor(getResources().getColor(android.R.color.white, null));
-            chip.setCheckedIconVisible(false);
-            chip.setChipStrokeWidth(0f);
-            chip.setChipCornerRadius(12f); // Rounded corners like participant count badge
-            chip.setText(category);
-            chip.setCheckable(true);
-            chip.setClickable(true);
-
-            // Add padding similar to toolbar participant count
-            chip.setChipMinHeight(40f);
-            chip.setTextSize(12f);
-            chip.setChipStartPadding(10f);
-            chip.setChipEndPadding(10f);
-            chip.setTextStartPadding(10f);
-            chip.setTextEndPadding(10f);
-
-            // Add vertical padding (top and bottom) - 8dp
-            int horizontalPadding = chip.getPaddingLeft();
-            chip.setPadding(horizontalPadding, 8, horizontalPadding, 8);
 
             Log.d(TAG, "Created chip: " + category);
 

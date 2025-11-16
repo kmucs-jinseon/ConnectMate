@@ -15,7 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -79,6 +82,21 @@ public class MapFragment extends Fragment {
 
     // Selected location data
     private PlaceSearchResult selectedPlace;
+    private PlaceSearchResult selectedPoi; // POI selected from map click
+
+    // POI Info Card UI components
+    private com.google.android.material.card.MaterialCardView poiInfoCard;
+    private TextView poiName;
+    private TextView poiCategory;
+    private TextView poiAddress;
+    private TextView poiPhone;
+    private TextView poiDistance;
+    private TextView poiWebsite;
+    private LinearLayout poiPhoneLayout;
+    private LinearLayout poiDistanceLayout;
+    private LinearLayout poiWebsiteLayout;
+    private ImageButton btnClosePoiInfo;
+    private com.google.android.material.button.MaterialButton btnUsePoiLocation;
 
     // HTTP client for Kakao API
     private OkHttpClient httpClient;
@@ -115,6 +133,20 @@ public class MapFragment extends Fragment {
         searchResultsRecycler = view.findViewById(R.id.search_results_recycler);
         btnUseLocation = view.findViewById(R.id.btn_use_location);
 
+        // Initialize POI Info Card UI
+        poiInfoCard = view.findViewById(R.id.poi_info_card);
+        poiName = view.findViewById(R.id.poi_name);
+        poiCategory = view.findViewById(R.id.poi_category);
+        poiAddress = view.findViewById(R.id.poi_address);
+        poiPhone = view.findViewById(R.id.poi_phone);
+        poiDistance = view.findViewById(R.id.poi_distance);
+        poiWebsite = view.findViewById(R.id.poi_website);
+        poiPhoneLayout = view.findViewById(R.id.poi_phone_layout);
+        poiDistanceLayout = view.findViewById(R.id.poi_distance_layout);
+        poiWebsiteLayout = view.findViewById(R.id.poi_website_layout);
+        btnClosePoiInfo = view.findViewById(R.id.btn_close_poi_info);
+        btnUsePoiLocation = view.findViewById(R.id.btn_use_poi_location);
+
         // Debug: Check if search components were found
         if (searchInput == null) {
             Log.e(TAG, "❌ Search input NOT FOUND!");
@@ -139,6 +171,19 @@ public class MapFragment extends Fragment {
                 openCreateActivityWithLocation();
             }
         });
+
+        // Setup POI Info Card buttons
+        if (btnClosePoiInfo != null) {
+            btnClosePoiInfo.setOnClickListener(v -> hidePoiInfo());
+        }
+
+        if (btnUsePoiLocation != null) {
+            btnUsePoiLocation.setOnClickListener(v -> {
+                if (selectedPoi != null) {
+                    openCreateActivityWithPoi();
+                }
+            });
+        }
 
         // Detect if running on emulator
         isEmulator = isRunningOnEmulator();
@@ -276,7 +321,7 @@ public class MapFragment extends Fragment {
 
         FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
 
-        // Set up click listener for markers
+        // Set up click listener for activity markers
         kakaoMap.setOnLabelClickListener((map, layer, label) -> {
             String activityId = label.getLabelId();
             if (getContext() != null && activityId != null) {
@@ -291,6 +336,19 @@ public class MapFragment extends Fragment {
                 }
             }
             return true;
+        });
+
+        // Set up click listener for map (to search for nearby POIs)
+        kakaoMap.setOnMapClickListener((kakaoMap1, position, screenPoint, poi) -> {
+            if (poi != null) {
+                // User clicked on a POI marker
+                Log.d(TAG, "POI clicked: " + poi.getName() + " at (" + position.getLatitude() + ", " + position.getLongitude() + ")");
+                fetchPoiDetails(poi.getName(), position.getLatitude(), position.getLongitude());
+            } else {
+                // User clicked on empty map area - search for nearby places
+                Log.d(TAG, "Map clicked at: (" + position.getLatitude() + ", " + position.getLongitude() + ")");
+                searchNearbyPlaces(position.getLatitude(), position.getLongitude());
+            }
         });
 
         // Listen for real-time activity changes
@@ -523,11 +581,11 @@ public class MapFragment extends Fragment {
         if (currentLocation != null) {
             double longitude = currentLocation.getLongitude();
             double latitude = currentLocation.getLatitude();
-            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000"; // 20km radius
+            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000&sort=accuracy"; // 20km radius, sort by relevance
             Log.d(TAG, "Searching near current location: " + latitude + ", " + longitude);
         } else {
             // Default to Seoul center if no location available
-            apiUrl += "&x=126.9780&y=37.5665&radius=20000";
+            apiUrl += "&x=126.9780&y=37.5665&radius=20000&sort=accuracy";
             Log.d(TAG, "Using default location (Seoul) for search");
         }
 
@@ -645,10 +703,10 @@ public class MapFragment extends Fragment {
         if (currentLocation != null) {
             double longitude = currentLocation.getLongitude();
             double latitude = currentLocation.getLatitude();
-            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000"; // 20km radius
+            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000&sort=accuracy"; // 20km radius, sort by relevance
         } else {
             // Default to Seoul center if no location available
-            apiUrl += "&x=126.9780&y=37.5665&radius=20000";
+            apiUrl += "&x=126.9780&y=37.5665&radius=20000&sort=accuracy";
         }
 
         Request request = new Request.Builder()
@@ -735,10 +793,16 @@ public class MapFragment extends Fragment {
      * Display search results
      */
     private void displaySearchResults(List<PlaceSearchResult> results) {
-        searchResults.clear();
-        searchResults.addAll(results);
-        searchAdapter.updateResults(searchResults);
-        searchResultsCard.setVisibility(View.VISIBLE);
+        if (searchResults != null) {
+            searchResults.clear();
+            searchResults.addAll(results);
+        }
+        if (searchAdapter != null) {
+            searchAdapter.updateResults(searchResults);
+        }
+        if (searchResultsCard != null) {
+            searchResultsCard.setVisibility(View.VISIBLE);
+        }
         Log.d(TAG, "Displaying " + results.size() + " search results");
     }
 
@@ -746,9 +810,15 @@ public class MapFragment extends Fragment {
      * Hide search results
      */
     private void hideSearchResults() {
-        searchResultsCard.setVisibility(View.GONE);
-        searchResults.clear();
-        searchAdapter.updateResults(searchResults);
+        if (searchResultsCard != null) {
+            searchResultsCard.setVisibility(View.GONE);
+        }
+        if (searchResults != null) {
+            searchResults.clear();
+        }
+        if (searchAdapter != null) {
+            searchAdapter.updateResults(searchResults);
+        }
     }
 
     /**
@@ -1176,6 +1246,334 @@ public class MapFragment extends Fragment {
         }
 
         Log.d(TAG, "Route display requested - full implementation pending");
+    }
+
+    /**
+     * Search for nearby places when user clicks on empty map area
+     */
+    private void searchNearbyPlaces(double latitude, double longitude) {
+        Log.d(TAG, "Searching for nearby places at: (" + latitude + ", " + longitude + ")");
+
+        // Build API URL for category search (search for any type of place)
+        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
+            android.net.Uri.encode("맛집") + // Default search for restaurants
+            "&x=" + longitude +
+            "&y=" + latitude +
+            "&radius=100&sort=distance"; // Search within 100 meters, sort by distance
+
+        Log.d(TAG, "Nearby places API URL: " + apiUrl);
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Failed to search nearby places", e);
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Nearby search response not successful: " + response.code());
+                    return;
+                }
+
+                String responseBody = response.body().string();
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    if (documents != null && documents.size() > 0) {
+                        // Get the first (closest) result
+                        JsonObject doc = documents.get(0).getAsJsonObject();
+
+                        PlaceSearchResult poi = new PlaceSearchResult();
+                        poi.setId(doc.get("id").getAsString());
+                        poi.setPlaceName(doc.get("place_name").getAsString());
+                        poi.setAddressName(doc.get("address_name").getAsString());
+
+                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
+                            poi.setRoadAddressName(doc.get("road_address_name").getAsString());
+                        }
+
+                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
+                            String categoryName = doc.get("category_name").getAsString();
+                            poi.setCategoryName(categoryName);
+                            poi.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
+                        }
+
+                        if (doc.has("phone") && !doc.get("phone").isJsonNull()) {
+                            poi.setPhone(doc.get("phone").getAsString());
+                        }
+
+                        poi.setLatitude(doc.get("y").getAsDouble());
+                        poi.setLongitude(doc.get("x").getAsDouble());
+
+                        if (doc.has("place_url") && !doc.get("place_url").isJsonNull()) {
+                            poi.setPlaceUrl(doc.get("place_url").getAsString());
+                        }
+
+                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
+                            poi.setDistance(doc.get("distance").getAsInt());
+                        }
+
+                        // Display POI info on UI thread
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayPoiInfo(poi));
+                        }
+
+                        Log.d(TAG, "Nearby place found: " + poi.getPlaceName());
+                    } else {
+                        Log.d(TAG, "No nearby places found");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing nearby places", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Fetch POI (Point of Interest) details from Kakao Local API
+     * This is called when user clicks on a real place on the map
+     */
+    private void fetchPoiDetails(String poiName, double latitude, double longitude) {
+        Log.d(TAG, "Fetching POI details for: " + poiName + " at (" + latitude + ", " + longitude + ")");
+
+        // Build API URL for keyword search with coordinates
+        // Sort by accuracy (relevance) first to get the most relevant match
+        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
+            android.net.Uri.encode(poiName) +
+            "&x=" + longitude +
+            "&y=" + latitude +
+            "&radius=50" + // Search within 50 meters
+            "&sort=accuracy"; // Sort by relevance
+
+        Log.d(TAG, "POI API URL: " + apiUrl);
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Failed to fetch POI details", e);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (getContext() != null) {
+                            Toast.makeText(getContext(), "POI 정보를 불러올 수 없습니다", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "POI fetch response not successful: " + response.code());
+                    return;
+                }
+
+                String responseBody = response.body().string();
+                Log.d(TAG, "POI response received");
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    if (documents != null && documents.size() > 0) {
+                        // Get the first (closest) result
+                        JsonObject doc = documents.get(0).getAsJsonObject();
+
+                        PlaceSearchResult poi = new PlaceSearchResult();
+                        poi.setId(doc.get("id").getAsString());
+                        poi.setPlaceName(doc.get("place_name").getAsString());
+                        poi.setAddressName(doc.get("address_name").getAsString());
+
+                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
+                            poi.setRoadAddressName(doc.get("road_address_name").getAsString());
+                        }
+
+                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
+                            String categoryName = doc.get("category_name").getAsString();
+                            poi.setCategoryName(categoryName);
+                            poi.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
+                        }
+
+                        if (doc.has("phone") && !doc.get("phone").isJsonNull()) {
+                            poi.setPhone(doc.get("phone").getAsString());
+                        }
+
+                        // Kakao API returns x=longitude, y=latitude
+                        poi.setLatitude(doc.get("y").getAsDouble());
+                        poi.setLongitude(doc.get("x").getAsDouble());
+
+                        if (doc.has("place_url") && !doc.get("place_url").isJsonNull()) {
+                            poi.setPlaceUrl(doc.get("place_url").getAsString());
+                        }
+
+                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
+                            poi.setDistance(doc.get("distance").getAsInt());
+                        }
+
+                        // Display POI info on UI thread
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> displayPoiInfo(poi));
+                        }
+
+                        Log.d(TAG, "POI details fetched successfully: " + poi.getPlaceName());
+                    } else {
+                        Log.w(TAG, "No POI results found");
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                if (getContext() != null) {
+                                    Toast.makeText(getContext(), poiName, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing POI details", e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Display POI information in the info card
+     */
+    private void displayPoiInfo(PlaceSearchResult poi) {
+        if (poi == null || poiInfoCard == null) {
+            return;
+        }
+
+        Log.d(TAG, "Displaying POI info: " + poi.getPlaceName());
+
+        // Store selected POI
+        selectedPoi = poi;
+
+        // Hide search results if visible
+        hideSearchResults();
+        hideUseLocationButton();
+
+        // Set POI name
+        if (poiName != null) {
+            poiName.setText(poi.getPlaceName());
+        }
+
+        // Set category
+        if (poiCategory != null) {
+            String category = poi.getCategoryName();
+            if (category != null && !category.isEmpty()) {
+                // Show only the last part of the category (e.g., "음식점 > 카페" -> "카페")
+                String[] parts = category.split(" > ");
+                poiCategory.setText(parts[parts.length - 1]);
+                poiCategory.setVisibility(View.VISIBLE);
+            } else {
+                poiCategory.setVisibility(View.GONE);
+            }
+        }
+
+        // Set address (prefer road address if available)
+        if (poiAddress != null) {
+            String address = poi.getRoadAddressName();
+            if (address == null || address.isEmpty()) {
+                address = poi.getAddressName();
+            }
+            poiAddress.setText(address);
+        }
+
+        // Set phone number (if available)
+        if (poiPhoneLayout != null && poiPhone != null) {
+            String phone = poi.getPhone();
+            if (phone != null && !phone.isEmpty()) {
+                poiPhone.setText(phone);
+                poiPhoneLayout.setVisibility(View.VISIBLE);
+            } else {
+                poiPhoneLayout.setVisibility(View.GONE);
+            }
+        }
+
+        // Set distance (if available)
+        if (poiDistanceLayout != null && poiDistance != null) {
+            int distance = poi.getDistance();
+            if (distance > 0) {
+                String distanceText;
+                if (distance < 1000) {
+                    distanceText = distance + "m";
+                } else {
+                    distanceText = String.format("%.1fkm", distance / 1000.0);
+                }
+                poiDistance.setText(distanceText);
+                poiDistanceLayout.setVisibility(View.VISIBLE);
+            } else {
+                poiDistanceLayout.setVisibility(View.GONE);
+            }
+        }
+
+        // Set website URL (if available - note: Kakao API doesn't provide this, but structure is here for future enhancement)
+        if (poiWebsiteLayout != null && poiWebsite != null) {
+            // This would be populated if we had website data from the API
+            // For now, it will remain hidden
+            poiWebsiteLayout.setVisibility(View.GONE);
+        }
+
+        // Show the POI info card
+        poiInfoCard.setVisibility(View.VISIBLE);
+
+        Log.d(TAG, "POI info card displayed successfully");
+        Log.d(TAG, "POI Details - Name: " + poi.getPlaceName() + ", Category: " + poi.getCategoryName() +
+                ", Phone: " + poi.getPhone() + ", Distance: " + poi.getDistance() + "m");
+    }
+
+    /**
+     * Hide POI information card
+     */
+    private void hidePoiInfo() {
+        if (poiInfoCard != null) {
+            poiInfoCard.setVisibility(View.GONE);
+        }
+        selectedPoi = null;
+        Log.d(TAG, "POI info card hidden");
+    }
+
+    /**
+     * Open CreateActivityActivity with selected POI data
+     */
+    private void openCreateActivityWithPoi() {
+        if (selectedPoi == null || getContext() == null) {
+            return;
+        }
+
+        Intent intent = new Intent(getContext(), CreateActivityActivity.class);
+        intent.putExtra("location_name", selectedPoi.getPlaceName());
+
+        // Use road address if available, otherwise use regular address
+        String address = selectedPoi.getRoadAddressName();
+        if (address == null || address.isEmpty()) {
+            address = selectedPoi.getAddressName();
+        }
+        intent.putExtra("location_address", address);
+        intent.putExtra("location_latitude", selectedPoi.getLatitude());
+        intent.putExtra("location_longitude", selectedPoi.getLongitude());
+
+        // Add category if available
+        if (selectedPoi.getMappedCategory() != null) {
+            intent.putExtra("suggested_category", selectedPoi.getMappedCategory());
+        }
+
+        startActivity(intent);
+
+        // Hide the POI card after using it
+        hidePoiInfo();
+
+        Log.d(TAG, "Opened CreateActivityActivity with POI: " + selectedPoi.getPlaceName());
     }
 
     /**

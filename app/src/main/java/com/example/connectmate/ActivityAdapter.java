@@ -3,6 +3,7 @@ package com.example.connectmate;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -143,19 +144,10 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
                 for (String category : categories) {
                     String trimmedCategory = category.trim();
                     if (!trimmedCategory.isEmpty()) {
-                        Chip chip = new Chip(context);
+                        // Create chip with CategoryChipStyle
+                        Chip chip = new Chip(new ContextThemeWrapper(context, R.style.CategoryChipStyle));
                         chip.setText(trimmedCategory);
-                        chip.setTextColor(Color.WHITE);
-                        chip.setChipCornerRadius(50f); // Large radius for ellipse/pill shape
                         chip.setClickable(false);
-                        chip.setTextSize(13f);
-                        chip.setChipMinHeight(40f);
-
-                        // Compact horizontal padding for shorter chips
-                        chip.setChipStartPadding(8f);
-                        chip.setChipEndPadding(8f);
-                        chip.setTextStartPadding(6f);
-                        chip.setTextEndPadding(6f);
 
                         // Set color based on category using CategoryMapper
                         int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(trimmedCategory);

@@ -5,6 +5,8 @@
     <color name="primary_blue_dark">#2868B8</color>
     <color name="blue_50">#EFF6FF</color>
     <color name="blue_100">#DBEAFE</color>
+    <color name="blue_200">#BFDBFE</color>
+    <color name="blue_300">#93C5FD</color>
     <color name="blue_500">#3B82F6</color>
     <color name="blue_700">#1D4ED8</color>
 
@@ -36,6 +38,19 @@
     <color name="amber_500">#F59E0B</color>
     <color name="yellow_500">#FFD300</color>
     <color name="yellow_100">#FFF9E6</color>
+
+    <!-- Pastel Category Colors (Light & Less Saturated) -->
+    <color name="pastel_green">#A7F4D8</color>       <!-- Sports - Pastel Mint Green -->
+    <color name="pastel_teal">#99E2DA</color>        <!-- Outdoor - Pastel Teal -->
+    <color name="pastel_blue">#9FC9F8</color>        <!-- Study - Pastel Blue -->
+    <color name="pastel_pink">#FAA4CE</color>        <!-- Culture - Pastel Pink -->
+    <color name="pastel_amber">#FFE5A0</color>       <!-- Social - Pastel Yellow/Amber -->
+    <color name="pastel_peach">#FFC386</color>       <!-- Food - Pastel Peach -->
+    <color name="pastel_sky">#A2D9E6</color>         <!-- Travel - Pastel Sky Blue -->
+    <color name="pastel_lavender">#D5AAFF</color>    <!-- Game - Pastel Lavender -->
+    <color name="pastel_lemon">#FFFAAC</color>       <!-- Hobby - Pastel Lemon -->
+    <color name="pastel_rose">#F69DA5</color>        <!-- Volunteer - Pastel Rose -->
+    <color name="pastel_gray">#D4D4D4</color>        <!-- Other - Pastel Gray -->
 
     <!-- Neutral Colors -->
     <color name="white">#FFFFFF</color>

@@ -131,6 +131,26 @@
         <item name="checkedIconVisible">false</item>
         <item name="chipStrokeWidth">0dp</item>
         <item name="chipCornerRadius">16dp</item>
+        <item name="chipStartPadding">12dp</item>
+        <item name="chipEndPadding">12dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <!-- =============================== -->
+    <!--      Category Chip Style        -->
+    <!-- =============================== -->
+    <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Action">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="chipStartPadding">12dp</item>
+        <item name="chipEndPadding">12dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="chipMinHeight">40dp</item>
+        <item name="android:textSize">13sp</item>
     </style>
 
 </resources>

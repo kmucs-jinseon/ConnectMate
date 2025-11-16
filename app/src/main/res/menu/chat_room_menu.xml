@@ -7,6 +7,6 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_leave_room"
-        android:title="방 나가기"
+        android:title="채팅방 나가기"
         app:showAsAction="never" />
 </menu>

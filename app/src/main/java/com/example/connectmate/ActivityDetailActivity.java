@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -127,19 +128,10 @@ public class ActivityDetailActivity extends AppCompatActivity {
             for (String category : categories) {
                 String trimmedCategory = category.trim();
                 if (!trimmedCategory.isEmpty()) {
-                    Chip chip = new Chip(this);
+                    // Create chip with CategoryChipStyle
+                    Chip chip = new Chip(new ContextThemeWrapper(this, R.style.CategoryChipStyle));
                     chip.setText(trimmedCategory);
-                    chip.setTextColor(getResources().getColor(android.R.color.white, null));
-                    chip.setChipCornerRadius(50f); // Large radius for ellipse/pill shape
                     chip.setClickable(false);
-                    chip.setChipMinHeight(40f);
-                    chip.setTextSize(13f);
-
-                    // Compact horizontal padding for shorter chips
-                    chip.setChipStartPadding(8f);
-                    chip.setChipEndPadding(8f);
-                    chip.setTextStartPadding(6f);
-                    chip.setTextEndPadding(6f);
 
                     // Set color based on category
                     int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(trimmedCategory);

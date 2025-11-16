@@ -146,35 +146,35 @@ public class CategoryMapper {
     }
 
     /**
-     * Get color resource ID for a category
+     * Get color resource ID for a category (Pastel colors)
      */
     public static int getCategoryColor(String category) {
-        if (category == null) return R.color.gray_500;
+        if (category == null) return R.color.pastel_gray;
 
         switch (category) {
             case CATEGORY_SPORTS:
-                return R.color.green_500;
+                return R.color.pastel_green;
             case CATEGORY_OUTDOOR:
-                return R.color.teal_500;
+                return R.color.pastel_teal;
             case CATEGORY_STUDY:
-                return R.color.indigo_500;
+                return R.color.pastel_blue;
             case CATEGORY_CULTURE:
-                return R.color.pink_500;
+                return R.color.pastel_pink;
             case CATEGORY_SOCIAL:
-                return R.color.amber_500;
+                return R.color.pastel_amber;
             case CATEGORY_FOOD:
-                return R.color.orange_500;
+                return R.color.pastel_peach;
             case CATEGORY_TRAVEL:
-                return R.color.cyan_500;
+                return R.color.pastel_sky;
             case CATEGORY_GAME:
-                return R.color.purple_500;
+                return R.color.pastel_lavender;
             case CATEGORY_HOBBY:
-                return R.color.yellow_500;
+                return R.color.pastel_lemon;
             case CATEGORY_VOLUNTEER:
-                return R.color.red_500;
+                return R.color.pastel_rose;
             case CATEGORY_OTHER:
             default:
-                return R.color.gray_500;
+                return R.color.pastel_gray;
         }
     }
 }
