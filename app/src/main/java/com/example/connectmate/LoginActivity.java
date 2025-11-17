@@ -544,7 +544,25 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // Naver Sign-In Methods
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // NAVER SIGN-IN METHODS - Standard OAuth Flow
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // This implementation ensures the full OAuth consent flow appears every time:
+    //
+    // FLOW ORDER (Standard OAuth):
+    // 1. User clicks Naver login button
+    // 2. Token revocation (if exists) - forces fresh consent
+    // 3. NAVER LOGIN SCREEN - User enters credentials
+    // 4. CONSENT SCREEN - User sees permissions and agrees
+    // 5. AUTHORIZATION - User is authenticated
+    // 6. App receives access token and user info
+    //
+    // Implementation steps:
+    // - Revoke any existing access token via Naver's token deletion API
+    // - Clear all cached session data from SDK
+    // - Start fresh OAuth flow via NaverIdLoginSDK.authenticate()
+    // ═══════════════════════════════════════════════════════════════════════════════
+
     private void signInWithNaver() {
         // Check if Naver SDK is initialized
         if (!isValidApiKey(BuildConfig.NAVER_CLIENT_ID) || !isValidApiKey(BuildConfig.NAVER_CLIENT_SECRET)) {
@@ -553,16 +571,76 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "═══════════════════════════════════════════");
-        Log.d(TAG, "Starting Naver Login");
+        Log.d(TAG, "Starting Naver Login with Forced Consent Screen");
         Log.d(TAG, "Client ID: " + BuildConfig.NAVER_CLIENT_ID);
         Log.d(TAG, "═══════════════════════════════════════════");
 
         // Disable button during sign-in
         naverSignInButton.setEnabled(false);
 
-        // IMPORTANT: Logout first to clear cached session
+        // STEP 1: Revoke existing access token to force consent screen
+        revokeNaverTokenAndLogin();
+    }
+
+    /**
+     * Revoke existing Naver access token to force the consent screen to appear
+     * This ensures users see the permission/consent page every time they log in
+     */
+    private void revokeNaverTokenAndLogin() {
+        String accessToken = NaverIdLoginSDK.INSTANCE.getAccessToken();
+
+        if (accessToken != null && !accessToken.isEmpty()) {
+            Log.d(TAG, "Found existing Naver access token - revoking to force consent screen...");
+
+            // Naver Token Deletion API endpoint
+            String deleteUrl = "https://nid.naver.com/oauth2.0/token?grant_type=delete" +
+                    "&client_id=" + BuildConfig.NAVER_CLIENT_ID +
+                    "&client_secret=" + BuildConfig.NAVER_CLIENT_SECRET +
+                    "&access_token=" + accessToken +
+                    "&service_provider=NAVER";
+
+            Request request = new Request.Builder()
+                    .url(deleteUrl)
+                    .get()
+                    .build();
+
+            httpClient.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                    Log.w(TAG, "Failed to revoke token (will proceed anyway): " + e.getMessage());
+                    // Proceed with login even if revocation fails
+                    runOnUiThread(() -> proceedWithNaverLogin());
+                }
+
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                    String responseBody = response.body() != null ? response.body().string() : "";
+
+                    if (response.isSuccessful()) {
+                        Log.d(TAG, "Successfully revoked Naver token - consent screen will appear");
+                        Log.d(TAG, "Revocation response: " + responseBody);
+                    } else {
+                        Log.w(TAG, "Token revocation returned status " + response.code() + ": " + responseBody);
+                    }
+
+                    // Proceed with login regardless of revocation result
+                    runOnUiThread(() -> proceedWithNaverLogin());
+                }
+            });
+        } else {
+            Log.d(TAG, "No existing Naver token found - proceeding with login");
+            proceedWithNaverLogin();
+        }
+    }
+
+    /**
+     * Proceed with Naver login after token revocation
+     * This will show the full OAuth flow including consent screen
+     */
+    private void proceedWithNaverLogin() {
+        // IMPORTANT: Logout to clear cached session
         // This forces Naver OAuth to show the login screen and allow account selection
-        Log.d(TAG, "Clearing Naver session to allow account selection...");
+        Log.d(TAG, "Clearing Naver session to ensure fresh login flow...");
         NaverIdLoginSDK.INSTANCE.logout();
 
         // Clear Naver SDK SharedPreferences to ensure fresh login
@@ -579,6 +657,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess() {
                 Log.d(TAG, "═══════════════════════════════════════════");
                 Log.d(TAG, "Naver OAuth login success");
+                Log.d(TAG, "User completed OAuth flow including consent");
                 Log.d(TAG, "═══════════════════════════════════════════");
                 getUserInfoFromNaver();
             }
@@ -619,6 +698,13 @@ public class LoginActivity extends AppCompatActivity {
         };
 
         try {
+            // This will show the full standard OAuth flow in this order:
+            // Step 1: NAVER LOGIN SCREEN - User enters Naver ID and password
+            // Step 2: CONSENT SCREEN - User sees permissions and clicks "Agree"
+            // Step 3: AUTHORIZATION - User is authenticated and authorized
+            // The SDK handles all steps automatically
+            Log.d(TAG, "Starting OAuth authentication flow...");
+            Log.d(TAG, "Flow: Login Screen → Consent Screen → Authorization");
             NaverIdLoginSDK.INSTANCE.authenticate(this, callback);
         } catch (Exception e) {
             Log.e(TAG, "═══════════════════════════════════════════");
@@ -717,11 +803,16 @@ public class LoginActivity extends AppCompatActivity {
 
                     if ("00".equals(resultCode)) {
                         JSONObject userResponse = json.getJSONObject("response");
-                        String userId = userResponse.optString("id", "");
-                        String email = userResponse.optString("email", "");
-                        String name = userResponse.optString("name", "");
-                        String nickname = userResponse.optString("nickname", "Naver User");
-                        String profileImage = userResponse.optString("profile_image", null);
+
+                        // Extract user information from Naver API response
+                        // These fields must be configured in Naver Developers Console:
+                        // - API Settings → Provided Information (제공 정보 선택)
+                        // Configure as Required (필수) or Optional (선택) based on app needs
+                        String userId = userResponse.optString("id", "");              // Always available
+                        String email = userResponse.optString("email", "");            // Configured in Console
+                        String name = userResponse.optString("name", "");              // Configured in Console
+                        String nickname = userResponse.optString("nickname", "Naver User"); // Configured in Console
+                        String profileImage = userResponse.optString("profile_image", null); // Configured in Console
 
                         Log.d(TAG, "═══════════════════════════════════════════");
                         Log.d(TAG, "Naver user info parsed successfully");
@@ -729,6 +820,7 @@ public class LoginActivity extends AppCompatActivity {
                         Log.d(TAG, "Email: " + email);
                         Log.d(TAG, "Name: " + name);
                         Log.d(TAG, "Nickname: " + nickname);
+                        Log.d(TAG, "Profile Image: " + (profileImage != null ? "Available" : "Not provided"));
                         Log.d(TAG, "═══════════════════════════════════════════");
 
                         runOnUiThread(() -> {

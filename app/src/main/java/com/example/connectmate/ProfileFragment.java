@@ -55,7 +55,6 @@ public class ProfileFragment extends Fragment {
     private TextView ratingText;
     private TextView activitiesCount;
     private TextView connectionsCount;
-    private TextView badgesCount;
     private MaterialButton editProfileButton;
 
     // UI elements - Recent Activities
@@ -107,7 +106,6 @@ public class ProfileFragment extends Fragment {
         ratingText = view.findViewById(R.id.rating_text);
         activitiesCount = view.findViewById(R.id.activities_count);
         connectionsCount = view.findViewById(R.id.connections_count);
-        badgesCount = view.findViewById(R.id.badges_count);
         editProfileButton = view.findViewById(R.id.edit_profile_button);
 
         // Recent activities
@@ -234,7 +232,7 @@ public class ProfileFragment extends Fragment {
         if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 4.8)));
         if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
         if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
-        if (badgesCount != null) badgesCount.setText(String.valueOf(or(u.badgesCount, 0L)));
+
 
         // Load profile image using Glide
         if (profileAvatar != null) {

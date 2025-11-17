@@ -789,6 +789,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        FragmentManager fm = getSupportFragmentManager();
+
+        // First, check if there are any fragments in the back stack
+        if (fm.getBackStackEntryCount() > 0) {
+            // Pop the back stack (navigate back to previous fragment)
+            fm.popBackStack();
+            Log.d(TAG, "Navigating back - popped fragment from back stack");
+            return;
+        }
+
+        // If no back stack, check if we're on the home fragment (Map)
+        // If on a different tab, navigate to Map instead of closing the app
+        if (activeFragment != null && !TAG_MAP.equals(activeFragment.getTag())) {
+            // Not on home fragment - switch to Map instead of closing
+            bottomNavigationView.setSelectedItemId(R.id.nav_map);
+            Log.d(TAG, "Navigating to home (Map) instead of closing app");
+            return;
+        }
+
+        // We're on the home fragment (Map) with no back stack - this is the last page
+        // Close the app
+        super.onBackPressed();
+        Log.d(TAG, "On last page - closing app");
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
