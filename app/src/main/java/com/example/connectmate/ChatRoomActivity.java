@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.net.Uri; // 추가
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -12,7 +13,10 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent; // 추가
 
+import androidx.activity.result.ActivityResultLauncher; // 추가
+import androidx.activity.result.contract.ActivityResultContracts; // 추가
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -29,11 +33,15 @@ import com.example.connectmate.utils.FirebaseActivityManager;
 import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.button.MaterialButton; // 추가
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage; // 추가
+import com.google.firebase.storage.StorageReference; // 추가
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID; // 추가
 
 public class ChatRoomActivity extends AppCompatActivity {
 
@@ -52,10 +60,15 @@ public class ChatRoomActivity extends AppCompatActivity {
     private LinearLayout emptyState;
     private TextInputEditText messageInput;
     private FloatingActionButton btnSendMessage;
+    private MaterialButton btnUploadPhoto; // 추가
 
     // Adapter
     private ChatMessageAdapter messageAdapter;
     private List<ChatMessage> messages;
+
+    // Image Upload
+    private Uri selectedImageUri; // 추가
+    private ActivityResultLauncher<Intent> pickImageLauncher; // 추가
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -72,6 +85,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         initializeViews();
         setupRecyclerView();
         setupMessageInput();
+        setupImagePicker(); // 추가
 
         if (chatRoom == null) {
             String chatRoomId = getIntent().getStringExtra("chat_room_id");
@@ -250,6 +264,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         emptyState = findViewById(R.id.empty_state);
         messageInput = findViewById(R.id.message_input);
         btnSendMessage = findViewById(R.id.btn_send_message);
+        btnUploadPhoto = findViewById(R.id.btn_upload_photo); // 추가
     }
 
     private void setupToolbar() {
@@ -300,6 +315,30 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void setupMessageInput() {
         btnSendMessage.setOnClickListener(v -> sendMessage());
+        btnUploadPhoto.setOnClickListener(v -> openImagePicker()); // 추가
+    }
+
+    // 추가: 이미지 선택기를 설정하는 메서드
+    private void setupImagePicker() {
+        pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    selectedImageUri = result.getData().getData();
+                    Toast.makeText(this, "사진이 선택되었습니다. 메시지 전송 버튼을 눌러주세요.", Toast.LENGTH_SHORT).show();
+                    // 여기에 선택된 이미지를 미리 보여주는 UI를 추가할 수 있습니다.
+                } else {
+                    selectedImageUri = null;
+                }
+            }
+        );
+    }
+
+    // 추가: 갤러리를 여는 메서드
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        pickImageLauncher.launch(intent);
     }
 
     /**
@@ -441,7 +480,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         String messageText = (messageInput.getText() != null) ?
             messageInput.getText().toString().trim() : "";
 
-        if (messageText.isEmpty()) {
+        if (messageText.isEmpty() && selectedImageUri == null) { // 이미지도 없고 텍스트도 없으면 리턴
+            Toast.makeText(this, "메시지를 입력하거나 사진을 선택해주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -460,50 +500,117 @@ public class ChatRoomActivity extends AppCompatActivity {
                 (latestProfileUrl.startsWith("data:image") ? "Base64 image" : latestProfileUrl));
         }
 
-        // Create message
-        ChatMessage message = new ChatMessage(
-            chatRoom.getId(),
-            currentUserId,
-            currentUserName,
-            messageText
-        );
-
-        // Set profile URL if available
-        if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
-            message.setSenderProfileUrl(currentUserProfileUrl);
-            Log.d(TAG, "Setting profile URL on message: " +
-                (currentUserProfileUrl.startsWith("data:image") ? "Base64 image (length: " + currentUserProfileUrl.length() + ")" : currentUserProfileUrl));
+        if (selectedImageUri != null) {
+            uploadImageAndSendMessage(messageText); // 이미지 업로드 후 메시지 전송
         } else {
-            Log.w(TAG, "No profile URL available to set on message - will use default image");
+            // Create message
+            ChatMessage message = new ChatMessage(
+                chatRoom.getId(),
+                currentUserId,
+                currentUserName,
+                messageText
+            );
+
+            // Set profile URL if available
+            if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
+                message.setSenderProfileUrl(currentUserProfileUrl);
+                Log.d(TAG, "Setting profile URL on message: " +
+                    (currentUserProfileUrl.startsWith("data:image") ? "Base64 image (length: " + currentUserProfileUrl.length() + ")" : currentUserProfileUrl));
+            } else {
+                Log.w(TAG, "No profile URL available to set on message - will use default image");
+            }
+
+            Log.d(TAG, "=== Sending message ===");
+            Log.d(TAG, "Sender ID: " + currentUserId);
+            Log.d(TAG, "Sender Name: " + currentUserName);
+            Log.d(TAG, "Sender Profile URL: " + message.getSenderProfileUrl());
+            Log.d(TAG, "Message Text: " + messageText);
+
+            // Send message to Firebase
+            FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+            chatManager.sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                @Override
+                public void onSuccess(ChatMessage result) {
+                    // Clear input on successful send
+                    runOnUiThread(() -> {
+                        messageInput.setText("");
+                        Log.d(TAG, "Message sent: " + messageText);
+                    });
+                    // Message will be added to list via real-time listener
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Failed to send message", e);
+                    runOnUiThread(() -> {
+                        Toast.makeText(ChatRoomActivity.this, "메시지 전송 실패", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        }
+    }
+
+    // 추가: 이미지를 Firebase Storage에 업로드하고 메시지를 전송하는 메서드
+    private void uploadImageAndSendMessage(String messageText) {
+        if (selectedImageUri == null) {
+            Toast.makeText(this, "선택된 이미지가 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        Log.d(TAG, "=== Sending message ===");
-        Log.d(TAG, "Sender ID: " + currentUserId);
-        Log.d(TAG, "Sender Name: " + currentUserName);
-        Log.d(TAG, "Sender Profile URL: " + message.getSenderProfileUrl());
-        Log.d(TAG, "Message Text: " + messageText);
+        Toast.makeText(this, "사진을 업로드 중입니다...", Toast.LENGTH_SHORT).show();
 
-        // Send message to Firebase
-        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-        chatManager.sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
-            @Override
-            public void onSuccess(ChatMessage result) {
-                // Clear input on successful send
-                runOnUiThread(() -> {
-                    messageInput.setText("");
-                    Log.d(TAG, "Message sent: " + messageText);
-                });
-                // Message will be added to list via real-time listener
-            }
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference("chat_images")
+            .child(chatRoom.getId())
+            .child(UUID.randomUUID().toString() + ".jpg");
 
-            @Override
-            public void onError(Exception e) {
-                Log.e(TAG, "Failed to send message", e);
-                runOnUiThread(() -> {
-                    Toast.makeText(ChatRoomActivity.this, "메시지 전송 실패", Toast.LENGTH_SHORT).show();
+        storageRef.putFile(selectedImageUri)
+            .addOnSuccessListener(taskSnapshot -> {
+                storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    String imageUrl = uri.toString();
+                    Log.d(TAG, "Image uploaded. Download URL: " + imageUrl);
+
+                    // Create message with image URL
+                    ChatMessage message = new ChatMessage(
+                        chatRoom.getId(),
+                        currentUserId,
+                        currentUserName,
+                        messageText.isEmpty() ? null : messageText // 텍스트가 비어있으면 null, 아니면 텍스트
+                    );
+                    message.setImageUrl(imageUrl); // 이미지 URL 설정
+
+                    if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
+                        message.setSenderProfileUrl(currentUserProfileUrl);
+                    }
+
+                    // Send message to Firebase
+                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                        @Override
+                        public void onSuccess(ChatMessage result) {
+                            runOnUiThread(() -> {
+                                messageInput.setText("");
+                                selectedImageUri = null; // 이미지 전송 후 초기화
+                                Toast.makeText(ChatRoomActivity.this, "사진 메시지가 전송되었습니다.", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Failed to send image message", e);
+                            runOnUiThread(() -> {
+                                Toast.makeText(ChatRoomActivity.this, "사진 메시지 전송 실패", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+
+                }).addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to get download URL", e);
+                    Toast.makeText(ChatRoomActivity.this, "사진 URL 가져오기 실패", Toast.LENGTH_SHORT).show();
                 });
-            }
-        });
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Failed to upload image", e);
+                Toast.makeText(ChatRoomActivity.this, "사진 업로드 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            });
     }
 
     private void updateUI() {
