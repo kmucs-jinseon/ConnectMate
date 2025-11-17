@@ -17,6 +17,7 @@ public class ChatMessage implements Serializable {
     private String senderName;
     private String senderProfileUrl;
     private String message;
+    private String imageUrl; // 추가: 이미지 URL 필드
     private int messageType;
     private long timestamp;
     private boolean isRead;
@@ -97,6 +98,15 @@ public class ChatMessage implements Serializable {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    // 추가: 이미지 URL getter 및 setter
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public int getMessageType() {
