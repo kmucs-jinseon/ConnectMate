@@ -187,8 +187,18 @@ public class ChatListFragment extends Fragment {
                 // No category filter or "All" selected - show all categories
                 matchesCategory = true;
             } else {
+                // Handle comma-separated categories (e.g., "운동,스터디")
                 String roomCategory = chatRoom.getCategory();
-                matchesCategory = roomCategory != null && selectedCategories.contains(roomCategory);
+                if (roomCategory != null && !roomCategory.isEmpty()) {
+                    // Split by comma and check if any category matches
+                    String[] categories = roomCategory.split(",");
+                    for (String cat : categories) {
+                        if (selectedCategories.contains(cat.trim())) {
+                            matchesCategory = true;
+                            break;
+                        }
+                    }
+                }
             }
 
             // Check search filter

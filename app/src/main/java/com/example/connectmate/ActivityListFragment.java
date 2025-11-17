@@ -221,8 +221,18 @@ public class ActivityListFragment extends Fragment {
                 // No category filter or "All" selected - show all categories
                 matchesCategory = true;
             } else {
+                // Handle comma-separated categories (e.g., "운동,스터디")
                 String activityCategory = activity.getCategory();
-                matchesCategory = activityCategory != null && selectedCategories.contains(activityCategory);
+                if (activityCategory != null && !activityCategory.isEmpty()) {
+                    // Split by comma and check if any category matches
+                    String[] categories = activityCategory.split(",");
+                    for (String cat : categories) {
+                        if (selectedCategories.contains(cat.trim())) {
+                            matchesCategory = true;
+                            break;
+                        }
+                    }
+                }
             }
 
             // Check search filter
