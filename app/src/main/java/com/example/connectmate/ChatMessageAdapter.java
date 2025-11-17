@@ -123,14 +123,17 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             messageTime.setText(time);
 
             // Load profile image with Glide
+            // Supports both Firebase Storage URLs and Base64 encoded images
             String profileUrl = message.getSenderProfileUrl();
-            android.util.Log.d("ChatMessageAdapter", "SENT message - Sender: " + message.getSenderName() + ", Profile URL: " + profileUrl);
+            android.util.Log.d("ChatMessageAdapter", "SENT message - Sender: " + message.getSenderName() + ", Profile: " +
+                (profileUrl != null ? (profileUrl.startsWith("data:image") ? "Base64 image" : "URL") : "null"));
 
             if (profileUrl != null && !profileUrl.isEmpty()) {
                 Glide.with(itemView.getContext())
-                        .load(profileUrl)
+                        .load(profileUrl)  // Glide handles both URLs and Base64 (data:image/...)
                         .placeholder(R.drawable.circle_logo)
                         .error(R.drawable.circle_logo)
+                        .circleCrop()
                         .into(profileImage);
             } else {
                 android.util.Log.w("ChatMessageAdapter", "No profile URL for sent message, using default");
@@ -164,14 +167,17 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             messageTime.setText(time);
 
             // Load profile image with Glide
+            // Supports both Firebase Storage URLs and Base64 encoded images
             String profileUrl = message.getSenderProfileUrl();
-            android.util.Log.d("ChatMessageAdapter", "RECEIVED message - Sender: " + message.getSenderName() + ", Profile URL: " + profileUrl);
+            android.util.Log.d("ChatMessageAdapter", "RECEIVED message - Sender: " + message.getSenderName() + ", Profile: " +
+                (profileUrl != null ? (profileUrl.startsWith("data:image") ? "Base64 image" : "URL") : "null"));
 
             if (profileUrl != null && !profileUrl.isEmpty()) {
                 Glide.with(itemView.getContext())
-                        .load(profileUrl)
+                        .load(profileUrl)  // Glide handles both URLs and Base64 (data:image/...)
                         .placeholder(R.drawable.circle_logo)
                         .error(R.drawable.circle_logo)
+                        .circleCrop()
                         .into(profileImage);
             } else {
                 android.util.Log.w("ChatMessageAdapter", "No profile URL for received message, using default");

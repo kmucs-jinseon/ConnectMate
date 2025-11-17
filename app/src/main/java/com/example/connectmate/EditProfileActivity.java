@@ -5,10 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -25,6 +28,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -329,6 +334,7 @@ public class EditProfileActivity extends AppCompatActivity {
 
     /**
      * Sync profile data to Realtime Database
+     * Uses Base64 encoding for images (works on free tier without Firebase Storage)
      */
     private void syncToRealtimeDatabase(String name, String username, String mbti, String bio) {
         String userId = getUserId();
@@ -340,6 +346,80 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        // If a new image was selected, convert it to Base64 first
+        if (selectedImageUri != null) {
+            convertImageToBase64AndSave(userId, name, username, mbti, bio);
+        } else {
+            // No new image, just update the profile data
+            saveProfileToFirebase(userId, name, username, mbti, bio, null);
+        }
+    }
+
+    /**
+     * Convert image to Base64 string and save to Realtime Database
+     * This works on free tier without Firebase Storage
+     */
+    private void convertImageToBase64AndSave(String userId, String name, String username, String mbti, String bio) {
+        if (selectedImageUri == null) {
+            android.util.Log.e("EditProfileActivity", "selectedImageUri is null!");
+            Toast.makeText(this, "이미지를 선택해주세요", Toast.LENGTH_SHORT).show();
+            saveProfileToFirebase(userId, name, username, mbti, bio, null);
+            return;
+        }
+
+        android.util.Log.d("EditProfileActivity", "Converting image to Base64...");
+        Toast.makeText(this, "이미지 처리 중...", Toast.LENGTH_SHORT).show();
+
+        try {
+            // Read image from URI
+            InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+
+            if (bitmap == null) {
+                throw new Exception("Failed to decode image");
+            }
+
+            // Resize image to reduce size (max 400x400 pixels)
+            int maxSize = 400;
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            float scale = Math.min(((float) maxSize / width), ((float) maxSize / height));
+
+            int newWidth = Math.round(width * scale);
+            int newHeight = Math.round(height * scale);
+
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+            android.util.Log.d("EditProfileActivity", "Resized image from " + width + "x" + height + " to " + newWidth + "x" + newHeight);
+
+            // Convert to Base64
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos); // 80% quality
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+
+            android.util.Log.d("EditProfileActivity", "Base64 string size: " + base64Image.length() + " characters");
+
+            // Clean up
+            bitmap.recycle();
+            resizedBitmap.recycle();
+            inputStream.close();
+
+            // Save to Firebase with Base64 string
+            saveProfileToFirebase(userId, name, username, mbti, bio, base64Image);
+
+        } catch (Exception e) {
+            android.util.Log.e("EditProfileActivity", "Failed to convert image to Base64", e);
+            Toast.makeText(this, "이미지 처리 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // Continue saving profile without image
+            saveProfileToFirebase(userId, name, username, mbti, bio, null);
+        }
+    }
+
+    /**
+     * Save profile data to Firebase Realtime Database
+     * imageData can be either a Base64 string or null
+     */
+    private void saveProfileToFirebase(String userId, String name, String username, String mbti, String bio, String imageData) {
         // Prepare data to update
         Map<String, Object> updates = new HashMap<>();
         updates.put("displayName", name);
@@ -347,22 +427,28 @@ public class EditProfileActivity extends AppCompatActivity {
         updates.put("mbti", mbti);
         updates.put("bio", bio);
 
-        if (selectedImageUri != null) {
-            updates.put("profileImageUrl", selectedImageUri.toString());
+        // If imageData is provided (Base64 string), update it
+        if (imageData != null && !imageData.isEmpty()) {
+            // Store Base64 string with prefix to identify it
+            String base64WithPrefix = "data:image/jpeg;base64," + imageData;
+            updates.put("profileImageUrl", base64WithPrefix);
+
+            // Also update SharedPreferences so chat picks it up immediately
+            prefs.edit().putString("profile_image_url", base64WithPrefix).apply();
+            android.util.Log.d("EditProfileActivity", "Saving Base64 image to Firebase (length: " + base64WithPrefix.length() + ")");
         }
 
         // Update Realtime Database
         dbRef.child("users").child(userId)
                 .updateChildren(updates)
                 .addOnSuccessListener(aVoid -> {
+                    android.util.Log.d("EditProfileActivity", "Profile updated successfully in Firebase");
                     Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
                     android.util.Log.e("EditProfileActivity", "Error updating profile in Realtime Database", e);
-                    // Even if database update fails, local save was successful
-                    Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast.makeText(this, "프로필 저장 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 

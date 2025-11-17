@@ -391,8 +391,41 @@ public class CreateActivityActivity extends AppCompatActivity {
             int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
             int categoryColor = getResources().getColor(colorRes, null);
 
-            // Set background color based on category
-            chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(categoryColor));
+            // Create ColorStateList for checked/unchecked states
+            // When checked: use original vibrant color
+            // When unchecked: use semi-transparent version
+            int[][] states = new int[][] {
+                new int[] { android.R.attr.state_checked },  // checked state
+                new int[] { }                                 // default (unchecked) state
+            };
+
+            int uncheckedColor = android.graphics.Color.argb(
+                120,  // 47% opacity for unchecked state
+                android.graphics.Color.red(categoryColor),
+                android.graphics.Color.green(categoryColor),
+                android.graphics.Color.blue(categoryColor)
+            );
+
+            int[] colors = new int[] {
+                categoryColor,      // checked: full vibrant color
+                uncheckedColor      // unchecked: semi-transparent
+            };
+
+            android.content.res.ColorStateList chipColorStateList =
+                new android.content.res.ColorStateList(states, colors);
+
+            chip.setChipBackgroundColor(chipColorStateList);
+
+            // Add scale animation on selection
+            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    // Scale up when selected
+                    buttonView.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
+                } else {
+                    // Scale back when deselected
+                    buttonView.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
+                }
+            });
 
             Log.d(TAG, "Created chip: " + category);
 

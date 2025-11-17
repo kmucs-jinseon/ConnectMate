@@ -208,8 +208,10 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     /**
      * Load profile URL from Firebase Realtime Database
+     * Loads Base64 encoded images or Firebase Storage URLs
      */
     private void loadProfileUrlFromFirebase(String userId) {
+        Log.d(TAG, "Loading profile URL from Firebase for user: " + userId);
         com.google.firebase.database.FirebaseDatabase.getInstance()
             .getReference("users")
             .child(userId)
@@ -223,7 +225,11 @@ public class ChatRoomActivity extends AppCompatActivity {
                         // Save to SharedPreferences for future use
                         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                         prefs.edit().putString("profile_image_url", profileUrl).apply();
-                        Log.d(TAG, "Loaded profile URL from Firebase: " + profileUrl);
+
+                        String logMsg = profileUrl.startsWith("data:image") ?
+                            "Loaded Base64 image from Firebase (length: " + profileUrl.length() + ")" :
+                            "Loaded Firebase Storage URL: " + profileUrl;
+                        Log.d(TAG, logMsg);
                     } else {
                         Log.d(TAG, "Profile URL exists in Firebase but is null/empty");
                     }
@@ -444,6 +450,16 @@ public class ChatRoomActivity extends AppCompatActivity {
             return;
         }
 
+        // IMPORTANT: Reload profile URL from SharedPreferences before sending
+        // This ensures we have the latest profile photo (including Base64 images)
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String latestProfileUrl = prefs.getString("profile_image_url", null);
+        if (latestProfileUrl != null && !latestProfileUrl.isEmpty()) {
+            currentUserProfileUrl = latestProfileUrl;
+            Log.d(TAG, "Refreshed profile URL from SharedPreferences: " +
+                (latestProfileUrl.startsWith("data:image") ? "Base64 image" : latestProfileUrl));
+        }
+
         // Create message
         ChatMessage message = new ChatMessage(
             chatRoom.getId(),
@@ -455,7 +471,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         // Set profile URL if available
         if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
             message.setSenderProfileUrl(currentUserProfileUrl);
-            Log.d(TAG, "Setting profile URL on message: " + currentUserProfileUrl);
+            Log.d(TAG, "Setting profile URL on message: " +
+                (currentUserProfileUrl.startsWith("data:image") ? "Base64 image (length: " + currentUserProfileUrl.length() + ")" : currentUserProfileUrl));
         } else {
             Log.w(TAG, "No profile URL available to set on message - will use default image");
         }

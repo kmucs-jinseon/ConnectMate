@@ -111,12 +111,14 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             });
 
             // Load last message sender's profile image
+            // Supports both Firebase Storage URLs and Base64 encoded images
             String profileUrl = chatRoom.getLastMessageSenderProfileUrl();
             if (profileUrl != null && !profileUrl.isEmpty()) {
                 Glide.with(itemView.getContext())
-                        .load(profileUrl)
+                        .load(profileUrl)  // Glide handles both URLs and Base64 (data:image/...)
                         .placeholder(R.drawable.circle_logo)
                         .error(R.drawable.circle_logo)
+                        .circleCrop()
                         .into(profileImage);
             } else {
                 // Fallback to main logo

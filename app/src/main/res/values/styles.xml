@@ -140,10 +140,13 @@
     <!-- =============================== -->
     <!--      Category Chip Style        -->
     <!-- =============================== -->
-    <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Action">
+    <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Choice">
         <item name="android:textColor">@android:color/white</item>
-        <item name="checkedIconVisible">false</item>
-        <item name="chipStrokeWidth">0dp</item>
+        <item name="checkedIconVisible">true</item>
+        <item name="checkedIcon">@android:drawable/ic_menu_add</item>
+        <item name="checkedIconTint">@android:color/white</item>
+        <item name="chipStrokeWidth">3dp</item>
+        <item name="chipStrokeColor">@color/white</item>
         <item name="chipCornerRadius">16dp</item>
         <item name="chipStartPadding">12dp</item>
         <item name="chipEndPadding">12dp</item>
@@ -151,6 +154,7 @@
         <item name="android:paddingBottom">8dp</item>
         <item name="chipMinHeight">40dp</item>
         <item name="android:textSize">13sp</item>
+        <item name="android:elevation">2dp</item>
     </style>
 
 </resources>

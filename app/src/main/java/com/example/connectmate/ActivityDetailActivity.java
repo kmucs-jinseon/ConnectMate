@@ -8,8 +8,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -119,24 +117,9 @@ public class ActivityDetailActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Only show delete menu if user is the creator
-        if (activity != null && isCurrentUserCreator()) {
-            getMenuInflater().inflate(R.menu.activity_detail_menu, menu);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_delete_activity) {
-            showDeleteConfirmationDialog();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
+    // Menu code removed - toolbar menu deleted
+    // Delete functionality preserved in showDeleteConfirmationDialog() method
+    // Can be triggered from UI button if needed in the future
 
     /**
      * Check if current user is the creator of this activity
