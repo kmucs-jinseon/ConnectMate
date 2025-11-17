@@ -133,6 +133,18 @@
     <string name="zoom_in">확대</string>
     <string name="zoom_out">축소</string>
     <string name="view_details">자세히 보기</string>
+    <string name="emulator_warning">지도는 실제 기기에서만 사용할 수 있습니다.\n\nKakao Maps requires a physical device to work properly.</string>
+    <string name="close_poi_info">닫기</string>
+    <string name="poi_name">Place Name</string>
+    <string name="poi_category">Category</string>
+    <string name="poi_address">Address</string>
+    <string name="poi_phone">Phone</string>
+    <string name="poi_distance">Distance</string>
+    <string name="poi_website">Website</string>
+    <string name="create_activity_at_this_place">+ 이 장소로 활동 만들기</string>
+    <string name="activities_at_this_place">이 장소의 활동</string>
+    <string name="use_this_location">이 장소로 활동 만들기</string>
+
 
     <!-- Activity List -->
     <string name="activities">활동 목록</string>

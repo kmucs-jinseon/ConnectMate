@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:layout_margin="16dp"
-        android:text="지도는 실제 기기에서만 사용할 수 있습니다.\n\nKakao Maps requires a physical device to work properly."
+        android:text="@string/emulator_warning"
         android:textSize="14sp"
         android:textColor="@android:color/black"
         android:background="@drawable/rounded_background"
@@ -42,6 +42,30 @@
         android:layout_margin="16dp"
         android:background="@android:color/transparent"
         android:elevation="16dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/search_layout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxBackgroundColor="@color/white"
+            app:boxStrokeWidth="0dp"
+            app:boxStrokeWidthFocused="0dp"
+            app:hintEnabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/search_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/search_activities_or_places"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Search Results List -->
         <androidx.cardview.widget.CardView
@@ -97,7 +121,7 @@
                 android:layout_gravity="end"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_close"
-                android:contentDescription="닫기"
+                android:contentDescription="@string/close_poi_info"
                 app:tint="@color/gray_600" />
 
             <!-- POI Name -->
@@ -105,7 +129,7 @@
                 android:id="@+id/poi_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Place Name"
+                android:text="@string/poi_name"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary" />
@@ -116,7 +140,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Category"
+                android:text="@string/poi_category"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary" />
 
@@ -132,7 +156,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_map_pin"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="@string/location_icon" />
 
                 <TextView
                     android:id="@+id/poi_address"
@@ -140,7 +165,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="Address"
+                    android:text="@string/poi_address"
                     android:textSize="14sp"
                     android:textColor="@color/text_secondary" />
 
@@ -160,7 +185,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_phone"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="@string/poi_phone" />
 
                 <TextView
                     android:id="@+id/poi_phone"
@@ -168,7 +194,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="Phone"
+                    android:text="@string/poi_phone"
                     android:textSize="14sp"
                     android:textColor="@color/text_secondary" />
 
@@ -188,7 +214,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_location"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="@string/poi_distance" />
 
                 <TextView
                     android:id="@+id/poi_distance"
@@ -196,7 +223,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="Distance"
+                    android:text="@string/poi_distance"
                     android:textSize="14sp"
                     android:textColor="@color/text_secondary" />
 
@@ -216,7 +243,8 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_link"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/primary_blue"
+                    android:contentDescription="@string/poi_website" />
 
                 <TextView
                     android:id="@+id/poi_website"
@@ -224,7 +252,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:text="Website"
+                    android:text="@string/poi_website"
                     android:textSize="14sp"
                     android:textColor="@color/primary_blue"
                     android:autoLink="web" />
@@ -237,11 +265,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:text="+ 이 장소로 활동 만들기"
+                android:text="@string/create_activity_at_this_place"
                 android:textColor="@color/white"
                 app:backgroundTint="@color/primary_blue"
                 app:cornerRadius="8dp" />
+
+            <!-- Existing Activities Header -->
+            <TextView
+                android:id="@+id/poi_activities_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/activities_at_this_place"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Existing Activities List -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/poi_activities_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:maxHeight="120dp"
+                android:visibility="gone"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         </LinearLayout>
 
@@ -254,7 +303,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="24dp"
-        android:text="이 장소로 활동 만들기"
+        android:text="@string/use_this_location"
         android:textColor="@color/white"
         app:icon="@drawable/ic_plus"
         app:iconTint="@color/white"

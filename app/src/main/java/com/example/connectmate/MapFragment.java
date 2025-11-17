@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -57,6 +59,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * MapFragment - Fragment containing Kakao Map with activity markers
@@ -69,10 +72,8 @@ public class MapFragment extends Fragment {
     private MapView mapView;
     private KakaoMap kakaoMap;
     private ProgressBar loadingIndicator;
-    private View emulatorWarning;
 
     // Search UI components
-    private com.google.android.material.textfield.TextInputLayout searchLayout;
     private com.google.android.material.textfield.TextInputEditText searchInput;
     private CardView searchResultsCard;
     private RecyclerView searchResultsRecycler;
@@ -88,7 +89,6 @@ public class MapFragment extends Fragment {
     private android.widget.PopupWindow poiPopupWindow;
 
     // POI Info Card UI components
-    private com.google.android.material.card.MaterialCardView poiInfoCard;
     private TextView poiName;
     private TextView poiCategory;
     private TextView poiAddress;
@@ -98,19 +98,19 @@ public class MapFragment extends Fragment {
     private LinearLayout poiPhoneLayout;
     private LinearLayout poiDistanceLayout;
     private LinearLayout poiWebsiteLayout;
-    private ImageButton btnClosePoiInfo;
-    private com.google.android.material.button.MaterialButton btnUsePoiLocation;
+    private TextView poiActivitiesHeader;
+    private RecyclerView poiActivitiesRecycler;
+
 
     // HTTP client for Kakao API
     private OkHttpClient httpClient;
     private Gson gson;
 
     // Data
-    private List<ActivityMarker> activityMarkers;
-    private Map<String, Label> labelMap; // Map activity ID to label
+    private Map<LatLng, List<Activity>> activityGroups;
+    private Map<LatLng, Label> markerMap;
     private Label currentLocationLabel; // Label for current location marker
     private LocationManager locationManager;
-    private boolean isEmulator = false;
     private boolean isMapInitialized = false; // Track if map has been initialized
 
     // Real-time search with debounce
@@ -127,10 +127,10 @@ public class MapFragment extends Fragment {
         // Initialize views
         mapView = view.findViewById(R.id.map_view);
         loadingIndicator = view.findViewById(R.id.loading_indicator);
-        emulatorWarning = view.findViewById(R.id.emulator_warning);
+        View emulatorWarning = view.findViewById(R.id.emulator_warning);
 
         // Initialize search UI
-        searchLayout = view.findViewById(R.id.search_layout);
+        com.google.android.material.textfield.TextInputLayout searchLayout = view.findViewById(R.id.search_layout);
         searchInput = view.findViewById(R.id.search_input);
         searchResultsCard = view.findViewById(R.id.search_results_card);
         searchResultsRecycler = view.findViewById(R.id.search_results_recycler);
@@ -166,7 +166,7 @@ public class MapFragment extends Fragment {
         // POI buttons are now handled in popup window initialization
 
         // Detect if running on emulator
-        isEmulator = isRunningOnEmulator();
+        boolean isEmulator = isRunningOnEmulator();
 
         if (isEmulator) {
             // Show emulator warning and hide map
@@ -178,8 +178,8 @@ public class MapFragment extends Fragment {
                 mapView.setVisibility(View.GONE);
             }
             // Still initialize data for when switching to real device
-            activityMarkers = new ArrayList<>();
-            labelMap = new HashMap<>();
+            activityGroups = new HashMap<>();
+            markerMap = new HashMap<>();
             locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
             return view;
         }
@@ -193,8 +193,8 @@ public class MapFragment extends Fragment {
         }
 
         // Initialize data
-        activityMarkers = new ArrayList<>();
-        labelMap = new HashMap<>();
+        activityGroups = new HashMap<>();
+        markerMap = new HashMap<>();
         locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
 
         // Wait for view to be laid out before initializing map
@@ -256,7 +256,7 @@ public class MapFragment extends Fragment {
             }
         }, new KakaoMapReadyCallback() {
             @Override
-            public void onMapReady(KakaoMap map) {
+            public void onMapReady(@NonNull KakaoMap map) {
                 Log.d(TAG, "═══════════════════════════════════");
                 Log.d(TAG, "✓ MAP READY in MapFragment!");
                 Log.d(TAG, "MapView visibility: " + mapView.getVisibility());
@@ -303,16 +303,15 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for activity markers
         kakaoMap.setOnLabelClickListener((map, layer, label) -> {
-            String activityId = label.getLabelId();
-            if (getContext() != null && activityId != null) {
-                // Find activity details
-                for (ActivityMarker marker : activityMarkers) {
-                    if (marker.getId().equals(activityId)) {
-                        Toast.makeText(getContext(),
-                            marker.getTitle() + " (" + marker.getCurrentParticipants() + "/" + marker.getMaxParticipants() + ")",
-                            Toast.LENGTH_SHORT).show();
-                        break;
-                    }
+            LatLng position = label.getPosition();
+            if (getContext() != null && position != null) {
+                List<Activity> activities = activityGroups.get(position);
+                if (activities != null && !activities.isEmpty()) {
+                    PlaceSearchResult place = new PlaceSearchResult();
+                    place.setLatitude(position.getLatitude());
+                    place.setLongitude(position.getLongitude());
+                    place.setPlaceName(activities.get(0).getLocation());
+                    displayPoiInfo(place);
                 }
             }
             return true;
@@ -320,15 +319,7 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for map (to search for nearby POIs)
         kakaoMap.setOnMapClickListener((kakaoMap1, position, screenPoint, poi) -> {
-            if (poi != null) {
-                // User clicked on a POI marker
-                Log.d(TAG, "POI clicked: " + poi.getName() + " at (" + position.getLatitude() + ", " + position.getLongitude() + ")");
-                fetchPoiDetails(poi.getName(), position.getLatitude(), position.getLongitude());
-            } else {
-                // User clicked on empty map area - search for nearby places
-                Log.d(TAG, "Map clicked at: (" + position.getLatitude() + ", " + position.getLongitude() + ")");
-                searchNearbyPlaces(position.getLatitude(), position.getLongitude());
-            }
+            fetchPoiDetails(Objects.requireNonNull(poi).getName(), position.getLatitude(), position.getLongitude());
         });
 
         // Listen for real-time activity changes
@@ -344,7 +335,7 @@ public class MapFragment extends Fragment {
             @Override
             public void onActivityChanged(Activity activity) {
                 // Remove old marker and add updated one
-                removeActivityMarker(activity.getId());
+                removeActivityMarker(activity);
                 if (activity.getLatitude() != 0 && activity.getLongitude() != 0) {
                     addActivityMarker(activity);
                     Log.d(TAG, "Activity marker updated: " + activity.getTitle());
@@ -353,7 +344,7 @@ public class MapFragment extends Fragment {
 
             @Override
             public void onActivityRemoved(Activity activity) {
-                removeActivityMarker(activity.getId());
+                removeActivityMarker(activity);
                 Log.d(TAG, "Activity marker removed: " + activity.getTitle());
             }
 
@@ -373,77 +364,70 @@ public class MapFragment extends Fragment {
     private void addActivityMarker(Activity activity) {
         if (kakaoMap == null || activity == null) return;
 
-        try {
-            if (kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-
-                if (labelLayer != null) {
-                    // Create marker style
-                    LabelStyles styles = kakaoMap.getLabelManager()
-                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
-
-                    // Create label options
-                    LabelOptions options = LabelOptions.from(
-                        activity.getId(),
-                        LatLng.from(activity.getLatitude(), activity.getLongitude())
-                    ).setStyles(styles);
-
-                    // Add label to map
-                    Label label = labelLayer.addLabel(options);
-                    label.setClickable(true);
-
-                    // Store label reference for later updates/removal
-                    labelMap.put(activity.getId(), label);
-
-                    // Also add to activityMarkers list for compatibility
-                    ActivityMarker marker = new ActivityMarker(
-                        activity.getId(),
-                        activity.getTitle(),
-                        activity.getLocation(),
-                        activity.getTime(),
-                        activity.getDescription(),
-                        activity.getCurrentParticipants(),
-                        activity.getMaxParticipants(),
-                        activity.getLatitude(),
-                        activity.getLongitude(),
-                        activity.getCategory()
-                    );
-                    activityMarkers.add(marker);
-
-                    Log.d(TAG, "Added marker for: " + activity.getTitle() + " at (" +
-                        activity.getLatitude() + ", " + activity.getLongitude() + ")");
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to add marker for activity: " + activity.getTitle(), e);
+        LatLng position = LatLng.from(activity.getLatitude(), activity.getLongitude());
+        List<Activity> activities = activityGroups.get(position);
+        if (activities == null) {
+            activities = new ArrayList<>();
+            activityGroups.put(position, activities);
         }
+        activities.add(activity);
+
+        updateMarker(position);
     }
 
     /**
      * Remove a marker from the map
      */
-    private void removeActivityMarker(String activityId) {
-        if (kakaoMap == null || activityId == null) return;
+    private void removeActivityMarker(Activity activity) {
+        if (kakaoMap == null || activity == null) return;
 
-        try {
-            // Remove label from map
-            Label label = labelMap.get(activityId);
-            if (label != null && kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-                if (labelLayer != null) {
-                    labelLayer.remove(label);
-                }
-                labelMap.remove(activityId);
+        LatLng position = LatLng.from(activity.getLatitude(), activity.getLongitude());
+        List<Activity> activities = activityGroups.get(position);
+        if (activities != null) {
+            activities.removeIf(a -> a.getId().equals(activity.getId()));
+            if (activities.isEmpty()) {
+                activityGroups.remove(position);
             }
-
-            // Remove from activityMarkers list
-            activityMarkers.removeIf(marker -> marker.getId().equals(activityId));
-
-            Log.d(TAG, "Removed marker for activity: " + activityId);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to remove marker for activity: " + activityId, e);
+            updateMarker(position);
         }
     }
+
+    private void updateMarker(LatLng position) {
+        if (kakaoMap == null) return;
+
+        LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+        if (labelLayer == null) return;
+
+        Label existingMarker = markerMap.get(position);
+        if (existingMarker != null) {
+            labelLayer.remove(existingMarker);
+            markerMap.remove(position);
+        }
+
+        List<Activity> activities = activityGroups.get(position);
+        if (activities != null && !activities.isEmpty()) {
+            Bitmap markerBitmap = createMarkerBitmap(activities.size());
+            LabelStyles styles = LabelStyles.from(LabelStyle.from(markerBitmap));
+            LabelOptions options = LabelOptions.from(position).setStyles(styles);
+            Label newMarker = labelLayer.addLabel(options);
+            markerMap.put(position, newMarker);
+        }
+    }
+
+    private Bitmap createMarkerBitmap(int count) {
+        View markerView = LayoutInflater.from(getContext()).inflate(R.layout.custom_marker, null);
+        TextView markerText = markerView.findViewById(R.id.marker_text);
+        markerText.setText(String.valueOf(count));
+
+        markerView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        markerView.layout(0, 0, markerView.getMeasuredWidth(), markerView.getMeasuredHeight());
+
+        Bitmap bitmap = Bitmap.createBitmap(markerView.getMeasuredWidth(), markerView.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        markerView.draw(canvas);
+        return bitmap;
+    }
+
 
     /**
      * Setup search UI and functionality
@@ -533,7 +517,7 @@ public class MapFragment extends Fragment {
             return;
         }
 
-        String query = searchInput.getText().toString().trim();
+        String query = Objects.requireNonNull(searchInput.getText()).toString().trim();
         Log.d(TAG, "Search query: '" + query + "'");
 
         if (query.isEmpty()) {
@@ -600,7 +584,7 @@ public class MapFragment extends Fragment {
                     return;
                 }
 
-                String responseBody = response.body().string();
+                String responseBody = Objects.requireNonNull(response.body()).string();
                 Log.d(TAG, "Search response received, length: " + responseBody.length());
 
                 try {
@@ -708,7 +692,7 @@ public class MapFragment extends Fragment {
                     return;
                 }
 
-                String responseBody = response.body().string();
+                String responseBody = Objects.requireNonNull(response.body()).string();
 
                 try {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
@@ -1066,13 +1050,6 @@ public class MapFragment extends Fragment {
     }
 
     /**
-     * Get the activity markers
-     */
-    public List<ActivityMarker> getActivityMarkers() {
-        return activityMarkers;
-    }
-
-    /**
      * Get current location for external search (e.g., MainActivity search)
      */
     public Location getCurrentLocationForSearch() {
@@ -1250,13 +1227,13 @@ public class MapFragment extends Fragment {
                     return;
                 }
 
-                String responseBody = response.body().string();
+                String responseBody = Objects.requireNonNull(response.body()).string();
 
                 try {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
                     JsonArray documents = jsonObject.getAsJsonArray("documents");
 
-                    if (documents != null && documents.size() > 0) {
+                    if (documents != null && !documents.isEmpty()) {
                         // Get the first (closest) result
                         JsonObject doc = documents.get(0).getAsJsonObject();
 
@@ -1349,14 +1326,14 @@ public class MapFragment extends Fragment {
                     return;
                 }
 
-                String responseBody = response.body().string();
+                String responseBody = Objects.requireNonNull(response.body()).string();
                 Log.d(TAG, "POI response received");
 
                 try {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
                     JsonArray documents = jsonObject.getAsJsonArray("documents");
 
-                    if (documents != null && documents.size() > 0) {
+                    if (documents != null && !documents.isEmpty()) {
                         // Get the first (closest) result
                         JsonObject doc = documents.get(0).getAsJsonObject();
 
@@ -1438,26 +1415,26 @@ public class MapFragment extends Fragment {
 
         // Inflate popup layout - inflate just the fragment to get a fresh copy
         android.view.LayoutInflater inflater = android.view.LayoutInflater.from(getContext());
-        android.view.View fullLayout = inflater.inflate(R.layout.fragment_map, null, false);
-        android.view.View popupView = fullLayout.findViewById(R.id.poi_info_card);
+        android.view.View popupView = inflater.inflate(R.layout.fragment_map, (ViewGroup) getView(), false);
+        android.view.View poiInfoCard = popupView.findViewById(R.id.poi_info_card);
 
         // Remove the popup view from its parent so it can be added to PopupWindow
-        if (popupView.getParent() != null) {
-            ((android.view.ViewGroup) popupView.getParent()).removeView(popupView);
+        if (poiInfoCard.getParent() != null) {
+            ((android.view.ViewGroup) poiInfoCard.getParent()).removeView(poiInfoCard);
         }
 
         // Make the popup view visible
-        popupView.setVisibility(View.VISIBLE);
+        poiInfoCard.setVisibility(View.VISIBLE);
 
         // Enhance the card's shadow/elevation for clearer edges
-        if (popupView instanceof com.google.android.material.card.MaterialCardView) {
-            com.google.android.material.card.MaterialCardView cardView = (com.google.android.material.card.MaterialCardView) popupView;
+        if (poiInfoCard instanceof com.google.android.material.card.MaterialCardView) {
+            com.google.android.material.card.MaterialCardView cardView = (com.google.android.material.card.MaterialCardView) poiInfoCard;
             cardView.setCardElevation(24f); // Increased elevation for more prominent shadow
             cardView.setMaxCardElevation(24f);
         }
 
         // Initialize UI components from popup view
-        initializePoiPopupComponents(popupView);
+        initializePoiPopupComponents(poiInfoCard);
 
         // Calculate popup width with margins
         int horizontalMarginDp = 16; // Left and right margins
@@ -1469,7 +1446,7 @@ public class MapFragment extends Fragment {
 
         // Create popup window with calculated width
         poiPopupWindow = new android.widget.PopupWindow(
-            popupView,
+            poiInfoCard,
             popupWidth,
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
             true
@@ -1530,7 +1507,7 @@ public class MapFragment extends Fragment {
                 if (distance < 1000) {
                     distanceText = distance + "m";
                 } else {
-                    distanceText = String.format("%.1fkm", distance / 1000.0);
+                    distanceText = String.format(java.util.Locale.getDefault(), "%.1fkm", distance / 1000.0);
                 }
                 poiDistance.setText(distanceText);
                 poiDistanceLayout.setVisibility(View.VISIBLE);
@@ -1545,6 +1522,9 @@ public class MapFragment extends Fragment {
             // For now, it will remain hidden
             poiWebsiteLayout.setVisibility(View.GONE);
         }
+
+        // Find and display activities at this POI
+        findAndDisplayActivitiesAtPoi(poi);
 
         // Show popup window at bottom of screen, above the menu bar
         // Convert dp to pixels for bottom margin
@@ -1563,6 +1543,7 @@ public class MapFragment extends Fragment {
                 ", Phone: " + poi.getPhone() + ", Distance: " + poi.getDistance() + "m");
     }
 
+
     /**
      * Initialize POI popup UI components
      */
@@ -1577,8 +1558,11 @@ public class MapFragment extends Fragment {
         poiPhoneLayout = popupView.findViewById(R.id.poi_phone_layout);
         poiDistanceLayout = popupView.findViewById(R.id.poi_distance_layout);
         poiWebsiteLayout = popupView.findViewById(R.id.poi_website_layout);
-        btnClosePoiInfo = popupView.findViewById(R.id.btn_close_poi_info);
-        btnUsePoiLocation = popupView.findViewById(R.id.btn_use_poi_location);
+        ImageButton btnClosePoiInfo = popupView.findViewById(R.id.btn_close_poi_info);
+        com.google.android.material.button.MaterialButton btnUsePoiLocation = popupView.findViewById(R.id.btn_use_poi_location);
+        poiActivitiesHeader = popupView.findViewById(R.id.poi_activities_header);
+        poiActivitiesRecycler = popupView.findViewById(R.id.poi_activities_recycler);
+
 
         // Setup close button
         if (btnClosePoiInfo != null) {
@@ -1602,6 +1586,31 @@ public class MapFragment extends Fragment {
             });
         }
     }
+
+    private void findAndDisplayActivitiesAtPoi(PlaceSearchResult poi) {
+        if (poi == null) return;
+        FirebaseActivityManager.getInstance().getActivitiesByLocation(poi.getLatitude(), poi.getLongitude(), new FirebaseActivityManager.OnCompleteListener<List<Activity>>() {
+            @Override
+            public void onSuccess(List<Activity> activities) {
+                if (activities != null && !activities.isEmpty()) {
+                    poiActivitiesHeader.setVisibility(View.VISIBLE);
+                    poiActivitiesRecycler.setVisibility(View.VISIBLE);
+                    poiActivitiesRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
+                    poiActivitiesRecycler.setAdapter(new PoiActivityAdapter(getContext(), activities));
+                } else {
+                    poiActivitiesHeader.setVisibility(View.GONE);
+                    poiActivitiesRecycler.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                poiActivitiesHeader.setVisibility(View.GONE);
+                poiActivitiesRecycler.setVisibility(View.GONE);
+            }
+        });
+    }
+
 
     /**
      * Hide POI information popup
@@ -1740,11 +1749,11 @@ public class MapFragment extends Fragment {
         isMapInitialized = false; // Reset initialization flag
 
         // Clear marker collections
-        if (labelMap != null) {
-            labelMap.clear();
+        if (markerMap != null) {
+            markerMap.clear();
         }
-        if (activityMarkers != null) {
-            activityMarkers.clear();
+        if (activityGroups != null) {
+            activityGroups.clear();
         }
         currentLocationLabel = null;
 

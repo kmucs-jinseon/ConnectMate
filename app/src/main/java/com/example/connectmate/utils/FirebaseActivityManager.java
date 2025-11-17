@@ -473,6 +473,36 @@ public class FirebaseActivityManager {
     }
 
     /**
+     * Get activities by exact location.
+     */
+    public void getActivitiesByLocation(double latitude, double longitude, OnCompleteListener<List<Activity>> listener) {
+        // Firebase can only query on one order-by clause. We'll query by latitude and then filter by longitude.
+        activitiesRef.orderByChild("latitude").equalTo(latitude).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                List<Activity> matchingActivities = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Activity activity = snapshot.getValue(Activity.class);
+                    // Check if the longitude also matches
+                    if (activity != null && activity.getLongitude() == longitude) {
+                        matchingActivities.add(activity);
+                    }
+                }
+                if (listener != null) {
+                    listener.onSuccess(matchingActivities);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                if (listener != null) {
+                    listener.onError(databaseError.toException());
+                }
+            }
+        });
+    }
+
+    /**
      * Search activities (Note: Firebase doesn't support full-text search,
      * so we load all and filter locally. For production, consider using Algolia or Elasticsearch)
      */
@@ -816,6 +846,34 @@ public class FirebaseActivityManager {
     }
 
     /**
+     * Get all activities with location information.
+     */
+    public void getActivitiesWithLocation(ActivityLocationListener listener) {
+        activitiesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<Map<String, Object>> activityLocations = new ArrayList<>();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    Activity activity = child.getValue(Activity.class);
+                    if (activity != null && activity.getLatitude() != 0 && activity.getLongitude() != 0) {
+                        Map<String, Object> locationData = new HashMap<>();
+                        locationData.put("id", activity.getId());
+                        locationData.put("latitude", activity.getLatitude());
+                        locationData.put("longitude", activity.getLongitude());
+                        activityLocations.add(locationData);
+                    }
+                }
+                listener.onSuccess(activityLocations);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        });
+    }
+
+    /**
      * Remove all listeners
      */
     public void removeAllListeners() {
@@ -833,6 +891,11 @@ public class FirebaseActivityManager {
 
     public interface ActivityListListener {
         void onActivitiesLoaded(List<Activity> activities);
+        void onError(Exception e);
+    }
+
+    public interface ActivityLocationListener {
+        void onSuccess(List<Map<String, Object>> activityLocations);
         void onError(Exception e);
     }
 

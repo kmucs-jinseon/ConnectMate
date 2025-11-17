@@ -629,65 +629,12 @@ public class CreateActivityActivity extends AppCompatActivity {
                 }
 
                 Activity activity;
-                FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
 
                 if (isEditMode && editingActivity != null) {
-                    // UPDATE MODE - preserve existing activity data
-                    Log.d(TAG, "Updating activity with ID: " + editingActivity.getId());
-
-                    // Update existing activity with new values
+                    // UPDATE MODE
                     activity = editingActivity;
-                    activity.setTitle(title);
-                    activity.setDescription(description);
-                    activity.setCategory(category);
-                    activity.setDate(date);
-                    activity.setTime(time);
-                    activity.setLocation(location);
-                    activity.setMaxParticipants(maxParticipants);
-                    activity.setVisibility(visibility);
-                    activity.setHashtags(hashtags);
-
-                    // Update location coordinates if they were provided from map search
-                    if (hasLinkedLocationCoordinates) {
-                        activity.setLatitude(locationLatitude);
-                        activity.setLongitude(locationLongitude);
-                        Log.d(TAG, "Activity location updated to: " + locationLatitude + ", " + locationLongitude);
-                    } else {
-                        activity.setLatitude(0.0);
-                        activity.setLongitude(0.0);
-                        Log.d(TAG, "Activity location coordinates cleared due to manual location edits.");
-                    }
-
-                    // Show progress feedback
-                    Toast.makeText(this, "활동 수정 중...", Toast.LENGTH_SHORT).show();
-
-                    // Update activity using FirebaseActivityManager
-                    Log.d(TAG, "Calling Firebase to update activity");
-                    activityManager.updateActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
-                        @Override
-                        public void onSuccess(Activity result) {
-                            runOnUiThread(() -> {
-                                Toast.makeText(CreateActivityActivity.this, "활동이 수정되었습니다!", Toast.LENGTH_SHORT).show();
-                                Log.d(TAG, "Activity updated successfully: " + result.getTitle());
-                                // Close activity and return to previous screen
-                                finish();
-                            });
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            runOnUiThread(() -> {
-                                createButton.setEnabled(true);
-                                Toast.makeText(CreateActivityActivity.this, "활동 수정에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                Log.e(TAG, "Failed to update activity", e);
-                            });
-                        }
-                    });
                 } else {
-                    // CREATE MODE - create new activity
-                    Log.d(TAG, "Creating activity with title: " + title);
-
-                    // Create Activity object
+                    // CREATE MODE
                     activity = new Activity(
                         title,
                         description,
@@ -701,41 +648,26 @@ public class CreateActivityActivity extends AppCompatActivity {
                         creatorId,
                         creatorName
                     );
+                }
 
-                    // Set location coordinates if they were provided from map search
-                    if (hasLinkedLocationCoordinates) {
-                        activity.setLatitude(locationLatitude);
-                        activity.setLongitude(locationLongitude);
-                        Log.d(TAG, "Activity location set to: " + locationLatitude + ", " + locationLongitude);
-                    } else {
-                        Log.d(TAG, "No map coordinates linked to location text; using default activity coordinates.");
-                    }
+                // Update or set fields
+                activity.setTitle(title);
+                activity.setDescription(description);
+                activity.setCategory(category);
+                activity.setDate(date);
+                activity.setTime(time);
+                activity.setLocation(location);
+                activity.setMaxParticipants(maxParticipants);
+                activity.setVisibility(visibility);
+                activity.setHashtags(hashtags);
 
-                    // Show progress feedback
-                    Toast.makeText(this, "활동 생성 중...", Toast.LENGTH_SHORT).show();
-
-                    // Save activity using FirebaseActivityManager
-                    Log.d(TAG, "Calling Firebase to save activity");
-                    activityManager.saveActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
-                        @Override
-                        public void onSuccess(Activity result) {
-                            runOnUiThread(() -> {
-                                Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
-                                Log.d(TAG, "Activity created successfully: " + result.getTitle());
-                                // Close activity and return to previous screen
-                                finish();
-                            });
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            runOnUiThread(() -> {
-                                createButton.setEnabled(true);
-                                Toast.makeText(CreateActivityActivity.this, "활동 생성에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                Log.e(TAG, "Failed to save activity", e);
-                            });
-                        }
-                    });
+                // Handle location coordinates
+                if (hasLinkedLocationCoordinates) {
+                    activity.setLatitude(locationLatitude);
+                    activity.setLongitude(locationLongitude);
+                    saveOrUpdateActivity(activity);
+                } else {
+                    geocodeLocation(location, activity, this::saveOrUpdateActivity);
                 }
 
             } catch (Exception e) {
@@ -745,6 +677,84 @@ public class CreateActivityActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void geocodeLocation(String locationName, Activity activity, java.util.function.Consumer<Activity> callback) {
+        // API call to geocode the location name
+        String apiUrl = "https://dapi.kakao.com/v2/local/search/address.json?query=" + android.net.Uri.encode(locationName);
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Geocoding failed for: " + locationName, e);
+                // Proceed without coordinates
+                runOnUiThread(() -> callback.accept(activity));
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseBody = response.body().string();
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    if (documents.size() > 0) {
+                        JsonObject doc = documents.get(0).getAsJsonObject();
+                        activity.setLatitude(doc.get("y").getAsDouble());
+                        activity.setLongitude(doc.get("x").getAsDouble());
+                    }
+                }
+                // Proceed with or without coordinates
+                runOnUiThread(() -> callback.accept(activity));
+            }
+        });
+    }
+
+
+    private void saveOrUpdateActivity(Activity activity) {
+        FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
+        if (isEditMode) {
+            activityManager.updateActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+                @Override
+                public void onSuccess(Activity result) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(CreateActivityActivity.this, "활동이 수정되었습니다!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    runOnUiThread(() -> {
+                        createButton.setEnabled(true);
+                        Toast.makeText(CreateActivityActivity.this, "활동 수정에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+                }
+            });
+        } else {
+            activityManager.saveActivity(activity, new FirebaseActivityManager.OnCompleteListener<Activity>() {
+                @Override
+                public void onSuccess(Activity result) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    runOnUiThread(() -> {
+                        createButton.setEnabled(true);
+                        Toast.makeText(CreateActivityActivity.this, "활동 생성에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+                }
+            });
+        }
+    }
+
 
     /**
      * Search for places using Kakao Local API
