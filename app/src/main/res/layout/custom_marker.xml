@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@drawable/ic_map_pin"
-    android:gravity="center">
+    android:layout_gravity="center">
 
+    <!-- Base map pin icon with a filled center -->
+    <ImageView
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/ic_map_pin_filled"
+        android:layout_gravity="center" />
+
+    <!-- Number text on top of the filled pin -->
     <TextView
         android:id="@+id/marker_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="3.5dp"
         android:textColor="@android:color/white"
-        android:textSize="12sp"
+        android:textSize="14sp"
         android:textStyle="bold" />
 
-</LinearLayout>
+</FrameLayout>

@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24.0"
+    android:viewportHeight="24.0">
+
+    <!-- The main pin body, now using the primary blue color for consistency -->
+    <path
+        android:fillColor="@color/primary_blue"
+        android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7z"/>
+
+    <!-- The blue circle fill in the center (already blue, but ensures it's the same blue) -->
+    <path
+        android:fillColor="@color/primary_blue"
+        android:pathData="M12,9m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
+</vector>

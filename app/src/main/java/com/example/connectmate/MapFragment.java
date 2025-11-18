@@ -301,26 +301,35 @@ public class MapFragment extends Fragment {
 
         FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
 
-        // Set up click listener for activity markers
+        // Set up click listener for activity markers (Labels)
         kakaoMap.setOnLabelClickListener((map, layer, label) -> {
             LatLng position = label.getPosition();
             if (getContext() != null && position != null) {
                 List<Activity> activities = activityGroups.get(position);
                 if (activities != null && !activities.isEmpty()) {
-                    PlaceSearchResult place = new PlaceSearchResult();
-                    place.setLatitude(position.getLatitude());
-                    place.setLongitude(position.getLongitude());
-                    place.setPlaceName(activities.get(0).getLocation());
-                    displayPoiInfo(place);
+                    // Use the location name from the first activity to search for POI details
+                    String locationName = activities.get(0).getLocation();
+                    Log.d(TAG, "Marker clicked for location: " + locationName);
+                    // Fetch detailed info just like clicking a POI
+                    fetchPoiDetails(locationName, position.getLatitude(), position.getLongitude());
                 }
             }
-            return true;
+            return true; // Consume the event
         });
 
-        // Set up click listener for map (to search for nearby POIs)
+        // Set up click listener for the map itself (POIs or empty space)
         kakaoMap.setOnMapClickListener((kakaoMap1, position, screenPoint, poi) -> {
-            fetchPoiDetails(Objects.requireNonNull(poi).getName(), position.getLatitude(), position.getLongitude());
+            if (poi != null) {
+                // A clickable POI (building, landmark, etc.) was clicked
+                Log.d(TAG, "Map POI clicked: " + poi.getName());
+                fetchPoiDetails(poi.getName(), position.getLatitude(), position.getLongitude());
+            } else {
+                // User clicked on an empty space on the map
+                Log.d(TAG, "Empty map space clicked, hiding POI info.");
+                hidePoiInfo();
+            }
         });
+
 
         // Listen for real-time activity changes
         activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
