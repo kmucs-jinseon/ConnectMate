@@ -135,7 +135,7 @@
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="@color/white"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -150,7 +150,7 @@
                 <ImageView
                     android:layout_width="18dp"
                     android:layout_height="18dp"
-                    android:src="@drawable/ic_my_location"
+                    android:src="@drawable/ic_map_pin"
                     app:tint="@color/primary_blue"
                     android:contentDescription="@string/current_location"/>
 
@@ -159,7 +159,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text=""
+                    android:text="@string/getting_location"
                     android:textColor="@color/gray_700"
                     android:textSize="13sp"
                     android:maxLines="1"

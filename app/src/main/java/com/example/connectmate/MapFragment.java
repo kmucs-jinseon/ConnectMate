@@ -62,6 +62,7 @@ import java.util.Objects;
 public class MapFragment extends Fragment {
 
     private static final String TAG = "MapFragment";
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     // Map components
     private MapView mapView;
@@ -565,8 +566,8 @@ public class MapFragment extends Fragment {
         }
 
         if (lacksLocationPermission()) {
-            Log.w(TAG, "Location permission not granted, using default location");
-            moveToDefaultLocation();
+            Log.w(TAG, "Location permission not granted, requesting...");
+            requestLocationPermission();
             return;
         }
 
@@ -640,6 +641,45 @@ public class MapFragment extends Fragment {
             ContextCompat.checkSelfPermission(getContext(),
                 Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
         );
+    }
+
+    /**
+     * Request location permissions from user
+     */
+    private void requestLocationPermission() {
+        if (getActivity() == null) {
+            Log.e(TAG, "Cannot request permissions - activity is null");
+            moveToDefaultLocation();
+            return;
+        }
+
+        String[] permissions = new String[] {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        };
+
+        requestPermissions(permissions, LOCATION_PERMISSION_REQUEST_CODE);
+        Log.d(TAG, "Location permission requested");
+    }
+
+    /**
+     * Handle permission request result
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Location permission granted!");
+                // Permission granted, try to move to current location again
+                moveToCurrentLocation();
+            } else {
+                Log.w(TAG, "Location permission denied by user");
+                Toast.makeText(getContext(), "위치 권한이 거부되었습니다. 기본 위치로 이동합니다.", Toast.LENGTH_SHORT).show();
+                moveToDefaultLocation();
+            }
+        }
     }
 
     /**
