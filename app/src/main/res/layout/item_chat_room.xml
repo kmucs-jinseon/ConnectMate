@@ -86,8 +86,8 @@
         android:textSize="11sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@id/timestamp"
-        app:layout_constraintTop_toTopOf="@id/timestamp"
-        app:layout_constraintBottom_toBottomOf="@id/timestamp"
+        app:layout_constraintTop_toTopOf="@id/chat_name"
+        app:layout_constraintBottom_toBottomOf="@id/chat_name"
         tools:text="5명" />
 
     <TextView
@@ -116,6 +116,7 @@
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/chat_name"
+        app:layout_constraintBottom_toBottomOf="@id/chat_name"
         tools:text="오후 2:30" />
 
     <!-- Unread Badge -->
