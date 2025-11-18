@@ -2,15 +2,20 @@ package com.example.connectmate;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.connectmate.models.Activity;
-import com.google.android.material.button.MaterialButton;
+import com.example.connectmate.utils.CategoryMapper;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.util.List;
 
@@ -34,8 +39,68 @@ public class PoiActivityAdapter extends RecyclerView.Adapter<PoiActivityAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Activity activity = activities.get(position);
-        holder.activityButton.setText(activity.getTitle());
 
+        // Set activity name
+        holder.activityName.setText(activity.getTitle());
+
+        // Set categories (support multiple categories separated by comma or semicolon)
+        holder.categoryGroup.removeAllViews();
+        String categories = activity.getCategory();
+        if (categories != null && !categories.isEmpty()) {
+            // Split by comma or semicolon
+            String[] categoryArray = categories.split("[,;]");
+
+            for (String category : categoryArray) {
+                category = category.trim();
+                if (!category.isEmpty()) {
+                    // Create a new chip for each category
+                    Chip chip = new Chip(context);
+                    chip.setText(category);
+                    chip.setTextSize(12);
+
+                    // Get the category-specific color
+                    int colorResId = CategoryMapper.getCategoryColor(category);
+                    int color = ContextCompat.getColor(context, colorResId);
+                    chip.setChipBackgroundColor(ColorStateList.valueOf(color));
+
+                    // Use dark text color for better readability on pastel backgrounds
+                    int textColor = ContextCompat.getColor(context, R.color.text_primary);
+                    chip.setTextColor(textColor);
+
+                    // Set chip styling
+                    chip.setChipCornerRadius(16 * context.getResources().getDisplayMetrics().density);
+                    chip.setChipMinHeight(28 * context.getResources().getDisplayMetrics().density);
+                    chip.setChipStartPadding(8 * context.getResources().getDisplayMetrics().density);
+                    chip.setChipEndPadding(8 * context.getResources().getDisplayMetrics().density);
+                    chip.setClickable(false);
+                    chip.setCheckable(false);
+
+                    holder.categoryGroup.addView(chip);
+                }
+            }
+
+            holder.categoryGroup.setVisibility(View.VISIBLE);
+        } else {
+            holder.categoryGroup.setVisibility(View.GONE);
+        }
+
+        // Set description
+        String description = activity.getDescription();
+        if (description != null && !description.isEmpty()) {
+            holder.activityDescription.setText(description);
+            holder.activityDescription.setVisibility(View.VISIBLE);
+        } else {
+            holder.activityDescription.setVisibility(View.GONE);
+        }
+
+        // Hide divider for the last item
+        if (position == activities.size() - 1) {
+            holder.divider.setVisibility(View.GONE);
+        } else {
+            holder.divider.setVisibility(View.VISIBLE);
+        }
+
+        // Click listener to open activity detail
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ActivityDetailActivity.class);
             intent.putExtra("activity_id", activity.getId());
@@ -49,11 +114,17 @@ public class PoiActivityAdapter extends RecyclerView.Adapter<PoiActivityAdapter.
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        MaterialButton activityButton;
+        TextView activityName;
+        ChipGroup categoryGroup;
+        TextView activityDescription;
+        View divider;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            activityButton = itemView.findViewById(R.id.poi_activity_button);
+            activityName = itemView.findViewById(R.id.poi_activity_name);
+            categoryGroup = itemView.findViewById(R.id.poi_activity_category_group);
+            activityDescription = itemView.findViewById(R.id.poi_activity_description);
+            divider = itemView.findViewById(R.id.poi_activity_divider);
         }
     }
 }

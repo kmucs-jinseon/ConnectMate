@@ -152,6 +152,11 @@ public class MainActivity extends AppCompatActivity {
         // Handle map navigation intent
         handleMapNavigationIntent();
 
+        // Auto-load current location display after map is ready
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            updateCurrentLocationDisplay();
+        }, 1500); // Delay to allow MapFragment to get location
+
         Log.d(TAG, "MainActivity initialized with background map");
     }
 

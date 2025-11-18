@@ -274,11 +274,14 @@ public class MapFragment extends Fragment {
             if (getContext() != null && position != null) {
                 List<Activity> activities = activityGroups.get(position);
                 if (activities != null && !activities.isEmpty()) {
+                    Activity activity = activities.get(0);
                     PlaceSearchResult place = new PlaceSearchResult();
                     place.setLatitude(position.getLatitude());
                     place.setLongitude(position.getLongitude());
-                    place.setPlaceName(activities.get(0).getLocation());
-                    displayPoiInfo(place);
+                    place.setPlaceName(activity.getLocation());
+
+                    // Fetch real address via reverse geocoding
+                    fetchAddressForPlace(place);
                 }
             }
             return true;
@@ -373,12 +376,45 @@ public class MapFragment extends Fragment {
 
         List<Activity> activities = activityGroups.get(position);
         if (activities != null && !activities.isEmpty()) {
-            Bitmap markerBitmap = createMarkerBitmap(activities.size());
-            LabelStyles styles = LabelStyles.from(LabelStyle.from(markerBitmap));
+            // Create simple marker bitmap without count
+            Bitmap markerBitmap = createSimpleMarkerBitmap();
+            LabelStyles styles = LabelStyles.from(LabelStyle.from(markerBitmap)
+                .setAnchorPoint(0.5f, 1.0f));
+
             LabelOptions options = LabelOptions.from(position).setStyles(styles);
             Label newMarker = labelLayer.addLabel(options);
             markerMap.put(position, newMarker);
         }
+    }
+
+    private Bitmap createSimpleMarkerBitmap() {
+        // Create a simple bitmap from the map pin drawable
+        android.graphics.drawable.Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map_pin);
+        if (drawable == null) {
+            // Fallback: create a simple colored circle if drawable not found
+            int size = (int) (48 * getResources().getDisplayMetrics().density);
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            android.graphics.Paint paint = new android.graphics.Paint();
+            paint.setColor(ContextCompat.getColor(requireContext(), R.color.primary_blue));
+            paint.setAntiAlias(true);
+            canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint);
+            return bitmap;
+        }
+
+        int width = drawable.getIntrinsicWidth();
+        int height = drawable.getIntrinsicHeight();
+
+        // Scale up for better visibility
+        int scale = 2;
+        width = width * scale;
+        height = height * scale;
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, width, height);
+        drawable.draw(canvas);
+        return bitmap;
     }
 
     private Bitmap createMarkerBitmap(int count) {
@@ -1054,9 +1090,9 @@ public class MapFragment extends Fragment {
             poiPopupWindow.dismiss();
         }
 
-        // Inflate popup layout - inflate just the fragment to get a fresh copy
+        // Inflate popup layout - use null parent to avoid attaching issues
         android.view.LayoutInflater inflater = android.view.LayoutInflater.from(getContext());
-        android.view.View popupView = inflater.inflate(R.layout.fragment_map, (ViewGroup) getView(), false);
+        android.view.View popupView = inflater.inflate(R.layout.fragment_map, null, false);
         android.view.View poiInfoCard = popupView.findViewById(R.id.poi_info_card);
 
         // Remove the popup view from its parent so it can be added to PopupWindow
@@ -1295,6 +1331,77 @@ public class MapFragment extends Fragment {
         hidePoiInfo();
 
         Log.d(TAG, "Opened CreateActivityActivity with POI: " + selectedPoi.getPlaceName());
+    }
+
+    /**
+     * Fetch address for a place using reverse geocoding and display POI info
+     */
+    private void fetchAddressForPlace(PlaceSearchResult place) {
+        if (place == null) return;
+
+        String apiUrl = "https://dapi.kakao.com/v2/local/geo/coord2address.json?x=" +
+            place.getLongitude() + "&y=" + place.getLatitude();
+
+        Request request = new Request.Builder()
+            .url(apiUrl)
+            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
+            .build();
+
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Reverse geocoding failed for place", e);
+                // Display POI info even without address
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> displayPoiInfo(place));
+                }
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "Reverse geocoding response not successful: " + response.code());
+                    // Display POI info even without address
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> displayPoiInfo(place));
+                    }
+                    return;
+                }
+
+                String responseBody = Objects.requireNonNull(response.body()).string();
+
+                try {
+                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+                    JsonArray documents = jsonObject.getAsJsonArray("documents");
+
+                    if (documents != null && documents.size() > 0) {
+                        JsonObject doc = documents.get(0).getAsJsonObject();
+
+                        // Try to get road address first, fallback to regular address
+                        if (doc.has("road_address") && !doc.get("road_address").isJsonNull()) {
+                            JsonObject roadAddress = doc.getAsJsonObject("road_address");
+                            place.setRoadAddressName(roadAddress.get("address_name").getAsString());
+                        }
+
+                        if (doc.has("address") && !doc.get("address").isJsonNull()) {
+                            JsonObject regAddress = doc.getAsJsonObject("address");
+                            place.setAddressName(regAddress.get("address_name").getAsString());
+                        }
+                    }
+
+                    // Display POI info on UI thread with address
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> displayPoiInfo(place));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing reverse geocoding results for place", e);
+                    // Display POI info even if parsing failed
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> displayPoiInfo(place));
+                    }
+                }
+            }
+        });
     }
 
     /**
