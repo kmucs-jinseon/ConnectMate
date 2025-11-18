@@ -102,7 +102,7 @@
         android:textColor="@color/gray_600"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="@id/profile_image"
-        app:layout_constraintEnd_toStartOf="@id/unread_badge"
+        app:layout_constraintEnd_toStartOf="@id/unread_count"
         app:layout_constraintStart_toEndOf="@id/profile_image"
         app:layout_constraintTop_toBottomOf="@id/chat_name"
         tools:text="Hey, how are you doing today?" />
@@ -119,37 +119,24 @@
         app:layout_constraintBottom_toBottomOf="@id/chat_name"
         tools:text="오후 2:30" />
 
-    <!-- Unread Badge -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/unread_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Unread Badge - Perfect Circle -->
+    <TextView
+        android:id="@+id/unread_count"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:layout_marginTop="4dp"
         android:visibility="gone"
-        app:cardBackgroundColor="@color/primary_blue"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
+        android:background="@drawable/bg_unread_circle"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="11sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/profile_image"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/timestamp"
-        tools:visibility="visible">
-
-        <TextView
-            android:id="@+id/unread_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="20dp"
-            android:paddingStart="6dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="2dp"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            tools:text="3" />
-
-    </androidx.cardview.widget.CardView>
+        tools:visibility="visible"
+        tools:text="3" />
 
     <!-- Divider -->
     <View

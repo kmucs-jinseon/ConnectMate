@@ -9,14 +9,10 @@ import android.graphics.Canvas;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -24,7 +20,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -73,12 +68,6 @@ public class MapFragment extends Fragment {
     private KakaoMap kakaoMap;
     private ProgressBar loadingIndicator;
 
-    // Search UI components
-    private com.google.android.material.textfield.TextInputEditText searchInput;
-    private CardView searchResultsCard;
-    private RecyclerView searchResultsRecycler;
-    private PlaceSearchAdapter searchAdapter;
-    private List<PlaceSearchResult> searchResults;
     private com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton btnUseLocation;
 
     // Selected location data
@@ -113,11 +102,6 @@ public class MapFragment extends Fragment {
     private LocationManager locationManager;
     private boolean isMapInitialized = false; // Track if map has been initialized
 
-    // Real-time search with debounce
-    private android.os.Handler searchHandler;
-    private Runnable searchRunnable;
-    private static final long SEARCH_DELAY_MS = 800; // Wait 800ms after user stops typing
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -129,32 +113,14 @@ public class MapFragment extends Fragment {
         loadingIndicator = view.findViewById(R.id.loading_indicator);
         View emulatorWarning = view.findViewById(R.id.emulator_warning);
 
-        // Initialize search UI
-        com.google.android.material.textfield.TextInputLayout searchLayout = view.findViewById(R.id.search_layout);
-        searchInput = view.findViewById(R.id.search_input);
-        searchResultsCard = view.findViewById(R.id.search_results_card);
-        searchResultsRecycler = view.findViewById(R.id.search_results_recycler);
+        // Initialize UI
         btnUseLocation = view.findViewById(R.id.btn_use_location);
 
         // POI Info Card will be shown as a PopupWindow - no need to initialize here
 
-        // Debug: Check if search components were found
-        if (searchInput == null) {
-            Log.e(TAG, "❌ Search input NOT FOUND!");
-        } else {
-            Log.d(TAG, "✓ Search input found");
-        }
-
         // Initialize HTTP client and JSON parser
         httpClient = new OkHttpClient();
         gson = new Gson();
-        searchResults = new ArrayList<>();
-
-        // Initialize search handler for debounced real-time search
-        searchHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-
-        // Setup search functionality
-        setupSearchUI();
 
         // Setup "Use Location" button
         btnUseLocation.setOnClickListener(v -> {
@@ -438,361 +404,9 @@ public class MapFragment extends Fragment {
     }
 
 
-    /**
-     * Setup search UI and functionality
-     */
-    private void setupSearchUI() {
-        // Check if all required views are initialized
-        if (searchInput == null) {
-            Log.e(TAG, "❌ searchInput is NULL!");
-            return;
-        }
-        if (searchResultsRecycler == null) {
-            Log.e(TAG, "❌ searchResultsRecycler is NULL!");
-            return;
-        }
 
-        Log.d(TAG, "✓ All search UI components found, setting up...");
 
-        // Setup RecyclerView for search results
-        searchAdapter = new PlaceSearchAdapter(searchResults, place -> {
-            // When a place is clicked, move to that location and hide results
-            selectedPlace = place;  // Save selected place
-            moveToLocation(place.getLatitude(), place.getLongitude(), place.getPlaceName());
-            hideSearchResults();
-            hideKeyboard();
-            showUseLocationButton();  // Show button to use this location
-        });
 
-        searchResultsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
-        searchResultsRecycler.setAdapter(searchAdapter);
-
-        // Text change listener for real-time search
-        searchInput.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // TextInputLayout handles clear button automatically
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // Cancel previous search request
-                if (searchRunnable != null) {
-                    searchHandler.removeCallbacks(searchRunnable);
-                }
-
-                String query = s.toString().trim();
-
-                // If empty, hide results
-                if (query.isEmpty()) {
-                    hideSearchResults();
-                    hideUseLocationButton();
-                    selectedPlace = null;
-                    return;
-                }
-
-                // Schedule new search after delay (debounce)
-                searchRunnable = () -> {
-                    Log.d(TAG, "Real-time search triggered for: " + query);
-                    performSearchSilent(query);  // Use silent version without toast
-                };
-
-                searchHandler.postDelayed(searchRunnable, SEARCH_DELAY_MS);
-            }
-        });
-
-        // Handle IME search action (when user presses search on keyboard)
-        searchInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                performSearch();
-                return true;
-            }
-            return false;
-        });
-    }
-
-    /**
-     * Perform place search using Kakao Local API
-     */
-    private void performSearch() {
-        Log.d(TAG, "performSearch() called");
-
-        if (searchInput == null) {
-            Log.e(TAG, "❌ Cannot search: searchInput is null");
-            return;
-        }
-
-        String query = Objects.requireNonNull(searchInput.getText()).toString().trim();
-        Log.d(TAG, "Search query: '" + query + "'");
-
-        if (query.isEmpty()) {
-            Toast.makeText(getContext(), "검색어를 입력하세요", Toast.LENGTH_SHORT).show();
-            Log.w(TAG, "Search cancelled: empty query");
-            return;
-        }
-
-        // Hide keyboard
-        hideKeyboard();
-
-        // Show searching feedback
-        Toast.makeText(getContext(), "'" + query + "' 검색 중...", Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "🔍 Searching for: " + query);
-
-        // Hide previous results
-        hideSearchResults();
-
-        // Get current location for proximity search
-        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
-            android.net.Uri.encode(query);
-
-        // Add current location to search for nearby results
-        Location currentLocation = getCurrentLocation();
-        if (currentLocation != null) {
-            double longitude = currentLocation.getLongitude();
-            double latitude = currentLocation.getLatitude();
-            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000&sort=accuracy"; // 20km radius, sort by relevance
-            Log.d(TAG, "Searching near current location: " + latitude + ", " + longitude);
-        } else {
-            // Default to Seoul center if no location available
-            apiUrl += "&x=126.9780&y=37.5665&radius=20000&sort=accuracy";
-            Log.d(TAG, "Using default location (Seoul) for search");
-        }
-
-        Log.d(TAG, "API URL: " + apiUrl);
-        Log.d(TAG, "Using API Key: " + BuildConfig.KAKAO_REST_API_KEY.substring(0, 10) + "...");
-
-        Request request = new Request.Builder()
-            .url(apiUrl)
-            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
-            .build();
-
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "Search request failed", e);
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() ->
-                        Toast.makeText(getContext(), "❌ 검색 실패: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                    );
-                }
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    Log.e(TAG, "Search response not successful: " + response.code());
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "검색 오류 (Code: " + response.code() + ")", Toast.LENGTH_SHORT).show()
-                        );
-                    }
-                    return;
-                }
-
-                String responseBody = Objects.requireNonNull(response.body()).string();
-                Log.d(TAG, "Search response received, length: " + responseBody.length());
-
-                try {
-                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
-                    JsonArray documents = jsonObject.getAsJsonArray("documents");
-
-                    List<PlaceSearchResult> results = new ArrayList<>();
-                    for (int i = 0; i < documents.size(); i++) {
-                        JsonObject doc = documents.get(i).getAsJsonObject();
-
-                        PlaceSearchResult place = new PlaceSearchResult();
-                        place.setId(doc.get("id").getAsString());
-                        place.setPlaceName(doc.get("place_name").getAsString());
-                        place.setAddressName(doc.get("address_name").getAsString());
-
-                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
-                            place.setRoadAddressName(doc.get("road_address_name").getAsString());
-                        }
-
-                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
-                            String categoryName = doc.get("category_name").getAsString();
-                            place.setCategoryName(categoryName);
-                            // Map Kakao category to our activity category
-                            place.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
-                        }
-
-                        if (doc.has("phone") && !doc.get("phone").isJsonNull()) {
-                            place.setPhone(doc.get("phone").getAsString());
-                        }
-
-                        // Kakao API returns x=longitude, y=latitude
-                        place.setLatitude(doc.get("y").getAsDouble());
-                        place.setLongitude(doc.get("x").getAsDouble());
-
-                        if (doc.has("place_url") && !doc.get("place_url").isJsonNull()) {
-                            place.setPlaceUrl(doc.get("place_url").getAsString());
-                        }
-
-                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
-                            place.setDistance(doc.get("distance").getAsInt());
-                        }
-
-                        results.add(place);
-                    }
-
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            if (results.isEmpty()) {
-                                Toast.makeText(getContext(), "검색 결과가 없습니다", Toast.LENGTH_SHORT).show();
-                                hideSearchResults();
-                            } else {
-                                displaySearchResults(results);
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing search results", e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Perform place search silently (for real-time search without toast notifications)
-     */
-    private void performSearchSilent(String query) {
-        if (query.isEmpty()) {
-            hideSearchResults();
-            return;
-        }
-
-        Log.d(TAG, "Silent search for: " + query);
-
-        // Get current location for proximity search
-        String apiUrl = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" +
-            android.net.Uri.encode(query);
-
-        // Add current location to search for nearby results
-        Location currentLocation = getCurrentLocation();
-        if (currentLocation != null) {
-            double longitude = currentLocation.getLongitude();
-            double latitude = currentLocation.getLatitude();
-            apiUrl += "&x=" + longitude + "&y=" + latitude + "&radius=20000&sort=accuracy"; // 20km radius, sort by relevance
-        } else {
-            // Default to Seoul center if no location available
-            apiUrl += "&x=126.9780&y=37.5665&radius=20000&sort=accuracy";
-        }
-
-        Request request = new Request.Builder()
-            .url(apiUrl)
-            .addHeader("Authorization", "KakaoAK " + BuildConfig.KAKAO_REST_API_KEY)
-            .build();
-
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "Silent search request failed", e);
-                // Don't show toast for real-time search failures
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    Log.e(TAG, "Silent search response not successful: " + response.code());
-                    return;
-                }
-
-                String responseBody = Objects.requireNonNull(response.body()).string();
-
-                try {
-                    JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
-                    JsonArray documents = jsonObject.getAsJsonArray("documents");
-
-                    List<PlaceSearchResult> results = new ArrayList<>();
-                    for (int i = 0; i < documents.size(); i++) {
-                        JsonObject doc = documents.get(i).getAsJsonObject();
-
-                        PlaceSearchResult place = new PlaceSearchResult();
-                        place.setId(doc.get("id").getAsString());
-                        place.setPlaceName(doc.get("place_name").getAsString());
-                        place.setAddressName(doc.get("address_name").getAsString());
-
-                        if (doc.has("road_address_name") && !doc.get("road_address_name").isJsonNull()) {
-                            place.setRoadAddressName(doc.get("road_address_name").getAsString());
-                        }
-
-                        if (doc.has("category_name") && !doc.get("category_name").isJsonNull()) {
-                            String categoryName = doc.get("category_name").getAsString();
-                            place.setCategoryName(categoryName);
-                            // Map Kakao category to our activity category
-                            place.setMappedCategory(CategoryMapper.mapKakaoCategoryToActivity(categoryName));
-                        }
-
-                        if (doc.has("phone") && !doc.get("phone").isJsonNull()) {
-                            place.setPhone(doc.get("phone").getAsString());
-                        }
-
-                        // Kakao API returns x=longitude, y=latitude
-                        place.setLatitude(doc.get("y").getAsDouble());
-                        place.setLongitude(doc.get("x").getAsDouble());
-
-                        if (doc.has("place_url") && !doc.get("place_url").isJsonNull()) {
-                            place.setPlaceUrl(doc.get("place_url").getAsString());
-                        }
-
-                        if (doc.has("distance") && !doc.get("distance").isJsonNull()) {
-                            place.setDistance(doc.get("distance").getAsInt());
-                        }
-
-                        results.add(place);
-                    }
-
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            if (results.isEmpty()) {
-                                hideSearchResults();
-                            } else {
-                                displaySearchResults(results);
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing silent search results", e);
-                }
-            }
-        });
-    }
-
-    /**
-     * Display search results
-     */
-    private void displaySearchResults(List<PlaceSearchResult> results) {
-        if (searchResults != null) {
-            searchResults.clear();
-            searchResults.addAll(results);
-        }
-        if (searchAdapter != null) {
-            searchAdapter.updateResults(searchResults);
-        }
-        if (searchResultsCard != null) {
-            searchResultsCard.setVisibility(View.VISIBLE);
-        }
-        Log.d(TAG, "Displaying " + results.size() + " search results");
-    }
-
-    /**
-     * Hide search results
-     */
-    private void hideSearchResults() {
-        if (searchResultsCard != null) {
-            searchResultsCard.setVisibility(View.GONE);
-        }
-        if (searchResults != null) {
-            searchResults.clear();
-        }
-        if (searchAdapter != null) {
-            searchAdapter.updateResults(searchResults);
-        }
-    }
 
     /**
      * Move camera to a specific location and add marker
@@ -858,18 +472,6 @@ public class MapFragment extends Fragment {
         }
     }
 
-    /**
-     * Hide keyboard
-     */
-    private void hideKeyboard() {
-        if (getActivity() != null && searchInput != null) {
-            InputMethodManager imm = (InputMethodManager) getActivity()
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
-            }
-        }
-    }
 
     /**
      * Show "Use This Location" button
@@ -1413,8 +1015,7 @@ public class MapFragment extends Fragment {
         // Store selected POI
         selectedPoi = poi;
 
-        // Hide search results if visible
-        hideSearchResults();
+        // Hide use location button if visible
         hideUseLocationButton();
 
         // Dismiss existing popup if any
@@ -1735,11 +1336,6 @@ public class MapFragment extends Fragment {
             poiPopupWindow.dismiss();
         }
         poiPopupWindow = null;
-
-        // Clean up search handler to prevent memory leaks
-        if (searchHandler != null && searchRunnable != null) {
-            searchHandler.removeCallbacks(searchRunnable);
-        }
 
         // Clean up Firebase listeners
         FirebaseActivityManager.getInstance().removeAllListeners();
