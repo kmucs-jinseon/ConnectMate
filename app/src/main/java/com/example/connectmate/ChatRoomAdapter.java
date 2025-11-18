@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.connectmate.models.ChatRoom;
@@ -58,7 +57,6 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         private final TextView memberCount;
         private final TextView lastMessage;
         private final TextView timestamp;
-        private final CardView unreadBadge;
         private final TextView unreadCount;
 
         public ChatRoomViewHolder(@NonNull View itemView) {
@@ -69,7 +67,6 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             memberCount = itemView.findViewById(R.id.member_count);
             lastMessage = itemView.findViewById(R.id.last_message);
             timestamp = itemView.findViewById(R.id.timestamp);
-            unreadBadge = itemView.findViewById(R.id.unread_badge);
             unreadCount = itemView.findViewById(R.id.unread_count);
         }
 
@@ -95,12 +92,12 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             String timeStr = timeFormat.format(new Date(chatRoom.getLastMessageTime()));
             timestamp.setText(timeStr);
 
-            // Show/hide unread badge
+            // Show/hide unread badge (perfect circle)
             if (chatRoom.getUnreadCount() > 0) {
-                unreadBadge.setVisibility(View.VISIBLE);
+                unreadCount.setVisibility(View.VISIBLE);
                 unreadCount.setText(String.valueOf(chatRoom.getUnreadCount()));
             } else {
-                unreadBadge.setVisibility(View.GONE);
+                unreadCount.setVisibility(View.GONE);
             }
 
             // Set click listener
