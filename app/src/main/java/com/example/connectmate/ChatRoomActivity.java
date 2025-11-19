@@ -1002,20 +1002,44 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                 // Save to gallery
                 String fileName = "ConnectMate_" + System.currentTimeMillis() + ".jpg";
-                android.content.ContentValues values = new android.content.ContentValues();
-                values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, fileName);
-                values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-                values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ConnectMate");
 
-                android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    // API 29+ (Android 10+): Use MediaStore with RELATIVE_PATH
+                    android.content.ContentValues values = new android.content.ContentValues();
+                    values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, fileName);
+                    values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                    values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ConnectMate");
 
-                if (uri != null) {
-                    try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
-                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, outputStream);
-                        runOnUiThread(() -> Toast.makeText(this, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show());
+                    android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                    if (uri != null) {
+                        try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, outputStream);
+                            runOnUiThread(() -> Toast.makeText(this, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show());
+                        }
+                    } else {
+                        runOnUiThread(() -> Toast.makeText(this, "이미지 저장 실패", Toast.LENGTH_SHORT).show());
                     }
                 } else {
-                    runOnUiThread(() -> Toast.makeText(this, "이미지 저장 실패", Toast.LENGTH_SHORT).show());
+                    // API < 29: Use legacy method
+                    java.io.File picturesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES);
+                    java.io.File connectMateDir = new java.io.File(picturesDir, "ConnectMate");
+                    if (!connectMateDir.exists()) {
+                        connectMateDir.mkdirs();
+                    }
+                    java.io.File imageFile = new java.io.File(connectMateDir, fileName);
+
+                    try (java.io.FileOutputStream fos = new java.io.FileOutputStream(imageFile)) {
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, fos);
+
+                        // Notify media scanner
+                        android.content.ContentValues values = new android.content.ContentValues();
+                        values.put(android.provider.MediaStore.Images.Media.DATA, imageFile.getAbsolutePath());
+                        values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                        getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                        runOnUiThread(() -> Toast.makeText(this, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show());
+                    }
                 }
 
             } catch (Exception e) {
@@ -1045,23 +1069,36 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
 
                 // Save to Downloads folder
-                android.content.ContentValues values = new android.content.ContentValues();
-                values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
-                if (fileType != null && !fileType.isEmpty()) {
-                    values.put(android.provider.MediaStore.Downloads.MIME_TYPE, fileType);
-                }
-                values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    // API 29+ (Android 10+): Use MediaStore.Downloads
+                    android.content.ContentValues values = new android.content.ContentValues();
+                    values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    if (fileType != null && !fileType.isEmpty()) {
+                        values.put(android.provider.MediaStore.Downloads.MIME_TYPE, fileType);
+                    }
+                    values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
 
-                android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
 
-                if (uri != null) {
-                    try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
-                        outputStream.write(fileBytes);
-                        outputStream.flush();
-                        runOnUiThread(() -> Toast.makeText(this, "다운로드 폴더에 저장되었습니다: " + fileName, Toast.LENGTH_LONG).show());
+                    if (uri != null) {
+                        try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                            outputStream.write(fileBytes);
+                            outputStream.flush();
+                            runOnUiThread(() -> Toast.makeText(this, "다운로드 폴더에 저장되었습니다: " + fileName, Toast.LENGTH_LONG).show());
+                        }
+                    } else {
+                        runOnUiThread(() -> Toast.makeText(this, "파일 저장 실패", Toast.LENGTH_SHORT).show());
                     }
                 } else {
-                    runOnUiThread(() -> Toast.makeText(this, "파일 저장 실패", Toast.LENGTH_SHORT).show());
+                    // API < 29: Use legacy method
+                    java.io.File downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    java.io.File file = new java.io.File(downloadsDir, fileName);
+
+                    try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                        fos.write(fileBytes);
+                        fos.flush();
+                        runOnUiThread(() -> Toast.makeText(this, "다운로드 폴더에 저장되었습니다: " + fileName, Toast.LENGTH_LONG).show());
+                    }
                 }
 
             } catch (Exception e) {

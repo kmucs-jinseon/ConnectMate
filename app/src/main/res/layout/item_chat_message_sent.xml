@@ -39,20 +39,18 @@
                 android:id="@+id/image_frame"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:visibility="gone">
+                android:visibility="gone"
+                android:background="@drawable/bg_image_rounded_sent"
+                android:foreground="@drawable/fg_image_border_sent"
+                android:elevation="2dp"
+                android:clipToOutline="true">
 
                 <ImageView
                     android:id="@+id/message_image"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:background="@drawable/bg_image_rounded_sent"
-                    android:contentDescription="Message image"
-                    android:clipToOutline="true" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:contentDescription="Message image" />
 
             </FrameLayout>
 
