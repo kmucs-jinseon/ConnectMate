@@ -34,6 +34,7 @@ public class ChatListFragment extends Fragment {
     private static final String TAG = "ChatListFragment";
 
     // UI Components
+    private ImageButton btnMyFriends;
     private ImageButton btnSearch;
     private ImageButton btnFilter;
     private TextInputLayout searchLayout;
@@ -76,6 +77,7 @@ public class ChatListFragment extends Fragment {
 
     private void initializeViews(View view) {
         // Header buttons
+        btnMyFriends = view.findViewById(R.id.btn_my_friends);
         btnSearch = view.findViewById(R.id.btn_search);
         btnFilter = view.findViewById(R.id.btn_filter);
 
@@ -104,6 +106,12 @@ public class ChatListFragment extends Fragment {
     }
 
     private void setupClickListeners() {
+        // My Friends button
+        btnMyFriends.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), FriendsActivity.class);
+            startActivity(intent);
+        });
+
         // Search button - toggle search input visibility
         btnSearch.setOnClickListener(v -> toggleSearch());
 
@@ -277,62 +285,22 @@ public class ChatListFragment extends Fragment {
      * Load chat rooms from Firebase with real-time updates
      */
     private void loadChatRoomsFromFirebase() {
-        FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Log.w(TAG, "Cannot load chat rooms - no current user ID");
+            // Optionally, show a login prompt or handle the logged-out state
+            return;
+        }
 
-        // Listen for chat room changes in real-time
-        chatManager.listenForChatRoomChanges(new FirebaseChatManager.ChatRoomChangeListener() {
+        FirebaseChatManager.getInstance().getJoinedChatRooms(currentUserId, new FirebaseChatManager.ChatRoomListListener() {
             @Override
-            public void onChatRoomAdded(ChatRoom chatRoom) {
-                // Check if chat room already exists to avoid duplicates
-                boolean exists = false;
-                for (ChatRoom room : allChatRooms) {
-                    if (room.getId().equals(chatRoom.getId())) {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                if (!exists) {
-                    allChatRooms.add(0, chatRoom); // Add to beginning (newest first)
-
-                    // Load unread count for this chat room
+            public void onChatRoomsLoaded(List<ChatRoom> chatRooms) {
+                allChatRooms.clear();
+                allChatRooms.addAll(chatRooms);
+                for (ChatRoom chatRoom : allChatRooms) {
                     loadUnreadCountForChatRoom(chatRoom);
-
-                    // Re-apply filters to update the filtered list
-                    applyFiltersAndSearch();
-
-                    Log.d(TAG, "Chat room added: " + chatRoom.getName());
                 }
-            }
-
-            @Override
-            public void onChatRoomChanged(ChatRoom chatRoom) {
-                // Update existing chat room
-                for (int i = 0; i < allChatRooms.size(); i++) {
-                    if (allChatRooms.get(i).getId().equals(chatRoom.getId())) {
-                        allChatRooms.set(i, chatRoom);
-                        break;
-                    }
-                }
-
-                // Load unread count for this chat room
-                loadUnreadCountForChatRoom(chatRoom);
-
-                // Re-apply filters to update the filtered list
                 applyFiltersAndSearch();
-
-                Log.d(TAG, "Chat room updated: " + chatRoom.getName());
-            }
-
-            @Override
-            public void onChatRoomRemoved(ChatRoom chatRoom) {
-                // Remove chat room from lists
-                allChatRooms.removeIf(room -> room.getId().equals(chatRoom.getId()));
-
-                // Re-apply filters and search to update the filtered list
-                applyFiltersAndSearch();
-
-                Log.d(TAG, "Chat room removed: " + chatRoom.getName());
             }
 
             @Override
@@ -344,6 +312,7 @@ public class ChatListFragment extends Fragment {
             }
         });
     }
+
 
     /**
      * Load unread count for a specific chat room for the current user

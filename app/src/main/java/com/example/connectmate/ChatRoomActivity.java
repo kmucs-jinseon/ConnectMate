@@ -1,21 +1,18 @@
 package com.example.connectmate;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Log;
-import android.webkit.MimeTypeMap;
-import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,12 +40,15 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 public class ChatRoomActivity extends AppCompatActivity {
 
@@ -135,6 +135,12 @@ public class ChatRoomActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.chat_room_menu, menu);
+        if (chatRoom != null && "private".equals(chatRoom.getCategory())) {
+            MenuItem leaveItem = menu.findItem(R.id.action_leave_room);
+            if (leaveItem != null) {
+                leaveItem.setTitle("친구 끊기");
+            }
+        }
         return true;
     }
 
@@ -142,7 +148,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.action_leave_room) {
-            leaveChatRoom();
+            if (chatRoom != null && "private".equals(chatRoom.getCategory())) {
+                removeFriend();
+            } else {
+                leaveChatRoom();
+            }
             return true;
         } else if (itemId == R.id.action_view_participants) {
             showParticipantsDialog();
@@ -151,20 +161,80 @@ public class ChatRoomActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void removeFriend() {
+        if (chatRoom == null || chatRoom.getMembers().size() != 2) {
+            return;
+        }
+
+        String friendId = null;
+        for (String memberId : chatRoom.getMembers().keySet()) {
+            if (!memberId.equals(currentUserId)) {
+                friendId = memberId;
+                break;
+            }
+        }
+
+        if (friendId != null) {
+            String finalFriendId = friendId;
+            new AlertDialog.Builder(this)
+                .setTitle("친구 끊기")
+                .setMessage("정말 친구를 끊으시겠습니까? 이 채팅방은 삭제됩니다.")
+                .setPositiveButton("끊기", (dialog, which) -> {
+                    DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+                    usersRef.child(currentUserId).child("friends").child(finalFriendId).removeValue();
+                    usersRef.child(finalFriendId).child("friends").child(currentUserId).removeValue();
+                    FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Toast.makeText(ChatRoomActivity.this, "친구 관계를 끊었습니다.", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ChatRoomActivity.this, "친구 끊기 실패", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("취소", null)
+                .show();
+        }
+    }
+
+
     private void showParticipantsDialog() {
-        if (chatRoom == null || chatRoom.getMemberNames().isEmpty()) {
+        if (chatRoom == null || chatRoom.getMembers().isEmpty()) {
             Toast.makeText(this, "참여자가 없습니다.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        List<String> memberNames = chatRoom.getMemberNames();
-        String[] items = memberNames.toArray(new String[0]);
+        DatabaseReference friendsRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friends");
+        friendsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<String> friendIds = new ArrayList<>();
+                for (DataSnapshot friendSnapshot : snapshot.getChildren()) {
+                    friendIds.add(friendSnapshot.getKey());
+                }
 
-        new AlertDialog.Builder(this)
-            .setTitle("참여자 목록 (" + memberNames.size() + "명)")
-            .setItems(items, null)
-            .setPositiveButton("확인", null)
-            .show();
+                List<Participant> participants = new ArrayList<>();
+                for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
+                    participants.add(new Participant(entry.getKey(), entry.getValue().getName()));
+                }
+
+                ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
+
+                new AlertDialog.Builder(ChatRoomActivity.this)
+                        .setTitle("참여자 목록 (" + participants.size() + "명)")
+                        .setAdapter(adapter, null)
+                        .setPositiveButton("확인", null)
+                        .show();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Handle error
+            }
+        });
     }
 
     private void leaveChatRoom() {

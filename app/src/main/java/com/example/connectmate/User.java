@@ -1,5 +1,8 @@
 package com.example.connectmate;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * User model class for Firebase Realtime Database
  * Represents a user profile with authentication and social login information
@@ -20,6 +23,8 @@ public class User {
     public int badgesCount;
     public long createdAt;
     public long lastLoginAt;
+    public Map<String, Boolean> friends = new HashMap<>(); // Key: friend's user ID, Value: true
+    public Map<String, Boolean> friendRequests = new HashMap<>(); // Key: user ID who sent the request, Value: true
 
     // Required empty constructor for Firebase Realtime Database
     public User() {
@@ -168,5 +173,21 @@ public class User {
 
     public void setProfileCompleted(boolean profileCompleted) {
         this.profileCompleted = profileCompleted;
+    }
+
+    public Map<String, Boolean> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(Map<String, Boolean> friends) {
+        this.friends = friends;
+    }
+
+    public Map<String, Boolean> getFriendRequests() {
+        return friendRequests;
+    }
+
+    public void setFriendRequests(Map<String, Boolean> friendRequests) {
+        this.friendRequests = friendRequests;
     }
 }

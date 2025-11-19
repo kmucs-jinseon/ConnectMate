@@ -40,6 +40,17 @@
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
+                <!-- My Friends Button -->
+                <ImageButton
+                    android:id="@+id/btn_my_friends"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="My Friends"
+                    android:src="@drawable/ic_people"
+                    app:tint="@color/white" />
+
                 <!-- Search Button -->
                 <ImageButton
                     android:id="@+id/btn_search"

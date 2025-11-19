@@ -201,6 +201,34 @@ public class FirebaseChatManager {
     }
 
     /**
+     * Get all chat rooms that a user has joined.
+     */
+    public void getJoinedChatRooms(String userId, ChatRoomListListener listener) {
+        chatRoomsRef.orderByChild("lastMessageTime")
+            .addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    List<ChatRoom> chatRooms = new ArrayList<>();
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        ChatRoom chatRoom = child.getValue(ChatRoom.class);
+                        if (chatRoom != null && chatRoom.getMembers().containsKey(userId)) {
+                            chatRooms.add(0, chatRoom); // Add to beginning (newest first)
+                        }
+                    }
+
+                    Log.d(TAG, "Loaded " + chatRooms.size() + " joined chat rooms from Firebase for user " + userId);
+                    listener.onChatRoomsLoaded(chatRooms);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error loading joined chat rooms", error.toException());
+                    listener.onError(error.toException());
+                }
+            });
+    }
+
+    /**
      * Listen for chat room changes in real-time
      */
     public void listenForChatRoomChanges(ChatRoomChangeListener listener) {
@@ -256,10 +284,8 @@ public class FirebaseChatManager {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 ChatRoom chatRoom = snapshot.getValue(ChatRoom.class);
-                if (chatRoom != null && listener != null) {
+                if (listener != null) {
                     listener.onSuccess(chatRoom);
-                } else if (listener != null) {
-                    listener.onError(new Exception("Chat room not found"));
                 }
             }
 
