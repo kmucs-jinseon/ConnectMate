@@ -70,6 +70,8 @@ public class ChatRoomActivity extends AppCompatActivity {
     private MaterialButton btnUploadPhoto; // 추가
     private CardView imagePreviewContainer; // 추가
     private ImageView imagePreview; // 추가
+    private View filePreview; // 추가: 문서 미리보기
+    private TextView fileNamePreview; // 추가: 파일명 미리보기
     private ImageButton btnRemoveImage; // 추가
 
     // Adapter
@@ -277,6 +279,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnUploadPhoto = findViewById(R.id.btn_upload_photo); // 추가
         imagePreviewContainer = findViewById(R.id.image_preview_container); // 추가
         imagePreview = findViewById(R.id.image_preview); // 추가
+        filePreview = findViewById(R.id.file_preview); // 추가
+        fileNamePreview = findViewById(R.id.file_name_preview); // 추가
         btnRemoveImage = findViewById(R.id.btn_remove_image); // 추가
 
         // Setup remove image button
@@ -356,20 +360,45 @@ public class ChatRoomActivity extends AppCompatActivity {
         );
     }
 
-    // 추가: 이미지 미리보기 표시
+    // 추가: 파일 미리보기 표시 (이미지 또는 문서)
     private void showImagePreview() {
         if (selectedImageUri != null) {
-            imagePreview.setImageURI(selectedImageUri);
+            // Detect file type
+            String mimeType = getContentResolver().getType(selectedImageUri);
+            if (mimeType == null) {
+                mimeType = "application/octet-stream";
+            }
+
+            boolean isImage = mimeType.startsWith("image/");
+
+            if (isImage) {
+                // Show image preview
+                imagePreview.setImageURI(selectedImageUri);
+                imagePreview.setVisibility(View.VISIBLE);
+                filePreview.setVisibility(View.GONE);
+            } else {
+                // Show document preview with filename
+                String fileName = getFileName(selectedImageUri);
+                if (fileName == null) {
+                    fileName = "document_" + System.currentTimeMillis();
+                }
+                fileNamePreview.setText(fileName);
+                imagePreview.setVisibility(View.GONE);
+                filePreview.setVisibility(View.VISIBLE);
+            }
+
             imagePreviewContainer.setVisibility(View.VISIBLE);
         }
     }
 
-    // 추가: 이미지 선택 취소
+    // 추가: 파일 선택 취소
     private void clearImageSelection() {
         selectedImageUri = null;
         imagePreview.setImageURI(null);
+        imagePreview.setVisibility(View.GONE);
+        filePreview.setVisibility(View.GONE);
         imagePreviewContainer.setVisibility(View.GONE);
-        Toast.makeText(this, "사진 선택이 취소되었습니다.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "파일 선택이 취소되었습니다.", Toast.LENGTH_SHORT).show();
     }
 
     // 추가: 업로드 옵션 선택 다이얼로그
