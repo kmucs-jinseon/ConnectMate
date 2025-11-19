@@ -252,7 +252,8 @@ public class LoginActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "signInWithEmail failed", e);
-                    String msg = "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+                    loginButton.setEnabled(true);
+                    String msg = "로그인에 실패했습니다. 다시 시도해 주세요.";
                     if (e instanceof com.google.firebase.auth.FirebaseAuthException) {
                         String code = ((com.google.firebase.auth.FirebaseAuthException) e).getErrorCode();
                         switch (code) {
