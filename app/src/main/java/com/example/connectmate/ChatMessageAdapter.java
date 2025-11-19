@@ -27,10 +27,19 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private final List<ChatMessage> messages;
     private final String currentUserId;
+    private OnImageClickListener imageClickListener;
+
+    public interface OnImageClickListener {
+        void onImageClick(String imageUrl);
+    }
 
     public ChatMessageAdapter(List<ChatMessage> messages, String currentUserId) {
         this.messages = messages;
         this.currentUserId = currentUserId;
+    }
+
+    public void setOnImageClickListener(OnImageClickListener listener) {
+        this.imageClickListener = listener;
     }
 
     @Override
@@ -74,9 +83,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (holder instanceof SystemMessageViewHolder) {
             ((SystemMessageViewHolder) holder).bind(message);
         } else if (holder instanceof SentMessageViewHolder) {
-            ((SentMessageViewHolder) holder).bind(message);
+            ((SentMessageViewHolder) holder).bind(message, imageClickListener);
         } else if (holder instanceof ReceivedMessageViewHolder) {
-            ((ReceivedMessageViewHolder) holder).bind(message);
+            ((ReceivedMessageViewHolder) holder).bind(message, imageClickListener);
         }
     }
 
@@ -120,7 +129,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
-        public void bind(ChatMessage message) {
+        public void bind(ChatMessage message, OnImageClickListener listener) {
             senderName.setText(message.getSenderName());
 
             // Handle text message
@@ -139,8 +148,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                         .placeholder(R.drawable.circle_logo)
                         .error(R.drawable.circle_logo)
                         .into(messageImage);
+
+                // Add click listener for image
+                messageImage.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onImageClick(message.getImageUrl());
+                    }
+                });
             } else {
                 messageImage.setVisibility(View.GONE);
+                messageImage.setOnClickListener(null);
             }
 
             // Handle document message
@@ -203,7 +220,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
-        public void bind(ChatMessage message) {
+        public void bind(ChatMessage message, OnImageClickListener listener) {
             senderName.setText(message.getSenderName());
 
             // Handle text message
@@ -222,8 +239,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                         .placeholder(R.drawable.circle_logo)
                         .error(R.drawable.circle_logo)
                         .into(messageImage);
+
+                // Add click listener for image
+                messageImage.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onImageClick(message.getImageUrl());
+                    }
+                });
             } else {
                 messageImage.setVisibility(View.GONE);
+                messageImage.setOnClickListener(null);
             }
 
             // Handle document message

@@ -327,6 +327,9 @@ public class ChatRoomActivity extends AppCompatActivity {
         messages = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter(messages, currentUserId);
 
+        // Set image click listener
+        messageAdapter.setOnImageClickListener(imageUrl -> showImageViewerDialog(imageUrl));
+
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true); // Start from bottom
         messagesRecyclerView.setLayoutManager(layoutManager);
@@ -880,6 +883,81 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         }
         return result;
+    }
+
+    // Show image viewer dialog
+    private void showImageViewerDialog(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+
+        // Create dialog
+        android.app.Dialog dialog = new android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+        dialog.setContentView(R.layout.dialog_image_viewer);
+
+        ImageView fullImage = dialog.findViewById(R.id.full_image);
+        ImageButton btnClose = dialog.findViewById(R.id.btn_close);
+        com.google.android.material.floatingactionbutton.FloatingActionButton btnDownload = dialog.findViewById(R.id.btn_download);
+
+        // Load image
+        com.bumptech.glide.Glide.with(this)
+                .load(imageUrl)
+                .into(fullImage);
+
+        // Close button
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        // Download button
+        btnDownload.setOnClickListener(v -> {
+            downloadImageToGallery(imageUrl);
+        });
+
+        dialog.show();
+    }
+
+    // Download image to gallery
+    private void downloadImageToGallery(String imageUrl) {
+        Toast.makeText(this, "이미지를 다운로드 중입니다...", Toast.LENGTH_SHORT).show();
+
+        new Thread(() -> {
+            try {
+                // Decode Base64 image
+                String base64Image = imageUrl;
+                if (base64Image.contains(",")) {
+                    base64Image = base64Image.split(",")[1];
+                }
+
+                byte[] imageBytes = android.util.Base64.decode(base64Image, android.util.Base64.DEFAULT);
+                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
+                if (bitmap == null) {
+                    runOnUiThread(() -> Toast.makeText(this, "이미지 다운로드 실패", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                // Save to gallery
+                String fileName = "ConnectMate_" + System.currentTimeMillis() + ".jpg";
+                android.content.ContentValues values = new android.content.ContentValues();
+                values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, fileName);
+                values.put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+                values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/ConnectMate");
+
+                android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                if (uri != null) {
+                    try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, outputStream);
+                        runOnUiThread(() -> Toast.makeText(this, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show());
+                    }
+                } else {
+                    runOnUiThread(() -> Toast.makeText(this, "이미지 저장 실패", Toast.LENGTH_SHORT).show());
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to download image", e);
+                runOnUiThread(() -> Toast.makeText(this, "이미지 다운로드 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     private void updateUI() {
