@@ -3,6 +3,7 @@ package com.example.connectmate;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -103,6 +104,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private final CircleImageView profileImage;
         private final TextView senderName;
         private final TextView messageText;
+        private final ImageView messageImage;
+        private final View documentContainer;
+        private final TextView documentName;
         private final TextView messageTime;
 
         public SentMessageViewHolder(@NonNull View itemView) {
@@ -110,12 +114,48 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             profileImage = itemView.findViewById(R.id.profile_image);
             senderName = itemView.findViewById(R.id.sender_name);
             messageText = itemView.findViewById(R.id.message_text);
+            messageImage = itemView.findViewById(R.id.message_image);
+            documentContainer = itemView.findViewById(R.id.document_container);
+            documentName = itemView.findViewById(R.id.document_name);
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
         public void bind(ChatMessage message) {
             senderName.setText(message.getSenderName());
-            messageText.setText(message.getMessage());
+
+            // Handle text message
+            if (message.getMessage() != null && !message.getMessage().isEmpty()) {
+                messageText.setVisibility(View.VISIBLE);
+                messageText.setText(message.getMessage());
+            } else {
+                messageText.setVisibility(View.GONE);
+            }
+
+            // Handle image message
+            if (message.getImageUrl() != null && !message.getImageUrl().isEmpty()) {
+                messageImage.setVisibility(View.VISIBLE);
+                Glide.with(itemView.getContext())
+                        .load(message.getImageUrl())
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(messageImage);
+            } else {
+                messageImage.setVisibility(View.GONE);
+            }
+
+            // Handle document message
+            if (message.isDocumentMessage() && message.getFileName() != null) {
+                documentContainer.setVisibility(View.VISIBLE);
+                documentName.setText(message.getFileName());
+
+                // Add click listener to open/download document
+                documentContainer.setOnClickListener(v -> {
+                    // TODO: Implement document open/download functionality
+                    android.util.Log.d("ChatMessageAdapter", "Document clicked: " + message.getFileName());
+                });
+            } else {
+                documentContainer.setVisibility(View.GONE);
+            }
 
             // Format timestamp in Korean format
             SimpleDateFormat timeFormat = new SimpleDateFormat("a h:mm", Locale.KOREAN);
@@ -147,6 +187,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private final CircleImageView profileImage;
         private final TextView senderName;
         private final TextView messageText;
+        private final ImageView messageImage;
+        private final View documentContainer;
+        private final TextView documentName;
         private final TextView messageTime;
 
         public ReceivedMessageViewHolder(@NonNull View itemView) {
@@ -154,12 +197,48 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             profileImage = itemView.findViewById(R.id.profile_image);
             senderName = itemView.findViewById(R.id.sender_name);
             messageText = itemView.findViewById(R.id.message_text);
+            messageImage = itemView.findViewById(R.id.message_image);
+            documentContainer = itemView.findViewById(R.id.document_container);
+            documentName = itemView.findViewById(R.id.document_name);
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
         public void bind(ChatMessage message) {
             senderName.setText(message.getSenderName());
-            messageText.setText(message.getMessage());
+
+            // Handle text message
+            if (message.getMessage() != null && !message.getMessage().isEmpty()) {
+                messageText.setVisibility(View.VISIBLE);
+                messageText.setText(message.getMessage());
+            } else {
+                messageText.setVisibility(View.GONE);
+            }
+
+            // Handle image message
+            if (message.getImageUrl() != null && !message.getImageUrl().isEmpty()) {
+                messageImage.setVisibility(View.VISIBLE);
+                Glide.with(itemView.getContext())
+                        .load(message.getImageUrl())
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(messageImage);
+            } else {
+                messageImage.setVisibility(View.GONE);
+            }
+
+            // Handle document message
+            if (message.isDocumentMessage() && message.getFileName() != null) {
+                documentContainer.setVisibility(View.VISIBLE);
+                documentName.setText(message.getFileName());
+
+                // Add click listener to open/download document
+                documentContainer.setOnClickListener(v -> {
+                    // TODO: Implement document open/download functionality
+                    android.util.Log.d("ChatMessageAdapter", "Document clicked: " + message.getFileName());
+                });
+            } else {
+                documentContainer.setVisibility(View.GONE);
+            }
 
             // Format timestamp in Korean format
             SimpleDateFormat timeFormat = new SimpleDateFormat("a h:mm", Locale.KOREAN);

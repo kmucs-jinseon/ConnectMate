@@ -10,6 +10,7 @@ public class ChatMessage implements Serializable {
     public static final int TYPE_TEXT = 0;
     public static final int TYPE_SYSTEM = 1;
     public static final int TYPE_IMAGE = 2;
+    public static final int TYPE_DOCUMENT = 3;
 
     private String id;
     private String chatRoomId;
@@ -18,6 +19,9 @@ public class ChatMessage implements Serializable {
     private String senderProfileUrl;
     private String message;
     private String imageUrl; // 추가: 이미지 URL 필드
+    private String fileUrl; // 추가: 문서 파일 Base64 데이터
+    private String fileName; // 추가: 파일 이름
+    private String fileType; // 추가: 파일 MIME 타입
     private int messageType;
     private long timestamp;
     private boolean isRead;
@@ -109,6 +113,31 @@ public class ChatMessage implements Serializable {
         this.imageUrl = imageUrl;
     }
 
+    // 추가: 문서 파일 getter 및 setter
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
     public int getMessageType() {
         return messageType;
     }
@@ -138,5 +167,12 @@ public class ChatMessage implements Serializable {
      */
     public boolean isSystemMessage() {
         return messageType == TYPE_SYSTEM;
+    }
+
+    /**
+     * Check if this is a document message
+     */
+    public boolean isDocumentMessage() {
+        return messageType == TYPE_DOCUMENT;
     }
 }

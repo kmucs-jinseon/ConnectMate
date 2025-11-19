@@ -4,10 +4,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.database.Cursor; // 추가
 import android.net.Uri; // 추가
 import android.os.Bundle;
 import android.provider.MediaStore; // 추가
+import android.provider.OpenableColumns; // 추가
 import android.util.Log;
+import android.webkit.MimeTypeMap; // 추가
+import android.widget.ImageButton; // 추가
+import android.widget.ImageView; // 추가
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView; // 추가
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -62,6 +68,9 @@ public class ChatRoomActivity extends AppCompatActivity {
     private TextInputEditText messageInput;
     private FloatingActionButton btnSendMessage;
     private MaterialButton btnUploadPhoto; // 추가
+    private CardView imagePreviewContainer; // 추가
+    private ImageView imagePreview; // 추가
+    private ImageButton btnRemoveImage; // 추가
 
     // Adapter
     private ChatMessageAdapter messageAdapter;
@@ -266,6 +275,12 @@ public class ChatRoomActivity extends AppCompatActivity {
         messageInput = findViewById(R.id.message_input);
         btnSendMessage = findViewById(R.id.btn_send_message);
         btnUploadPhoto = findViewById(R.id.btn_upload_photo); // 추가
+        imagePreviewContainer = findViewById(R.id.image_preview_container); // 추가
+        imagePreview = findViewById(R.id.image_preview); // 추가
+        btnRemoveImage = findViewById(R.id.btn_remove_image); // 추가
+
+        // Setup remove image button
+        btnRemoveImage.setOnClickListener(v -> clearImageSelection());
     }
 
     private void setupToolbar() {
@@ -326,13 +341,35 @@ public class ChatRoomActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     selectedImageUri = result.getData().getData();
-                    Toast.makeText(this, "사진이 선택되었습니다. 메시지 전송 버튼을 눌러주세요.", Toast.LENGTH_SHORT).show();
-                    // 여기에 선택된 이미지를 미리 보여주는 UI를 추가할 수 있습니다.
+                    Log.d(TAG, "Image selected - URI: " + selectedImageUri);
+                    Log.d(TAG, "URI scheme: " + (selectedImageUri != null ? selectedImageUri.getScheme() : "null"));
+
+                    // Show image preview
+                    showImagePreview();
+                    Toast.makeText(this, "사진이 선택되었습니다.", Toast.LENGTH_SHORT).show();
                 } else {
-                    selectedImageUri = null;
+                    // Clear image selection and hide preview when picker is canceled
+                    Log.d(TAG, "Image selection cancelled or failed");
+                    clearImageSelection();
                 }
             }
         );
+    }
+
+    // 추가: 이미지 미리보기 표시
+    private void showImagePreview() {
+        if (selectedImageUri != null) {
+            imagePreview.setImageURI(selectedImageUri);
+            imagePreviewContainer.setVisibility(View.VISIBLE);
+        }
+    }
+
+    // 추가: 이미지 선택 취소
+    private void clearImageSelection() {
+        selectedImageUri = null;
+        imagePreview.setImageURI(null);
+        imagePreviewContainer.setVisibility(View.GONE);
+        Toast.makeText(this, "사진 선택이 취소되었습니다.", Toast.LENGTH_SHORT).show();
     }
 
     // 추가: 업로드 옵션 선택 다이얼로그
@@ -362,7 +399,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     // 추가: 파일 탐색기를 여는 메서드 (파일 브라우저를 열음)
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
+        intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         // 파일 브라우저를 명시적으로 열도록 설정
         intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
@@ -505,15 +542,22 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void sendMessage() {
+        Log.d(TAG, "=== sendMessage() called ===");
         String messageText = (messageInput.getText() != null) ?
             messageInput.getText().toString().trim() : "";
 
+        Log.d(TAG, "Message text: '" + messageText + "'");
+        Log.d(TAG, "selectedImageUri: " + selectedImageUri);
+        Log.d(TAG, "currentUserId: " + currentUserId);
+
         if (messageText.isEmpty() && selectedImageUri == null) { // 이미지도 없고 텍스트도 없으면 리턴
+            Log.w(TAG, "Both message and image are empty");
             Toast.makeText(this, "메시지를 입력하거나 사진을 선택해주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (currentUserId.isEmpty()) {
+            Log.e(TAG, "currentUserId is empty!");
             Toast.makeText(this, "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -529,8 +573,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
 
         if (selectedImageUri != null) {
+            Log.d(TAG, "Image is selected, calling uploadImageAndSendMessage()");
             uploadImageAndSendMessage(messageText); // 이미지 업로드 후 메시지 전송
         } else {
+            Log.d(TAG, "No image selected, sending text message only");
             // Create message
             ChatMessage message = new ChatMessage(
                 chatRoom.getId(),
@@ -578,45 +624,105 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
-    // 추가: 이미지를 Firebase Storage에 업로드하고 메시지를 전송하는 메서드
+    // 추가: 파일을 Base64로 인코딩하고 메시지를 전송하는 메서드
     private void uploadImageAndSendMessage(String messageText) {
+        Log.d(TAG, "=== uploadImageAndSendMessage() called ===");
         if (selectedImageUri == null) {
-            Toast.makeText(this, "선택된 이미지가 없습니다.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "선택된 파일이 없습니다.", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "selectedImageUri is null in upload method");
             return;
         }
 
-        Toast.makeText(this, "사진을 업로드 중입니다...", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Starting file encoding...");
+        Log.d(TAG, "Selected URI: " + selectedImageUri);
+        Log.d(TAG, "Chat room ID: " + (chatRoom != null ? chatRoom.getId() : "NULL"));
 
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference("chat_images")
-            .child(chatRoom.getId())
-            .child(UUID.randomUUID().toString() + ".jpg");
+        // Detect file type
+        String mimeType = getContentResolver().getType(selectedImageUri);
+        if (mimeType == null) {
+            mimeType = "application/octet-stream";
+        }
+        Log.d(TAG, "File MIME type: " + mimeType);
 
-        storageRef.putFile(selectedImageUri)
-            .addOnSuccessListener(taskSnapshot -> {
-                storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    String imageUrl = uri.toString();
-                    Log.d(TAG, "Image uploaded. Download URL: " + imageUrl);
+        boolean isImage = mimeType.startsWith("image/");
 
-                    // Create message with image URL
+        if (isImage) {
+            Toast.makeText(this, "사진을 처리 중입니다...", Toast.LENGTH_SHORT).show();
+            processImageFile(messageText);
+        } else {
+            Toast.makeText(this, "파일을 처리 중입니다...", Toast.LENGTH_SHORT).show();
+            processDocumentFile(messageText, mimeType);
+        }
+    }
+
+    // Process image files
+    private void processImageFile(String messageText) {
+
+        // Convert image to Base64 in background thread
+        new Thread(() -> {
+            try {
+                // Read image from URI
+                java.io.InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
+                if (inputStream == null) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "이미지를 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
+                }
+
+                // Compress and resize image
+                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
+                inputStream.close();
+
+                if (bitmap == null) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "이미지 처리 실패", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
+                }
+
+                // Resize image to max 800x800 to reduce size
+                int maxSize = 800;
+                int width = bitmap.getWidth();
+                int height = bitmap.getHeight();
+                float scale = Math.min(((float) maxSize / width), ((float) maxSize / height));
+
+                if (scale < 1.0f) {
+                    int newWidth = Math.round(width * scale);
+                    int newHeight = Math.round(height * scale);
+                    bitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                }
+
+                // Convert to Base64
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, baos);
+                byte[] imageBytes = baos.toByteArray();
+                String base64Image = "data:image/jpeg;base64," + android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+
+                Log.d(TAG, "Image encoded successfully. Size: " + base64Image.length() + " chars");
+
+                // Send message on UI thread
+                runOnUiThread(() -> {
                     ChatMessage message = new ChatMessage(
                         chatRoom.getId(),
                         currentUserId,
                         currentUserName,
-                        messageText.isEmpty() ? null : messageText // 텍스트가 비어있으면 null, 아니면 텍스트
+                        messageText.isEmpty() ? null : messageText
                     );
-                    message.setImageUrl(imageUrl); // 이미지 URL 설정
+                    message.setImageUrl(base64Image); // Set Base64 image
 
                     if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
                         message.setSenderProfileUrl(currentUserProfileUrl);
                     }
 
-                    // Send message to Firebase
+                    Log.d(TAG, "Sending message with Base64 image...");
                     FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
                         @Override
                         public void onSuccess(ChatMessage result) {
+                            Log.d(TAG, "Image message sent successfully");
                             runOnUiThread(() -> {
                                 messageInput.setText("");
-                                selectedImageUri = null; // 이미지 전송 후 초기화
+                                clearImageSelection();
                                 Toast.makeText(ChatRoomActivity.this, "사진 메시지가 전송되었습니다.", Toast.LENGTH_SHORT).show();
                             });
                         }
@@ -625,20 +731,126 @@ public class ChatRoomActivity extends AppCompatActivity {
                         public void onError(Exception e) {
                             Log.e(TAG, "Failed to send image message", e);
                             runOnUiThread(() -> {
-                                Toast.makeText(ChatRoomActivity.this, "사진 메시지 전송 실패", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ChatRoomActivity.this, "사진 메시지 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                             });
                         }
                     });
-
-                }).addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to get download URL", e);
-                    Toast.makeText(ChatRoomActivity.this, "사진 URL 가져오기 실패", Toast.LENGTH_SHORT).show();
                 });
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to upload image", e);
-                Toast.makeText(ChatRoomActivity.this, "사진 업로드 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to encode image", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "이미지 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    // Process document files (PDF, docs, txt, etc.)
+    private void processDocumentFile(String messageText, String mimeType) {
+        new Thread(() -> {
+            try {
+                // Get filename
+                String fileName = getFileName(selectedImageUri);
+                if (fileName == null) {
+                    fileName = "document_" + System.currentTimeMillis();
+                }
+
+                // Read file data
+                java.io.InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
+                if (inputStream == null) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "파일을 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                    });
+                    return;
+                }
+
+                // Convert to Base64
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = inputStream.read(buffer)) > -1) {
+                    baos.write(buffer, 0, len);
+                }
+                baos.flush();
+                inputStream.close();
+
+                byte[] fileBytes = baos.toByteArray();
+                String base64File = android.util.Base64.encodeToString(fileBytes, android.util.Base64.DEFAULT);
+
+                Log.d(TAG, "Document encoded successfully. Size: " + base64File.length() + " chars, File: " + fileName);
+
+                final String finalFileName = fileName;
+
+                // Send message on UI thread
+                runOnUiThread(() -> {
+                    ChatMessage message = new ChatMessage(
+                        chatRoom.getId(),
+                        currentUserId,
+                        currentUserName,
+                        messageText.isEmpty() ? null : messageText
+                    );
+                    message.setFileUrl(base64File);
+                    message.setFileName(finalFileName);
+                    message.setFileType(mimeType);
+                    message.setMessageType(ChatMessage.TYPE_DOCUMENT);
+
+                    if (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty()) {
+                        message.setSenderProfileUrl(currentUserProfileUrl);
+                    }
+
+                    Log.d(TAG, "Sending message with document...");
+                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                        @Override
+                        public void onSuccess(ChatMessage result) {
+                            Log.d(TAG, "Document message sent successfully");
+                            runOnUiThread(() -> {
+                                messageInput.setText("");
+                                clearImageSelection();
+                                Toast.makeText(ChatRoomActivity.this, "파일이 전송되었습니다.", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Failed to send document message", e);
+                            runOnUiThread(() -> {
+                                Toast.makeText(ChatRoomActivity.this, "파일 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to encode document", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "파일 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    // Get filename from URI
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex != -1) {
+                        result = cursor.getString(nameIndex);
+                    }
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
     }
 
     private void updateUI() {
