@@ -21,6 +21,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -33,9 +34,14 @@ import androidx.cardview.widget.CardView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.connectmate.models.PlaceSearchResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.example.connectmate.models.PlaceSearchResult;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -105,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
     private Runnable searchRunnable;
     private static final long SEARCH_DELAY_MS = 800;
     private boolean profileSetupRedirectPending = false;
+    private boolean mainContentInitialized = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,40 +131,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "User authenticated successfully, proceeding with MainActivity setup");
 
         setContentView(R.layout.activity_main);
-
-        if (maybeRedirectToProfileSetup()) {
-            return;
-        }
-
-        Log.d(TAG, "MainActivity onCreate started");
-
-        // Initialize UI components
-        initializeViews();
-
-        // Initialize all fragments
-        initializeFragments(savedInstanceState);
-
-        // Set up map controls
-        setupMapControls();
-
-        // Set up activity controls
-        setupActivityControls();
-
-        // Set up bottom navigation
-        setupBottomNavigation();
-
-        // Set up floating action button
-        setupFloatingActionButton();
-
-        // Handle map navigation intent
-        handleMapNavigationIntent();
-
-        // Auto-load current location display after map is ready
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-            updateCurrentLocationDisplay();
-        }, 1500); // Delay to allow MapFragment to get location
-
-        Log.d(TAG, "MainActivity initialized with background map");
+        checkProfileCompletionAndInit(savedInstanceState);
     }
 
     /**
@@ -198,31 +172,55 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean maybeRedirectToProfileSetup() {
+    private void checkProfileCompletionAndInit(Bundle savedInstanceState) {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) {
+            Log.w(TAG, "No authenticated user while checking profile completion");
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        DatabaseReference userRef = FirebaseDatabase.getInstance()
+            .getReference("users")
+            .child(firebaseUser.getUid());
+
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Boolean completed = snapshot.child("profileCompleted").getValue(Boolean.class);
+                if (Boolean.TRUE.equals(completed)) {
+                    initializeMainContent(savedInstanceState);
+                } else {
+                    redirectToProfileSetup(snapshot, firebaseUser);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to check profile completion", error.toException());
+                Toast.makeText(MainActivity.this,
+                        "프로필 정보를 확인할 수 없습니다. 다시 시도해 주세요.",
+                        Toast.LENGTH_SHORT).show();
+                redirectToProfileSetup(null, firebaseUser);
+            }
+        });
+    }
+
+    private void redirectToProfileSetup(@Nullable DataSnapshot snapshot, FirebaseUser firebaseUser) {
         if (profileSetupRedirectPending) {
-            return true;
+            return;
         }
-
-        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-        boolean profileCompleted = prefs.getBoolean("profile_completed", true);
-        if (profileCompleted) {
-            return false;
-        }
-
         profileSetupRedirectPending = true;
 
-        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        String userId = prefs.getString("user_id", firebaseUser != null ? firebaseUser.getUid() : null);
-        String email = prefs.getString("user_email", firebaseUser != null ? firebaseUser.getEmail() : null);
-        String displayName = prefs.getString("user_name", firebaseUser != null ? firebaseUser.getDisplayName() : null);
-        String loginMethod = prefs.getString("login_method", "email");
-
-        prefs.edit().putBoolean("profile_completed", false).apply();
-
         Intent intent = new Intent(this, ProfileSetupActivity.class);
-        if (!TextUtils.isEmpty(userId)) {
-            intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
-        }
+        intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, firebaseUser.getUid());
+
+        String email = snapshot != null ? snapshot.child("email").getValue(String.class) : firebaseUser.getEmail();
+        String displayName = snapshot != null ? snapshot.child("displayName").getValue(String.class) : firebaseUser.getDisplayName();
+        String loginMethod = snapshot != null ? snapshot.child("loginMethod").getValue(String.class) : null;
+
         if (!TextUtils.isEmpty(email)) {
             intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_EMAIL, email);
         }
@@ -232,9 +230,46 @@ public class MainActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(loginMethod)) {
             intent.putExtra(ProfileSetupActivity.EXTRA_LOGIN_METHOD, loginMethod);
         }
+
         startActivity(intent);
         finish();
-        return true;
+    }
+
+    private void initializeMainContent(Bundle savedInstanceState) {
+        if (mainContentInitialized) {
+            return;
+        }
+        mainContentInitialized = true;
+
+        Log.d(TAG, "MainActivity onCreate started");
+
+        // Initialize UI components
+        initializeViews();
+
+        // Initialize all fragments
+        initializeFragments(savedInstanceState);
+
+        // Set up map controls
+        setupMapControls();
+
+        // Set up activity controls
+        setupActivityControls();
+
+        // Set up bottom navigation
+        setupBottomNavigation();
+
+        // Set up floating action button
+        setupFloatingActionButton();
+
+        // Handle map navigation intent
+        handleMapNavigationIntent();
+
+        // Auto-load current location display after map is ready
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            updateCurrentLocationDisplay();
+        }, 1500); // Delay to allow MapFragment to get location
+
+        Log.d(TAG, "MainActivity initialized with background map");
     }
 
     /**

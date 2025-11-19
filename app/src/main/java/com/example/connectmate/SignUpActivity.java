@@ -206,7 +206,6 @@ public class SignUpActivity extends AppCompatActivity {
                         // Save login state with user ID
                         saveLoginState("email", uid);
 
-                        markProfileIncomplete();
                         navigateToProfileSetup(uid, mail, name, "email");
                     } else {
                         navigateToMain();
@@ -264,13 +263,7 @@ public class SignUpActivity extends AppCompatActivity {
         return true;
     }
 
-    private void markProfileIncomplete() {
-        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-        prefs.edit().putBoolean("profile_completed", false).apply();
-    }
-
     private void navigateToProfileSetup(String userId, String email, String displayName, String loginMethod) {
-        markProfileIncomplete();
         Intent intent = new Intent(SignUpActivity.this, ProfileSetupActivity.class);
         if (userId != null && !userId.isEmpty()) {
             intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
@@ -350,7 +343,6 @@ public class SignUpActivity extends AppCompatActivity {
                 saveLoginState("google", userId);
 
                 Toast.makeText(this, "Google sign up successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
-                markProfileIncomplete();
                 navigateToProfileSetup(
                         userId,
                         account.getEmail(),
@@ -398,7 +390,6 @@ public class SignUpActivity extends AppCompatActivity {
                         }
 
                         Toast.makeText(SignUpActivity.this, "Google sign up successful!", Toast.LENGTH_SHORT).show();
-                        markProfileIncomplete();
                         navigateToProfileSetup(
                                 user != null ? user.getUid() : null,
                                 user != null ? user.getEmail() : null,
@@ -485,7 +476,6 @@ public class SignUpActivity extends AppCompatActivity {
                     saveLoginState("kakao", userId);
 
                     Toast.makeText(SignUpActivity.this, "Kakao signup successful!", Toast.LENGTH_SHORT).show();
-                    markProfileIncomplete();
                     navigateToProfileSetup(userId, email, displayName, "kakao");
                 });
             }
@@ -602,7 +592,6 @@ public class SignUpActivity extends AppCompatActivity {
                             saveLoginState("naver", realtimeUserId);
 
                             Toast.makeText(SignUpActivity.this, "Naver signup successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
-                            markProfileIncomplete();
                             navigateToProfileSetup(realtimeUserId, email, displayName, "naver");
                         });
                     } else {

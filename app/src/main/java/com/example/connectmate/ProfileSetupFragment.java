@@ -425,34 +425,33 @@ public class ProfileSetupFragment extends Fragment {
     private void saveProfileToFirebase(String name, String username, String mbti, String bio, String imageUrl) {
         DatabaseReference userRef = databaseReference.child("users").child(userId);
 
-        // Create User object to ensure all data is saved
-        User user = new User();
-        user.userId = userId;
-        user.displayName = name;
-        user.username = username;
-        user.email = email;
-        user.mbti = !TextUtils.isEmpty(mbti) ? mbti : "";
-        user.bio = !TextUtils.isEmpty(bio) ? bio : "";
-        user.profileImageUrl = imageUrl;
-        user.loginMethod = loginMethod != null ? loginMethod : "email";
-        user.profileCompleted = true;
-        user.lastLoginAt = System.currentTimeMillis();
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("displayName", name);
+        updates.put("username", username);
+        updates.put("email", email);
+        updates.put("mbti", !TextUtils.isEmpty(mbti) ? mbti : "");
+        updates.put("bio", !TextUtils.isEmpty(bio) ? bio : "");
+        updates.put("profileCompleted", true);
+        updates.put("lastLoginAt", System.currentTimeMillis());
+        if (loginMethod != null) {
+            updates.put("loginMethod", loginMethod);
+        }
+        updates.put("profileImageUrl", imageUrl);
 
-        // Use setValue to create/overwrite the user node completely
-        userRef.setValue(user)
-                .addOnSuccessListener(unused -> {
-                    toggleLoading(false);
-                    persistToPreferences(name, username, mbti, bio);
-                    Toast.makeText(requireContext(), "프로필이 저장되었습니다!", Toast.LENGTH_SHORT).show();
-                    if (host != null) {
-                        host.onProfileSetupCompleted();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    toggleLoading(false);
-                    Toast.makeText(requireContext(), "프로필 저장에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    Log.e(TAG, "Failed to save profile", e);
-                });
+        userRef.updateChildren(updates)
+            .addOnSuccessListener(unused -> {
+                toggleLoading(false);
+                persistToPreferences(name, username, mbti, bio);
+                Toast.makeText(requireContext(), "프로필이 저장되었습니다!", Toast.LENGTH_SHORT).show();
+                if (host != null) {
+                    host.onProfileSetupCompleted();
+                }
+            })
+            .addOnFailureListener(e -> {
+                toggleLoading(false);
+                Toast.makeText(requireContext(), "프로필 저장에 실패했습니다: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Log.e(TAG, "Failed to save profile", e);
+            });
     }
 
     private void persistToPreferences(String name, String username, String mbti, String bio) {
@@ -462,7 +461,6 @@ public class ProfileSetupFragment extends Fragment {
         if (email != null) editor.putString("user_email", email);
         editor.putString("user_mbti", mbti);
         editor.putString("user_bio", bio);
-        editor.putBoolean("profile_completed", true);
         editor.apply();
     }
 
