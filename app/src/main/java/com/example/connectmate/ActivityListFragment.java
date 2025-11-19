@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.utils.FirebaseActivityManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -47,6 +48,7 @@ public class ActivityListFragment extends Fragment {
     // Data
     private List<Activity> allActivities;
     private List<Activity> filteredActivities;
+    private boolean isUpdatingChipSelection = false;
 
     public ActivityListFragment() {
         super(R.layout.fragment_activity_list);
@@ -97,6 +99,7 @@ public class ActivityListFragment extends Fragment {
                 Log.d(TAG, "Using MainActivity's filter chips");
             }
         }
+        setupFilterChipSelectionBehavior();
 
         // Activity list
         activityRecyclerView = view.findViewById(R.id.activity_recycler_view);
@@ -164,6 +167,93 @@ public class ActivityListFragment extends Fragment {
             Intent intent = new Intent(requireContext(), CreateActivityActivity.class);
             startActivity(intent);
         });
+    }
+
+    private void setupFilterChipSelectionBehavior() {
+        if (filterChips == null) {
+            return;
+        }
+
+        for (int i = 0; i < filterChips.getChildCount(); i++) {
+            View child = filterChips.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setOnCheckedChangeListener((button, isChecked) -> {
+                    if (isUpdatingChipSelection) {
+                        return;
+                    }
+                    handleChipSelectionChange(button.getId(), isChecked);
+                });
+            }
+        }
+    }
+
+    private void handleChipSelectionChange(int chipId, boolean isChecked) {
+        if (filterChips == null) {
+            return;
+        }
+
+        if (isAllChip(chipId)) {
+            if (isChecked) {
+                selectOnlyAllChip();
+            }
+            return;
+        }
+
+        if (isChecked) {
+            deselectAllChip();
+        } else if (!hasAnyCategoryChipChecked()) {
+            selectOnlyAllChip();
+        }
+    }
+
+    private void selectOnlyAllChip() {
+        if (filterChips == null) {
+            return;
+        }
+        isUpdatingChipSelection = true;
+        for (int i = 0; i < filterChips.getChildCount(); i++) {
+            View child = filterChips.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setChecked(isAllChip(chip.getId()));
+            }
+        }
+        isUpdatingChipSelection = false;
+    }
+
+    private void deselectAllChip() {
+        Chip allChip = findAllChip();
+        if (allChip == null) {
+            return;
+        }
+        isUpdatingChipSelection = true;
+        allChip.setChecked(false);
+        isUpdatingChipSelection = false;
+    }
+
+    private Chip findAllChip() {
+        if (filterChips == null) {
+            return null;
+        }
+        Chip allChip = filterChips.findViewById(R.id.chip_all);
+        if (allChip == null) {
+            allChip = filterChips.findViewById(R.id.activity_chip_all);
+        }
+        return allChip;
+    }
+
+    private boolean hasAnyCategoryChipChecked() {
+        if (filterChips == null) {
+            return false;
+        }
+        List<Integer> checkedIds = filterChips.getCheckedChipIds();
+        for (Integer id : checkedIds) {
+            if (!isAllChip(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void toggleSearch() {
@@ -283,6 +373,10 @@ public class ActivityListFragment extends Fragment {
         }
 
         return selectedCategories;
+    }
+
+    private boolean isAllChip(int chipId) {
+        return chipId == R.id.chip_all || chipId == R.id.activity_chip_all;
     }
 
     private String getCategoryFromChipId(int chipId) {
