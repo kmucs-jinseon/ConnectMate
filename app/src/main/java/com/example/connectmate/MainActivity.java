@@ -173,8 +173,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkProfileCompletionAndInit(Bundle savedInstanceState) {
+        // Get user ID from either Firebase or SharedPreferences (for social logins)
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (firebaseUser == null) {
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String userId;
+
+        if (firebaseUser != null) {
+            userId = firebaseUser.getUid();
+            Log.d(TAG, "Using Firebase user ID: " + userId);
+        } else {
+            // Check for social login (Naver/Kakao/Google without Firebase)
+            userId = prefs.getString("user_id", null);
+            String loginMethod = prefs.getString("login_method", null);
+            Log.d(TAG, "Using social login user ID: " + userId + ", method: " + loginMethod);
+        }
+
+        if (userId == null || userId.isEmpty()) {
             Log.w(TAG, "No authenticated user while checking profile completion");
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);
@@ -184,8 +198,9 @@ public class MainActivity extends AppCompatActivity {
 
         DatabaseReference userRef = FirebaseDatabase.getInstance()
             .getReference("users")
-            .child(firebaseUser.getUid());
+            .child(userId);
 
+        final String finalUserId = userId;
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -193,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                 if (Boolean.TRUE.equals(completed)) {
                     initializeMainContent(savedInstanceState);
                 } else {
-                    redirectToProfileSetup(snapshot, firebaseUser);
+                    redirectToProfileSetup(snapshot, finalUserId);
                 }
             }
 
@@ -203,22 +218,22 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this,
                         "프로필 정보를 확인할 수 없습니다. 다시 시도해 주세요.",
                         Toast.LENGTH_SHORT).show();
-                redirectToProfileSetup(null, firebaseUser);
+                redirectToProfileSetup(null, finalUserId);
             }
         });
     }
 
-    private void redirectToProfileSetup(@Nullable DataSnapshot snapshot, FirebaseUser firebaseUser) {
+    private void redirectToProfileSetup(@Nullable DataSnapshot snapshot, String userId) {
         if (profileSetupRedirectPending) {
             return;
         }
         profileSetupRedirectPending = true;
 
         Intent intent = new Intent(this, ProfileSetupActivity.class);
-        intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, firebaseUser.getUid());
+        intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
 
-        String email = snapshot != null ? snapshot.child("email").getValue(String.class) : firebaseUser.getEmail();
-        String displayName = snapshot != null ? snapshot.child("displayName").getValue(String.class) : firebaseUser.getDisplayName();
+        String email = snapshot != null ? snapshot.child("email").getValue(String.class) : null;
+        String displayName = snapshot != null ? snapshot.child("displayName").getValue(String.class) : null;
         String loginMethod = snapshot != null ? snapshot.child("loginMethod").getValue(String.class) : null;
 
         if (!TextUtils.isEmpty(email)) {

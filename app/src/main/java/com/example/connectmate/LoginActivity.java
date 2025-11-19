@@ -342,7 +342,7 @@ public class LoginActivity extends AppCompatActivity {
                 // Google Sign-In succeeded but no ID token (web client ID not configured)
                 Log.w(TAG, "Google Sign-In succeeded but ID token is null. Configure Web Client ID in Firebase Console.");
 
-                // Save user info to Realtime Database using Google ID
+                // Save user info to Realtime Database using Google ID (navigation handled inside)
                 String userId = "google_" + account.getId();
                 saveUserToRealtimeDatabase(
                         userId,
@@ -356,7 +356,6 @@ public class LoginActivity extends AppCompatActivity {
                 saveLoginState("google", userId);
 
                 Toast.makeText(this, "Google sign in successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
-                navigateToMain();
             }
         } catch (ApiException e) {
             Log.w(TAG, "Google sign in failed", e);
@@ -388,7 +387,7 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
 
                         if (user != null) {
-                            // Save user to Realtime Database
+                            // Save user to Realtime Database (navigation handled inside)
                             saveUserToRealtimeDatabase(
                                     user.getUid(),
                                     user.getEmail() != null ? user.getEmail() : "",
@@ -396,10 +395,12 @@ public class LoginActivity extends AppCompatActivity {
                                     user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
                                     "google"
                             );
+
+                            // Save login state
+                            saveLoginState("google", user.getUid());
                         }
 
                         Toast.makeText(LoginActivity.this, "Google sign in successful!", Toast.LENGTH_SHORT).show();
-                        navigateToMain();
                     } else {
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
                         String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
@@ -530,7 +531,7 @@ public class LoginActivity extends AppCompatActivity {
                 Log.d(TAG, "═══════════════════════════════════════════");
 
                 runOnUiThread(() -> {
-                    // Save user to Realtime Database
+                    // Save user to Realtime Database (navigation handled inside)
                     String userId = "kakao_" + user.getId();
                     saveUserToRealtimeDatabase(userId, email, nickname, profileImageUrl, "kakao");
 
@@ -538,7 +539,6 @@ public class LoginActivity extends AppCompatActivity {
                     saveLoginState("kakao", userId);
 
                     Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + nickname, Toast.LENGTH_SHORT).show();
-                    navigateToMain();
                 });
             }
             return Unit.INSTANCE;
@@ -828,7 +828,7 @@ public class LoginActivity extends AppCompatActivity {
                             // Re-enable button
                             naverSignInButton.setEnabled(true);
 
-                            // Save user to Database
+                            // Save user to Database (navigation handled inside)
                             String realtimeUserId = "naver_" + userId;
                             String displayName = !name.isEmpty() ? name : (!nickname.isEmpty() ? nickname : "Naver User");
                             saveUserToRealtimeDatabase(realtimeUserId, email, displayName, profileImage, "naver");
@@ -837,7 +837,6 @@ public class LoginActivity extends AppCompatActivity {
                             saveLoginState("naver", realtimeUserId);
 
                             Toast.makeText(LoginActivity.this, "Naver login successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
-                            navigateToMain();
                         });
                     } else {
                         Log.e(TAG, "═══════════════════════════════════════════");
@@ -877,7 +876,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Save or update user information in Realtime Database
+     * Save or update user information in Realtime Database and navigate appropriately
      * @param userId User ID (Firebase UID or social login ID)
      * @param email User email
      * @param displayName User display name
@@ -901,6 +900,16 @@ public class LoginActivity extends AppCompatActivity {
                     }
                     Log.d(TAG, "User updated successfully");
                     saveUserToSharedPreferences(snapshot);
+
+                    // Check if profile is completed
+                    Boolean profileCompleted = snapshot.child("profileCompleted").getValue(Boolean.class);
+                    if (profileCompleted != null && profileCompleted) {
+                        Log.d(TAG, "Profile completed, navigating to MainActivity");
+                        navigateToMain();
+                    } else {
+                        Log.d(TAG, "Profile not completed, navigating to ProfileSetupActivity");
+                        navigateToProfileSetup(userId, email, displayName, loginMethod);
+                    }
                 } else {
                     // New user, create profile
                     Log.d(TAG, "New user, creating profile");
@@ -924,8 +933,16 @@ public class LoginActivity extends AppCompatActivity {
                                     editor.putString("profile_image_url", profileImageUrl);
                                 }
                                 editor.apply();
+
+                                // New user always goes to ProfileSetupActivity
+                                Log.d(TAG, "New user, navigating to ProfileSetupActivity");
+                                navigateToProfileSetup(userId, email, displayName, loginMethod);
                             })
-                            .addOnFailureListener(e -> Log.e(TAG, "Failed to create user", e));
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to create user", e);
+                                // Still navigate to ProfileSetup even if save fails
+                                navigateToProfileSetup(userId, email, displayName, loginMethod);
+                            });
                 }
             }
 
@@ -934,6 +951,27 @@ public class LoginActivity extends AppCompatActivity {
                 Log.e(TAG, "Failed to check user existence", error.toException());
             }
         });
+    }
+
+    /**
+     * Navigate to ProfileSetupActivity for new users or users with incomplete profile
+     */
+    private void navigateToProfileSetup(String userId, String email, String displayName, String loginMethod) {
+        Intent intent = new Intent(LoginActivity.this, ProfileSetupActivity.class);
+        if (userId != null && !userId.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_USER_ID, userId);
+        }
+        if (email != null && !email.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_EMAIL, email);
+        }
+        if (displayName != null && !displayName.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_DEFAULT_NAME, displayName);
+        }
+        if (loginMethod != null && !loginMethod.isEmpty()) {
+            intent.putExtra(ProfileSetupActivity.EXTRA_LOGIN_METHOD, loginMethod);
+        }
+        startActivity(intent);
+        finish();
     }
 
     /**
