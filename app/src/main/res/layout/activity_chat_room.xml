@@ -77,6 +77,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_upload_photo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="bottom"
+            android:layout_marginEnd="4dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_attachment"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="32dp"
+            app:iconTint="@color/primary_blue"
+            app:backgroundTint="@android:color/transparent"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/message_input_text_layout"
             android:layout_width="0dp"
@@ -99,18 +115,6 @@
                 android:inputType="textMultiLine|textCapSentences" />
 
         </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_upload_photo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_marginEnd="8dp"
-            android:text="사진"
-            app:cornerRadius="20dp"
-            app:backgroundTint="@color/primary_blue"
-            android:textColor="@color/white"
-            style="@style/Widget.MaterialComponents.Button.Icon" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_send_message"

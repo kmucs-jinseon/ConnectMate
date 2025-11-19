@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.net.Uri; // 추가
 import android.os.Bundle;
+import android.provider.MediaStore; // 추가
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -315,7 +316,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void setupMessageInput() {
         btnSendMessage.setOnClickListener(v -> sendMessage());
-        btnUploadPhoto.setOnClickListener(v -> openImagePicker()); // 추가
+        btnUploadPhoto.setOnClickListener(v -> showUploadOptionsDialog()); // 추가
     }
 
     // 추가: 이미지 선택기를 설정하는 메서드
@@ -334,10 +335,37 @@ public class ChatRoomActivity extends AppCompatActivity {
         );
     }
 
-    // 추가: 갤러리를 여는 메서드
-    private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_PICK);
+    // 추가: 업로드 옵션 선택 다이얼로그
+    private void showUploadOptionsDialog() {
+        String[] options = {"갤러리", "파일"};
+
+        new AlertDialog.Builder(this)
+            .setTitle("사진/파일 선택")
+            .setItems(options, (dialog, which) -> {
+                if (which == 0) {
+                    openGalleryPicker();
+                } else {
+                    openFilePicker();
+                }
+            })
+            .setNegativeButton("취소", null)
+            .show();
+    }
+
+    // 추가: 갤러리를 여는 메서드 (포토 앨범을 열음)
+    private void openGalleryPicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         intent.setType("image/*");
+        pickImageLauncher.launch(intent);
+    }
+
+    // 추가: 파일 탐색기를 여는 메서드 (파일 브라우저를 열음)
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // 파일 브라우저를 명시적으로 열도록 설정
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
         pickImageLauncher.launch(intent);
     }
 
