@@ -490,7 +490,70 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
+        Log.d(TAG, "═══════════════════════════════════════════");
+        Log.d(TAG, "Starting Naver SignUp with Forced Consent Screen");
+        Log.d(TAG, "═══════════════════════════════════════════");
+
         naverSignUpButton.setEnabled(false);
+
+        // Revoke existing token to force consent screen (same as LoginActivity)
+        revokeNaverTokenAndSignUp();
+    }
+
+    private void revokeNaverTokenAndSignUp() {
+        String accessToken = NaverIdLoginSDK.INSTANCE.getAccessToken();
+
+        if (accessToken != null && !accessToken.isEmpty()) {
+            Log.d(TAG, "Found existing Naver access token - revoking to force consent screen...");
+
+            String deleteUrl = "https://nid.naver.com/oauth2.0/token?grant_type=delete" +
+                    "&client_id=" + BuildConfig.NAVER_CLIENT_ID +
+                    "&client_secret=" + BuildConfig.NAVER_CLIENT_SECRET +
+                    "&access_token=" + accessToken +
+                    "&service_provider=NAVER";
+
+            Request request = new Request.Builder()
+                    .url(deleteUrl)
+                    .get()
+                    .build();
+
+            httpClient.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                    Log.w(TAG, "Failed to revoke token (will proceed anyway): " + e.getMessage());
+                    runOnUiThread(() -> proceedWithNaverSignUp());
+                }
+
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                    String responseBody = response.body() != null ? response.body().string() : "";
+                    if (response.isSuccessful()) {
+                        Log.d(TAG, "Successfully revoked Naver token");
+                    } else {
+                        Log.w(TAG, "Token revocation returned status " + response.code());
+                    }
+                    runOnUiThread(() -> proceedWithNaverSignUp());
+                }
+            });
+        } else {
+            Log.d(TAG, "No existing Naver token found - proceeding with signup");
+            proceedWithNaverSignUp();
+        }
+    }
+
+    private void proceedWithNaverSignUp() {
+        // Clear cached session to force fresh login flow
+        Log.d(TAG, "Clearing Naver session to ensure fresh signup flow...");
+        NaverIdLoginSDK.INSTANCE.logout();
+
+        // Clear Naver SDK SharedPreferences
+        try {
+            SharedPreferences naverOAuth = getSharedPreferences("NaverOAuthSDK", Context.MODE_PRIVATE);
+            naverOAuth.edit().clear().apply();
+            Log.d(TAG, "Cleared Naver SDK SharedPreferences");
+        } catch (Exception e) {
+            Log.w(TAG, "Could not clear Naver SharedPreferences", e);
+        }
 
         OAuthLoginCallback callback = new OAuthLoginCallback() {
             @Override
@@ -501,20 +564,25 @@ public class SignUpActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(int httpStatus, @NonNull String message) {
-                Log.e(TAG, "Naver signup failed: " + message);
-                naverSignUpButton.setEnabled(true);
-                Toast.makeText(SignUpActivity.this, "Naver signup failed: " + message, Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Naver signup failed - HTTP " + httpStatus + ": " + message);
+                runOnUiThread(() -> {
+                    naverSignUpButton.setEnabled(true);
+                    Toast.makeText(SignUpActivity.this, "Naver signup failed: " + message, Toast.LENGTH_SHORT).show();
+                });
             }
 
             @Override
             public void onError(int errorCode, @NonNull String message) {
-                Log.e(TAG, "Naver signup error: " + message);
-                naverSignUpButton.setEnabled(true);
-                Toast.makeText(SignUpActivity.this, "Naver signup error: " + message, Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Naver signup error - Code " + errorCode + ": " + message);
+                runOnUiThread(() -> {
+                    naverSignUpButton.setEnabled(true);
+                    Toast.makeText(SignUpActivity.this, "Naver signup error: " + message, Toast.LENGTH_SHORT).show();
+                });
             }
         };
 
         try {
+            Log.d(TAG, "Starting OAuth authentication flow for signup...");
             NaverIdLoginSDK.INSTANCE.authenticate(this, callback);
         } catch (Exception e) {
             Log.e(TAG, "Naver signup exception", e);

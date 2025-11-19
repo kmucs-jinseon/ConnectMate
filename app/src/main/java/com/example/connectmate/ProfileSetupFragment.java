@@ -301,11 +301,14 @@ public class ProfileSetupFragment extends Fragment {
                             }
                             if (profileImage != null && !TextUtils.isEmpty(user.profileImageUrl)) {
                                 profileImageUrl = user.profileImageUrl;
-                                Glide.with(ProfileSetupFragment.this)
-                                    .load(user.profileImageUrl)
-                                    .circleCrop()
-                                    .placeholder(R.drawable.ic_person_placeholder)
-                                    .into(profileImage);
+                                // Check if fragment is attached before loading with Glide
+                                if (isAdded() && getActivity() != null) {
+                                    Glide.with(ProfileSetupFragment.this)
+                                        .load(user.profileImageUrl)
+                                        .circleCrop()
+                                        .placeholder(R.drawable.ic_person_placeholder)
+                                        .into(profileImage);
+                                }
                             }
                         } else {
                             loadFromPreferences();
