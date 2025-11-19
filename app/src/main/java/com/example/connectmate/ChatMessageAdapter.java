@@ -28,9 +28,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private final List<ChatMessage> messages;
     private final String currentUserId;
     private OnImageClickListener imageClickListener;
+    private OnDocumentClickListener documentClickListener;
 
     public interface OnImageClickListener {
         void onImageClick(String imageUrl);
+    }
+
+    public interface OnDocumentClickListener {
+        void onDocumentClick(String fileUrl, String fileName, String fileType);
     }
 
     public ChatMessageAdapter(List<ChatMessage> messages, String currentUserId) {
@@ -40,6 +45,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void setOnImageClickListener(OnImageClickListener listener) {
         this.imageClickListener = listener;
+    }
+
+    public void setOnDocumentClickListener(OnDocumentClickListener listener) {
+        this.documentClickListener = listener;
     }
 
     @Override
@@ -83,9 +92,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (holder instanceof SystemMessageViewHolder) {
             ((SystemMessageViewHolder) holder).bind(message);
         } else if (holder instanceof SentMessageViewHolder) {
-            ((SentMessageViewHolder) holder).bind(message, imageClickListener);
+            ((SentMessageViewHolder) holder).bind(message, imageClickListener, documentClickListener);
         } else if (holder instanceof ReceivedMessageViewHolder) {
-            ((ReceivedMessageViewHolder) holder).bind(message, imageClickListener);
+            ((ReceivedMessageViewHolder) holder).bind(message, imageClickListener, documentClickListener);
         }
     }
 
@@ -113,6 +122,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private final CircleImageView profileImage;
         private final TextView senderName;
         private final TextView messageText;
+        private final View imageFrame;
         private final ImageView messageImage;
         private final View documentContainer;
         private final TextView documentName;
@@ -123,13 +133,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             profileImage = itemView.findViewById(R.id.profile_image);
             senderName = itemView.findViewById(R.id.sender_name);
             messageText = itemView.findViewById(R.id.message_text);
+            imageFrame = itemView.findViewById(R.id.image_frame);
             messageImage = itemView.findViewById(R.id.message_image);
             documentContainer = itemView.findViewById(R.id.document_container);
             documentName = itemView.findViewById(R.id.document_name);
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
-        public void bind(ChatMessage message, OnImageClickListener listener) {
+        public void bind(ChatMessage message, OnImageClickListener imageListener, OnDocumentClickListener docListener) {
             senderName.setText(message.getSenderName());
 
             // Handle text message
@@ -142,7 +153,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
             // Handle image message
             if (message.getImageUrl() != null && !message.getImageUrl().isEmpty()) {
-                messageImage.setVisibility(View.VISIBLE);
+                imageFrame.setVisibility(View.VISIBLE);
                 Glide.with(itemView.getContext())
                         .load(message.getImageUrl())
                         .placeholder(R.drawable.circle_logo)
@@ -150,14 +161,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                         .into(messageImage);
 
                 // Add click listener for image
-                messageImage.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onImageClick(message.getImageUrl());
+                imageFrame.setOnClickListener(v -> {
+                    if (imageListener != null) {
+                        imageListener.onImageClick(message.getImageUrl());
                     }
                 });
             } else {
-                messageImage.setVisibility(View.GONE);
-                messageImage.setOnClickListener(null);
+                imageFrame.setVisibility(View.GONE);
+                imageFrame.setOnClickListener(null);
             }
 
             // Handle document message
@@ -165,13 +176,15 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 documentContainer.setVisibility(View.VISIBLE);
                 documentName.setText(message.getFileName());
 
-                // Add click listener to open/download document
+                // Add click listener to download document
                 documentContainer.setOnClickListener(v -> {
-                    // TODO: Implement document open/download functionality
-                    android.util.Log.d("ChatMessageAdapter", "Document clicked: " + message.getFileName());
+                    if (docListener != null) {
+                        docListener.onDocumentClick(message.getFileUrl(), message.getFileName(), message.getFileType());
+                    }
                 });
             } else {
                 documentContainer.setVisibility(View.GONE);
+                documentContainer.setOnClickListener(null);
             }
 
             // Format timestamp in Korean format
@@ -204,6 +217,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private final CircleImageView profileImage;
         private final TextView senderName;
         private final TextView messageText;
+        private final View imageFrame;
         private final ImageView messageImage;
         private final View documentContainer;
         private final TextView documentName;
@@ -214,13 +228,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             profileImage = itemView.findViewById(R.id.profile_image);
             senderName = itemView.findViewById(R.id.sender_name);
             messageText = itemView.findViewById(R.id.message_text);
+            imageFrame = itemView.findViewById(R.id.image_frame);
             messageImage = itemView.findViewById(R.id.message_image);
             documentContainer = itemView.findViewById(R.id.document_container);
             documentName = itemView.findViewById(R.id.document_name);
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
-        public void bind(ChatMessage message, OnImageClickListener listener) {
+        public void bind(ChatMessage message, OnImageClickListener imageListener, OnDocumentClickListener docListener) {
             senderName.setText(message.getSenderName());
 
             // Handle text message
@@ -233,7 +248,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
             // Handle image message
             if (message.getImageUrl() != null && !message.getImageUrl().isEmpty()) {
-                messageImage.setVisibility(View.VISIBLE);
+                imageFrame.setVisibility(View.VISIBLE);
                 Glide.with(itemView.getContext())
                         .load(message.getImageUrl())
                         .placeholder(R.drawable.circle_logo)
@@ -241,14 +256,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                         .into(messageImage);
 
                 // Add click listener for image
-                messageImage.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onImageClick(message.getImageUrl());
+                imageFrame.setOnClickListener(v -> {
+                    if (imageListener != null) {
+                        imageListener.onImageClick(message.getImageUrl());
                     }
                 });
             } else {
-                messageImage.setVisibility(View.GONE);
-                messageImage.setOnClickListener(null);
+                imageFrame.setVisibility(View.GONE);
+                imageFrame.setOnClickListener(null);
             }
 
             // Handle document message
@@ -256,13 +271,15 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 documentContainer.setVisibility(View.VISIBLE);
                 documentName.setText(message.getFileName());
 
-                // Add click listener to open/download document
+                // Add click listener to download document
                 documentContainer.setOnClickListener(v -> {
-                    // TODO: Implement document open/download functionality
-                    android.util.Log.d("ChatMessageAdapter", "Document clicked: " + message.getFileName());
+                    if (docListener != null) {
+                        docListener.onDocumentClick(message.getFileUrl(), message.getFileName(), message.getFileType());
+                    }
                 });
             } else {
                 documentContainer.setVisibility(View.GONE);
+                documentContainer.setOnClickListener(null);
             }
 
             // Format timestamp in Korean format

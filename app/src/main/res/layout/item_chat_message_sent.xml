@@ -33,17 +33,28 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_chat_bubble_sent"
-            android:padding="12dp"
             android:layout_marginBottom="2dp">
 
-            <ImageView
-                android:id="@+id/message_image"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:scaleType="centerCrop"
-                android:visibility="gone"
-                android:layout_marginBottom="8dp"
-                android:contentDescription="Message image" />
+            <FrameLayout
+                android:id="@+id/image_frame"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/message_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/bg_image_rounded_sent"
+                    android:contentDescription="Message image"
+                    android:clipToOutline="true" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </FrameLayout>
 
             <LinearLayout
                 android:id="@+id/document_container"
@@ -53,16 +64,16 @@
                 android:padding="8dp"
                 android:visibility="gone"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="8dp"
-                android:background="@android:color/white"
-                android:elevation="2dp">
+                android:background="@drawable/bg_document_container_sent"
+                android:elevation="2dp"
+                android:clipToOutline="true">
 
                 <ImageView
                     android:id="@+id/document_icon"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:src="@android:drawable/ic_menu_save"
-                    android:tint="@color/primary_blue"
+                    android:tint="@color/white"
                     android:contentDescription="Document icon" />
 
                 <TextView
@@ -72,7 +83,7 @@
                     android:layout_marginStart="8dp"
                     android:text="document.pdf"
                     android:textSize="14sp"
-                    android:textColor="@color/primary_blue"
+                    android:textColor="@color/white"
                     android:maxWidth="180dp"
                     android:ellipsize="middle"
                     android:singleLine="true" />
@@ -86,7 +97,10 @@
                 android:text="Message text goes here"
                 android:textSize="15sp"
                 android:textColor="@color/white"
-                android:lineSpacingExtra="2dp" />
+                android:lineSpacingExtra="2dp"
+                android:padding="8dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp" />
 
         </LinearLayout>
 

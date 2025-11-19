@@ -4,31 +4,31 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
-import android.database.Cursor; // 추가
-import android.net.Uri; // 추가
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore; // 추가
-import android.provider.OpenableColumns; // 추가
+import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.util.Log;
-import android.webkit.MimeTypeMap; // 추가
-import android.widget.ImageButton; // 추가
-import android.widget.ImageView; // 추가
+import android.webkit.MimeTypeMap;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent; // 추가
+import android.content.Intent;
 
-import androidx.activity.result.ActivityResultLauncher; // 추가
-import androidx.activity.result.contract.ActivityResultContracts; // 추가
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.cardview.widget.CardView; // 추가
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -40,15 +40,15 @@ import com.example.connectmate.utils.FirebaseActivityManager;
 import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.button.MaterialButton; // 추가
+import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.storage.FirebaseStorage; // 추가
-import com.google.firebase.storage.StorageReference; // 추가
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID; // 추가
+import java.util.UUID;
 
 public class ChatRoomActivity extends AppCompatActivity {
 
@@ -67,25 +67,28 @@ public class ChatRoomActivity extends AppCompatActivity {
     private LinearLayout emptyState;
     private TextInputEditText messageInput;
     private FloatingActionButton btnSendMessage;
-    private MaterialButton btnUploadPhoto; // 추가
-    private CardView imagePreviewContainer; // 추가
-    private ImageView imagePreview; // 추가
-    private View filePreview; // 추가: 문서 미리보기
-    private TextView fileNamePreview; // 추가: 파일명 미리보기
-    private ImageButton btnRemoveImage; // 추가
+    private MaterialButton btnUploadPhoto;
+    private CardView imagePreviewContainer;
+    private ImageView imagePreview;
+    private View filePreview; // Document preview
+    private TextView fileNamePreview; // Filename preview
+    private ImageButton btnRemoveImage;
 
     // Adapter
     private ChatMessageAdapter messageAdapter;
     private List<ChatMessage> messages;
 
-    // Image Upload
-    private Uri selectedImageUri; // 추가
-    private ActivityResultLauncher<Intent> pickImageLauncher; // 추가
+    // File Upload
+    private java.util.ArrayList<Uri> selectedFileUris; // Multiple file support
+    private ActivityResultLauncher<Intent> pickImageLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
+
+        // Initialize file list
+        selectedFileUris = new java.util.ArrayList<>();
 
         // Get chat room from intent
         chatRoom = (ChatRoom) getIntent().getSerializableExtra("chat_room");
@@ -97,7 +100,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         initializeViews();
         setupRecyclerView();
         setupMessageInput();
-        setupImagePicker(); // 추가
+        setupImagePicker();
 
         if (chatRoom == null) {
             String chatRoomId = getIntent().getStringExtra("chat_room_id");
@@ -176,7 +179,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 .setMessage("정말 채팅방을 나가시겠습니까?")
                 .setPositiveButton("나가기", (dialog, which) -> {
 
-                    // ✅ FirebaseActivityManager 통해 멤버 제거
+                    // Remove member through FirebaseActivityManager
                     FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
@@ -330,6 +333,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         // Set image click listener
         messageAdapter.setOnImageClickListener(imageUrl -> showImageViewerDialog(imageUrl));
 
+        // Set document click listener
+        messageAdapter.setOnDocumentClickListener((fileUrl, fileName, fileType) ->
+            downloadDocumentToDownloads(fileUrl, fileName, fileType));
+
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true); // Start from bottom
         messagesRecyclerView.setLayoutManager(layoutManager);
@@ -338,73 +345,100 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void setupMessageInput() {
         btnSendMessage.setOnClickListener(v -> sendMessage());
-        btnUploadPhoto.setOnClickListener(v -> showUploadOptionsDialog()); // 추가
+        btnUploadPhoto.setOnClickListener(v -> showUploadOptionsDialog());
     }
 
-    // 추가: 이미지 선택기를 설정하는 메서드
+    // Setup file picker (supports multiple file selection)
     private void setupImagePicker() {
         pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    selectedImageUri = result.getData().getData();
-                    Log.d(TAG, "Image selected - URI: " + selectedImageUri);
-                    Log.d(TAG, "URI scheme: " + (selectedImageUri != null ? selectedImageUri.getScheme() : "null"));
+                    selectedFileUris.clear();
 
-                    // Show image preview
+                    Intent data = result.getData();
+
+                    // Handle multiple files
+                    if (data.getClipData() != null) {
+                        android.content.ClipData clipData = data.getClipData();
+                        int count = clipData.getItemCount();
+                        for (int i = 0; i < count; i++) {
+                            Uri uri = clipData.getItemAt(i).getUri();
+                            selectedFileUris.add(uri);
+                        }
+                        Log.d(TAG, count + " files selected");
+                        Toast.makeText(this, count + "개 파일이 선택되었습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                    // Handle single file
+                    else if (data.getData() != null) {
+                        Uri uri = data.getData();
+                        selectedFileUris.add(uri);
+                        Log.d(TAG, "Single file selected - URI: " + uri);
+                        Toast.makeText(this, "파일이 선택되었습니다.", Toast.LENGTH_SHORT).show();
+                    }
+
+                    // Show file preview
                     showImagePreview();
-                    Toast.makeText(this, "사진이 선택되었습니다.", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Clear image selection and hide preview when picker is canceled
-                    Log.d(TAG, "Image selection cancelled or failed");
+                    // Clear file selection and hide preview when picker is canceled
+                    Log.d(TAG, "File selection cancelled or failed");
                     clearImageSelection();
                 }
             }
         );
     }
 
-    // 추가: 파일 미리보기 표시 (이미지 또는 문서)
+    // Show file preview (supports multiple files)
     private void showImagePreview() {
-        if (selectedImageUri != null) {
-            // Detect file type
-            String mimeType = getContentResolver().getType(selectedImageUri);
-            if (mimeType == null) {
-                mimeType = "application/octet-stream";
-            }
-
-            boolean isImage = mimeType.startsWith("image/");
-
-            if (isImage) {
-                // Show image preview
-                imagePreview.setImageURI(selectedImageUri);
-                imagePreview.setVisibility(View.VISIBLE);
-                filePreview.setVisibility(View.GONE);
-            } else {
-                // Show document preview with filename
-                String fileName = getFileName(selectedImageUri);
-                if (fileName == null) {
-                    fileName = "document_" + System.currentTimeMillis();
-                }
-                fileNamePreview.setText(fileName);
-                imagePreview.setVisibility(View.GONE);
-                filePreview.setVisibility(View.VISIBLE);
-            }
-
-            imagePreviewContainer.setVisibility(View.VISIBLE);
+        if (selectedFileUris.isEmpty()) {
+            imagePreviewContainer.setVisibility(View.GONE);
+            return;
         }
+
+        // Show first file as preview
+        Uri firstUri = selectedFileUris.get(0);
+        String mimeType = getContentResolver().getType(firstUri);
+        if (mimeType == null) {
+            mimeType = "application/octet-stream";
+        }
+
+        boolean isImage = mimeType.startsWith("image/") || mimeType.startsWith("video/");
+
+        if (isImage) {
+            // Show image/video preview
+            imagePreview.setImageURI(firstUri);
+            imagePreview.setVisibility(View.VISIBLE);
+            filePreview.setVisibility(View.GONE);
+        } else {
+            // Show document preview with filename
+            String fileName = getFileName(firstUri);
+            if (fileName == null) {
+                fileName = "document_" + System.currentTimeMillis();
+            }
+
+            // Show count if multiple files
+            if (selectedFileUris.size() > 1) {
+                fileName = fileName + " and " + (selectedFileUris.size() - 1) + " more";
+            }
+
+            fileNamePreview.setText(fileName);
+            imagePreview.setVisibility(View.GONE);
+            filePreview.setVisibility(View.VISIBLE);
+        }
+
+        imagePreviewContainer.setVisibility(View.VISIBLE);
     }
 
-    // 추가: 파일 선택 취소
+    // Clear file selection
     private void clearImageSelection() {
-        selectedImageUri = null;
+        selectedFileUris.clear();
         imagePreview.setImageURI(null);
         imagePreview.setVisibility(View.GONE);
         filePreview.setVisibility(View.GONE);
         imagePreviewContainer.setVisibility(View.GONE);
-        Toast.makeText(this, "파일 선택이 취소되었습니다.", Toast.LENGTH_SHORT).show();
     }
 
-    // 추가: 업로드 옵션 선택 다이얼로그
+    // Show upload options dialog
     private void showUploadOptionsDialog() {
         String[] options = {"갤러리", "파일"};
 
@@ -421,19 +455,26 @@ public class ChatRoomActivity extends AppCompatActivity {
             .show();
     }
 
-    // 추가: 갤러리를 여는 메서드 (포토 앨범을 열음)
+    // Open gallery picker (supports multiple selection of photos and videos)
     private void openGalleryPicker() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
-        pickImageLauncher.launch(intent);
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Enable multiple selection
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        // Create chooser to prioritize photo apps (Gallery, Google Photos)
+        Intent chooser = Intent.createChooser(intent, "사진/동영상 선택");
+        pickImageLauncher.launch(chooser);
     }
 
-    // 추가: 파일 탐색기를 여는 메서드 (파일 브라우저를 열음)
+    // Open file picker (supports multiple file selection)
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        // 파일 브라우저를 명시적으로 열도록 설정
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Enable multiple selection
+        // Set to open file browser explicitly
         intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
         pickImageLauncher.launch(intent);
     }
@@ -579,12 +620,12 @@ public class ChatRoomActivity extends AppCompatActivity {
             messageInput.getText().toString().trim() : "";
 
         Log.d(TAG, "Message text: '" + messageText + "'");
-        Log.d(TAG, "selectedImageUri: " + selectedImageUri);
+        Log.d(TAG, "selectedFileUris count: " + selectedFileUris.size());
         Log.d(TAG, "currentUserId: " + currentUserId);
 
-        if (messageText.isEmpty() && selectedImageUri == null) { // 이미지도 없고 텍스트도 없으면 리턴
-            Log.w(TAG, "Both message and image are empty");
-            Toast.makeText(this, "메시지를 입력하거나 사진을 선택해주세요.", Toast.LENGTH_SHORT).show();
+        if (messageText.isEmpty() && selectedFileUris.isEmpty()) {
+            Log.w(TAG, "Both message and files are empty");
+            Toast.makeText(this, "메시지를 입력하거나 파일을 선택해주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -604,9 +645,9 @@ public class ChatRoomActivity extends AppCompatActivity {
                 (latestProfileUrl.startsWith("data:image") ? "Base64 image" : latestProfileUrl));
         }
 
-        if (selectedImageUri != null) {
-            Log.d(TAG, "Image is selected, calling uploadImageAndSendMessage()");
-            uploadImageAndSendMessage(messageText); // 이미지 업로드 후 메시지 전송
+        if (!selectedFileUris.isEmpty()) {
+            Log.d(TAG, selectedFileUris.size() + " files selected, uploading...");
+            uploadMultipleFilesAndSendMessages(messageText); // Upload multiple files
         } else {
             Log.d(TAG, "No image selected, sending text message only");
             // Create message
@@ -656,45 +697,69 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
-    // 추가: 파일을 Base64로 인코딩하고 메시지를 전송하는 메서드
-    private void uploadImageAndSendMessage(String messageText) {
-        Log.d(TAG, "=== uploadImageAndSendMessage() called ===");
-        if (selectedImageUri == null) {
+    // Upload multiple files and send messages
+    private void uploadMultipleFilesAndSendMessages(String messageText) {
+        if (selectedFileUris.isEmpty()) {
             Toast.makeText(this, "선택된 파일이 없습니다.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "selectedImageUri is null in upload method");
             return;
         }
 
-        Log.d(TAG, "Starting file encoding...");
-        Log.d(TAG, "Selected URI: " + selectedImageUri);
-        Log.d(TAG, "Chat room ID: " + (chatRoom != null ? chatRoom.getId() : "NULL"));
+        Toast.makeText(this, selectedFileUris.size() + "개 파일을 업로드 중입니다...", Toast.LENGTH_SHORT).show();
 
-        // Detect file type
-        String mimeType = getContentResolver().getType(selectedImageUri);
+        // Upload each file sequentially
+        for (int i = 0; i < selectedFileUris.size(); i++) {
+            Uri fileUri = selectedFileUris.get(i);
+            // Only send text with the first file
+            String textToSend = (i == 0 && !messageText.isEmpty()) ? messageText : "";
+            uploadSingleFile(fileUri, textToSend);
+        }
+
+        // Clear input and selection after starting uploads
+        messageInput.setText("");
+        clearImageSelection();
+    }
+
+    // Upload a single file
+    private void uploadSingleFile(Uri fileUri, String messageText) {
+        String mimeType = getContentResolver().getType(fileUri);
         if (mimeType == null) {
             mimeType = "application/octet-stream";
         }
-        Log.d(TAG, "File MIME type: " + mimeType);
 
         boolean isImage = mimeType.startsWith("image/");
+        boolean isVideo = mimeType.startsWith("video/");
 
         if (isImage) {
-            Toast.makeText(this, "사진을 처리 중입니다...", Toast.LENGTH_SHORT).show();
-            processImageFile(messageText);
+            processImageFile(fileUri, messageText);
+        } else if (isVideo) {
+            Toast.makeText(this, "비디오는 현재 지원되지 않습니다.", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this, "파일을 처리 중입니다...", Toast.LENGTH_SHORT).show();
-            processDocumentFile(messageText, mimeType);
+            processDocumentFile(fileUri, messageText, mimeType);
         }
     }
 
-    // Process image files
-    private void processImageFile(String messageText) {
+    // Encode file to Base64 and send message (legacy method)
+    private void uploadImageAndSendMessage(String messageText) {
+        if (selectedFileUris.isEmpty()) {
+            Toast.makeText(this, "선택된 파일이 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        uploadMultipleFilesAndSendMessages(messageText);
+    }
+
+    // Process a single image file
+    private void processImageFile(Uri imageUri, String messageText) {
+        Log.d(TAG, "Starting image encoding...");
+        Log.d(TAG, "Selected URI: " + imageUri);
+        Log.d(TAG, "Chat room ID: " + (chatRoom != null ? chatRoom.getId() : "NULL"));
+
+        Toast.makeText(this, "사진을 처리 중입니다...", Toast.LENGTH_SHORT).show();
 
         // Convert image to Base64 in background thread
         new Thread(() -> {
             try {
                 // Read image from URI
-                java.io.InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
+                java.io.InputStream inputStream = getContentResolver().openInputStream(imageUri);
                 if (inputStream == null) {
                     runOnUiThread(() -> {
                         Toast.makeText(this, "이미지를 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
@@ -779,17 +844,17 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     // Process document files (PDF, docs, txt, etc.)
-    private void processDocumentFile(String messageText, String mimeType) {
+    private void processDocumentFile(Uri fileUri, String messageText, String mimeType) {
         new Thread(() -> {
             try {
                 // Get filename
-                String fileName = getFileName(selectedImageUri);
+                String fileName = getFileName(fileUri);
                 if (fileName == null) {
                     fileName = "document_" + System.currentTimeMillis();
                 }
 
                 // Read file data
-                java.io.InputStream inputStream = getContentResolver().openInputStream(selectedImageUri);
+                java.io.InputStream inputStream = getContentResolver().openInputStream(fileUri);
                 if (inputStream == null) {
                     runOnUiThread(() -> {
                         Toast.makeText(this, "파일을 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
@@ -956,6 +1021,52 @@ public class ChatRoomActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Log.e(TAG, "Failed to download image", e);
                 runOnUiThread(() -> Toast.makeText(this, "이미지 다운로드 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    // Download document to Downloads folder
+    private void downloadDocumentToDownloads(String fileUrl, String fileName, String fileType) {
+        if (fileUrl == null || fileName == null) {
+            Toast.makeText(this, "파일 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "파일을 다운로드 중입니다...", Toast.LENGTH_SHORT).show();
+
+        new Thread(() -> {
+            try {
+                // Decode Base64 file
+                byte[] fileBytes = android.util.Base64.decode(fileUrl, android.util.Base64.DEFAULT);
+
+                if (fileBytes == null || fileBytes.length == 0) {
+                    runOnUiThread(() -> Toast.makeText(this, "파일 다운로드 실패", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                // Save to Downloads folder
+                android.content.ContentValues values = new android.content.ContentValues();
+                values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName);
+                if (fileType != null && !fileType.isEmpty()) {
+                    values.put(android.provider.MediaStore.Downloads.MIME_TYPE, fileType);
+                }
+                values.put(android.provider.MediaStore.Downloads.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS);
+
+                android.net.Uri uri = getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+
+                if (uri != null) {
+                    try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
+                        outputStream.write(fileBytes);
+                        outputStream.flush();
+                        runOnUiThread(() -> Toast.makeText(this, "다운로드 폴더에 저장되었습니다: " + fileName, Toast.LENGTH_LONG).show());
+                    }
+                } else {
+                    runOnUiThread(() -> Toast.makeText(this, "파일 저장 실패", Toast.LENGTH_SHORT).show());
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to download document", e);
+                runOnUiThread(() -> Toast.makeText(this, "파일 다운로드 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
             }
         }).start();
     }
