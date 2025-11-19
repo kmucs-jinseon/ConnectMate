@@ -39,7 +39,7 @@ public class User {
         this.bio = "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨";
         this.mbti = "ENFP";
         this.profileCompleted = false;
-        this.rating = 4.8;
+        this.rating = 0.0;
         this.activitiesCount = 0;
         this.connectionsCount = 0;
         this.badgesCount = 0;

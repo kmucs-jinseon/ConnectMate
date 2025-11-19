@@ -229,7 +229,7 @@ public class ProfileFragment extends Fragment {
         setText(profileBio, or(u.bio, "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨"));
         if (mbtiChip != null) mbtiChip.setText(or(u.mbti, "ENFP"));
 
-        if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 4.8)));
+        if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 0.0)));
         if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
         if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
 
@@ -339,7 +339,7 @@ public class ProfileFragment extends Fragment {
         }
 
         if (ratingText != null) {
-            ratingText.setText("4.8");
+            ratingText.setText("0.0");
         }
 
         // Load profile image using Glide
