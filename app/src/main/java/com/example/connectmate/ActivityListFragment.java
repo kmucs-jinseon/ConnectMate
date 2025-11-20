@@ -1,7 +1,11 @@
 package com.example.connectmate;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -13,17 +17,26 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.Activity;
 import com.example.connectmate.utils.FirebaseActivityManager;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class ActivityListFragment extends Fragment {
@@ -50,6 +63,12 @@ public class ActivityListFragment extends Fragment {
     private List<Activity> filteredActivities;
     private boolean isUpdatingChipSelection = false;
 
+    // Location
+    private FusedLocationProviderClient fusedLocationClient;
+    private Location currentUserLocation;
+    private static final double DEFAULT_LAT = 37.5665; // Seoul
+    private static final double DEFAULT_LNG = 126.9780;
+
     public ActivityListFragment() {
         super(R.layout.fragment_activity_list);
     }
@@ -68,8 +87,122 @@ public class ActivityListFragment extends Fragment {
         initializeViews(view);
         setupRecyclerView();
         setupClickListeners();
+        initializeLocation();
         loadActivitiesFromFirebase();
         updateUI();
+    }
+
+    private void initializeLocation() {
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        getCurrentUserLocation();
+    }
+
+    private void getCurrentUserLocation() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Use default location if no permission
+            currentUserLocation = new Location("default");
+            currentUserLocation.setLatitude(DEFAULT_LAT);
+            currentUserLocation.setLongitude(DEFAULT_LNG);
+            Log.d(TAG, "No location permission, using default location");
+            return;
+        }
+
+        // Get last known location first
+        fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+            if (location != null) {
+                currentUserLocation = location;
+                Log.d(TAG, "Got user location: " + location.getLatitude() + ", " + location.getLongitude());
+                // Re-sort activities with new location
+                applyFiltersAndSearch();
+            } else {
+                // Request fresh location
+                requestFreshLocation();
+            }
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Failed to get location", e);
+            // Use default location
+            currentUserLocation = new Location("default");
+            currentUserLocation.setLatitude(DEFAULT_LAT);
+            currentUserLocation.setLongitude(DEFAULT_LNG);
+        });
+    }
+
+    private void requestFreshLocation() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
+                .setWaitForAccurateLocation(false)
+                .setMinUpdateIntervalMillis(2000)
+                .setMaxUpdates(1)
+                .build();
+
+        LocationCallback locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(@NonNull LocationResult locationResult) {
+                Location location = locationResult.getLastLocation();
+                if (location != null) {
+                    currentUserLocation = location;
+                    Log.d(TAG, "Got fresh location: " + location.getLatitude() + ", " + location.getLongitude());
+                    // Re-sort activities with new location
+                    applyFiltersAndSearch();
+                }
+                fusedLocationClient.removeLocationUpdates(this);
+            }
+        };
+
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+    }
+
+    /**
+     * Calculate distance between two points using Haversine formula
+     * @return distance in meters
+     */
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000; // Earth's radius in meters
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    /**
+     * Get distance from user's current location to activity
+     */
+    private double getDistanceToActivity(Activity activity) {
+        double userLat = currentUserLocation != null ? currentUserLocation.getLatitude() : DEFAULT_LAT;
+        double userLng = currentUserLocation != null ? currentUserLocation.getLongitude() : DEFAULT_LNG;
+        return calculateDistance(userLat, userLng, activity.getLatitude(), activity.getLongitude());
+    }
+
+    /**
+     * Parse activity date string to comparable timestamp
+     */
+    private long parseDateToTimestamp(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) {
+            return Long.MAX_VALUE; // Put activities without dates at the end
+        }
+        try {
+            // Expected format: "2024년 12월 25일" or similar
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy년 MM월 dd일", java.util.Locale.KOREAN);
+            java.util.Date date = sdf.parse(dateStr);
+            return date != null ? date.getTime() : Long.MAX_VALUE;
+        } catch (Exception e) {
+            // Try alternative format
+            try {
+                java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+                java.util.Date date = sdf2.parse(dateStr);
+                return date != null ? date.getTime() : Long.MAX_VALUE;
+            } catch (Exception e2) {
+                return Long.MAX_VALUE;
+            }
+        }
     }
 
     private void initializeViews(View view) {
@@ -343,6 +476,23 @@ public class ActivityListFragment extends Fragment {
                 filteredActivities.add(activity);
             }
         }
+
+        // Sort by distance (closest first), then by date (soonest first) for same distance
+        Collections.sort(filteredActivities, (a1, a2) -> {
+            double dist1 = getDistanceToActivity(a1);
+            double dist2 = getDistanceToActivity(a2);
+
+            // Compare distances (within 100m considered same location)
+            if (Math.abs(dist1 - dist2) < 100) {
+                // Same location - sort by date (soonest first)
+                long date1 = parseDateToTimestamp(a1.getDate());
+                long date2 = parseDateToTimestamp(a2.getDate());
+                return Long.compare(date1, date2);
+            }
+
+            // Different locations - sort by distance (closest first)
+            return Double.compare(dist1, dist2);
+        });
 
         activityAdapter.notifyDataSetChanged();
         updateUI();

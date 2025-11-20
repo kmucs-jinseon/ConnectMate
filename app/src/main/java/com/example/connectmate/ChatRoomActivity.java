@@ -267,42 +267,73 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void getCurrentUserInfo() {
-        // Try Firebase Auth
+        // Get user ID first
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
             currentUserId = firebaseUser.getUid();
-            currentUserName = (firebaseUser.getDisplayName() != null) ?
-                firebaseUser.getDisplayName() : firebaseUser.getEmail();
-            currentUserProfileUrl = (firebaseUser.getPhotoUrl() != null) ?
-                firebaseUser.getPhotoUrl().toString() : null;
-            Log.d(TAG, "Firebase Auth - User: " + currentUserName + ", Profile URL: " + currentUserProfileUrl);
         } else {
             // Try SharedPreferences for social login
             SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
             currentUserId = prefs.getString("user_id", "");
-            currentUserName = prefs.getString("user_name", "Guest");
-            currentUserProfileUrl = prefs.getString("profile_image_url", null);
-            Log.d(TAG, "SharedPreferences - User: " + currentUserName + ", Profile URL: " + currentUserProfileUrl);
         }
 
-        // If no profile URL from auth, try to fetch from SharedPreferences as fallback
-        if (currentUserProfileUrl == null || currentUserProfileUrl.isEmpty()) {
-            SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-            currentUserProfileUrl = prefs.getString("profile_image_url", null);
-            Log.d(TAG, "Fallback SharedPreferences - Profile URL: " + currentUserProfileUrl);
+        // Set temporary values while loading from database
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        currentUserName = prefs.getString("user_name", "Guest");
+        currentUserProfileUrl = prefs.getString("profile_image_url", null);
 
-            // Also try to load from Firebase user profile
-            if ((currentUserProfileUrl == null || currentUserProfileUrl.isEmpty()) && !currentUserId.isEmpty()) {
-                Log.d(TAG, "Attempting to load profile URL from Firebase for user: " + currentUserId);
-                loadProfileUrlFromFirebase(currentUserId);
-            }
+        // Fetch real displayName and profileImageUrl from Firebase Realtime Database
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            loadUserInfoFromFirebase(currentUserId);
         }
 
-        Log.d(TAG, "=== Final getUserInfo result ===");
+        Log.d(TAG, "=== Initial getUserInfo result ===");
         Log.d(TAG, "User ID: " + currentUserId);
         Log.d(TAG, "User Name: " + currentUserName);
         Log.d(TAG, "Profile URL: " + currentUserProfileUrl);
-        Log.d(TAG, "Profile URL is " + (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty() ? "VALID" : "NULL/EMPTY"));
+    }
+
+    /**
+     * Load real user info (displayName and profileImageUrl) from Firebase Realtime Database
+     */
+    private void loadUserInfoFromFirebase(String userId) {
+        Log.d(TAG, "Loading user info from Firebase for user: " + userId);
+        com.google.firebase.database.FirebaseDatabase.getInstance()
+            .getReference("users")
+            .child(userId)
+            .addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                @Override
+                public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        // Get displayName from database
+                        String displayName = snapshot.child("displayName").getValue(String.class);
+                        if (displayName != null && !displayName.isEmpty()) {
+                            currentUserName = displayName;
+                            Log.d(TAG, "Loaded displayName from Firebase: " + currentUserName);
+                        }
+
+                        // Get profileImageUrl from database
+                        String profileUrl = snapshot.child("profileImageUrl").getValue(String.class);
+                        if (profileUrl != null && !profileUrl.isEmpty()) {
+                            currentUserProfileUrl = profileUrl;
+                            Log.d(TAG, "Loaded profileImageUrl from Firebase: " +
+                                (profileUrl.length() > 50 ? profileUrl.substring(0, 50) + "..." : profileUrl));
+                        }
+
+                        Log.d(TAG, "=== Updated user info from Firebase ===");
+                        Log.d(TAG, "User ID: " + currentUserId);
+                        Log.d(TAG, "User Name: " + currentUserName);
+                        Log.d(TAG, "Profile URL is " + (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty() ? "VALID" : "NULL/EMPTY"));
+                    } else {
+                        Log.w(TAG, "User not found in Firebase: " + userId);
+                    }
+                }
+
+                @Override
+                public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                    Log.e(TAG, "Failed to load user info from Firebase", error.toException());
+                }
+            });
     }
 
     /**
