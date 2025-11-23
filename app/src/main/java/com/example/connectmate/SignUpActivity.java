@@ -203,12 +203,35 @@ public class SignUpActivity extends AppCompatActivity {
                         Log.d(TAG, "[SIGNUP] calling saveUserToRealtimeDatabase uid=" + uid);
                         saveUserToRealtimeDatabase(uid, mail, name, photo, "email");
 
-                        // Save login state with user ID
-                        saveLoginState("email", uid);
+                        // Send email verification
+                        Log.d(TAG, "Attempting to send verification email to: " + mail);
+                        fu.sendEmailVerification()
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "Verification email sent successfully to: " + mail);
 
-                        navigateToProfileSetup(uid, mail, name, "email");
+                                    // Sign out user until they verify email
+                                    mAuth.signOut();
+
+                                    // Show verification dialog
+                                    showEmailVerificationDialog(mail);
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Failed to send verification email: " + e.getMessage(), e);
+                                    String errorMsg = "인증 이메일 발송에 실패했습니다.";
+                                    if (e.getMessage() != null) {
+                                        if (e.getMessage().contains("too many requests") || e.getMessage().contains("TOO_MANY_REQUESTS")) {
+                                            errorMsg = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+                                        } else if (e.getMessage().contains("network")) {
+                                            errorMsg = "네트워크 오류입니다. 연결을 확인해 주세요.";
+                                        }
+                                        Log.e(TAG, "Error details: " + e.getMessage());
+                                    }
+                                    Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
+                                    signUpButton.setEnabled(true);
+                                });
                     } else {
-                        navigateToMain();
+                        signUpButton.setEnabled(true);
+                        Toast.makeText(this, "회원가입에 실패했습니다.", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -227,6 +250,21 @@ public class SignUpActivity extends AppCompatActivity {
                     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
                     signUpButton.setEnabled(true);
                 });
+    }
+
+    private void showEmailVerificationDialog(String email) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("이메일 인증 필요")
+                .setMessage("인증 이메일을 " + email + "로 발송했습니다.\n\n이메일을 확인하고 인증 링크를 클릭한 후 로그인해 주세요.")
+                .setPositiveButton("확인", (dialog, which) -> {
+                    // Navigate to login screen
+                    Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private boolean validateInputs(String email, String password, String confirmPassword) {

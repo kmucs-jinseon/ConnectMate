@@ -237,6 +237,14 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnSuccessListener(result -> {
                     FirebaseUser fu = result.getUser();
                     if(fu != null) {
+                        // Check if email is verified
+                        if (!fu.isEmailVerified()) {
+                            Log.d(TAG, "Email not verified for user: " + fu.getEmail());
+                            loginButton.setEnabled(true);
+                            showEmailNotVerifiedDialog(fu);
+                            return;
+                        }
+
                         String uid = fu.getUid();
                         String mail = fu.getEmail();
                         String name = fu.getDisplayName();
@@ -248,7 +256,6 @@ public class LoginActivity extends AppCompatActivity {
                         // Save login state with user ID
                         saveLoginState("email", uid);
                     }
-                    navigateToMain();
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "signInWithEmail failed", e);
@@ -267,6 +274,33 @@ public class LoginActivity extends AppCompatActivity {
                     }
                     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void showEmailNotVerifiedDialog(FirebaseUser user) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("이메일 인증 필요")
+                .setMessage("이메일 인증이 완료되지 않았습니다.\n\n" + user.getEmail() + "로 발송된 인증 이메일을 확인해 주세요.\n\n인증 이메일을 다시 받으시겠습니까?")
+                .setPositiveButton("재발송", (dialog, which) -> {
+                    // Resend verification email
+                    user.sendEmailVerification()
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(this, "인증 이메일을 다시 발송했습니다.", Toast.LENGTH_SHORT).show();
+                                // Sign out user
+                                mAuth.signOut();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to resend verification email", e);
+                                Toast.makeText(this, "인증 이메일 발송에 실패했습니다.", Toast.LENGTH_SHORT).show();
+                                // Sign out user
+                                mAuth.signOut();
+                            });
+                })
+                .setNegativeButton("취소", (dialog, which) -> {
+                    // Sign out user
+                    mAuth.signOut();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private boolean validateInputs(String email, String password) {

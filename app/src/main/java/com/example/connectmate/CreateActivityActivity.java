@@ -5,6 +5,8 @@ import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.text.Editable;
@@ -392,40 +394,29 @@ public class CreateActivityActivity extends AppCompatActivity {
             int categoryColor = getResources().getColor(colorRes, null);
 
             // Create ColorStateList for checked/unchecked states
-            // When checked: use original vibrant color
-            // When unchecked: use semi-transparent version
-            int[][] states = new int[][] {
-                new int[] { android.R.attr.state_checked },  // checked state
-                new int[] { }                                 // default (unchecked) state
+            int[][] states = new int[][]{
+                    new int[]{android.R.attr.state_checked},  // checked state
+                    new int[]{}                                 // default (unchecked) state
             };
 
-            int uncheckedColor = android.graphics.Color.argb(
-                120,  // 47% opacity for unchecked state
-                android.graphics.Color.red(categoryColor),
-                android.graphics.Color.green(categoryColor),
-                android.graphics.Color.blue(categoryColor)
-            );
+            float[] hsv = new float[3];
+            android.graphics.Color.colorToHSV(categoryColor, hsv);
+            hsv[1] *= 0.3; // Reduce saturation for muted effect
+            int mutedColor = android.graphics.Color.HSVToColor(hsv);
 
-            int[] colors = new int[] {
-                categoryColor,      // checked: full vibrant color
-                uncheckedColor      // unchecked: semi-transparent
+            int[] colors = new int[]{
+                    categoryColor,      // checked: full vibrant color
+                    mutedColor      // unchecked: semi-transparent
             };
 
             android.content.res.ColorStateList chipColorStateList =
-                new android.content.res.ColorStateList(states, colors);
+                    new android.content.res.ColorStateList(states, colors);
 
             chip.setChipBackgroundColor(chipColorStateList);
+            chip.setChipStrokeColorResource(R.color.category_chip_stroke);
+            chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density); // 2dp
+            chip.setTextColor(getResources().getColorStateList(R.color.category_chip_text, null));
 
-            // Add scale animation on selection
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    // Scale up when selected
-                    buttonView.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
-                } else {
-                    // Scale back when deselected
-                    buttonView.animate().scaleX(1.0f).scaleY(1.0f).setDuration(150).start();
-                }
-            });
 
             Log.d(TAG, "Created chip: " + category);
 
