@@ -7,7 +7,7 @@
       <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
   </head>
   <body>
-      <div id="message">Verifying email...</div>
+      <div id="message">이메일을 인증 중...</div>
       <script>
           const params = new URLSearchParams(window.location.search);
           const mode = params.get('mode');
@@ -15,7 +15,7 @@
 
           if (mode === 'verifyEmail' && oobCode) {
               firebase.initializeApp({
-                  apiKey: "YOUR_API_KEY",
+                  apiKey: "AIzaSyCsbHWm9HfZccYxGXhHfdWrYJ0W-faAoYE",
                   authDomain: "connect-mate-25.firebaseapp.com"
               });
 
