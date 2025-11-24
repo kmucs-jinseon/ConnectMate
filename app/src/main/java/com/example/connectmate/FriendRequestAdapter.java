@@ -45,7 +45,11 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         User user = userList.get(position);
         holder.userName.setText(user.getDisplayName());
         Glide.with(context).load(user.getProfileImageUrl()).into(holder.userProfileImage);
-        holder.addFriendButton.setText("Accept");
+
+        holder.chatButton.setVisibility(View.GONE);
+        holder.removeFriendButton.setVisibility(View.GONE);
+        holder.addFriendButton.setVisibility(View.VISIBLE);
+        holder.addFriendButton.setText(R.string.accept);
         holder.addFriendButton.setOnClickListener(v -> {
             acceptFriendRequest(user);
         });
@@ -77,12 +81,16 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         ImageView userProfileImage;
         TextView userName;
         Button addFriendButton;
+        Button chatButton;
+        Button removeFriendButton;
 
         public FriendRequestViewHolder(@NonNull View itemView) {
             super(itemView);
             userProfileImage = itemView.findViewById(R.id.user_profile_image);
             userName = itemView.findViewById(R.id.user_name);
             addFriendButton = itemView.findViewById(R.id.add_friend_button);
+            chatButton = itemView.findViewById(R.id.chat_button);
+            removeFriendButton = itemView.findViewById(R.id.remove_friend_button);
         }
     }
 }

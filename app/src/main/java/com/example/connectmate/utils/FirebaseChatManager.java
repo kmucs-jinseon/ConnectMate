@@ -211,7 +211,7 @@ public class FirebaseChatManager {
                     List<ChatRoom> chatRooms = new ArrayList<>();
                     for (DataSnapshot child : snapshot.getChildren()) {
                         ChatRoom chatRoom = child.getValue(ChatRoom.class);
-                        if (chatRoom != null && chatRoom.getMembers().containsKey(userId)) {
+                        if (chatRoom != null && chatRoom.getMembers() != null && chatRoom.getMembers().containsKey(userId)) {
                             chatRooms.add(0, chatRoom); // Add to beginning (newest first)
                         }
                     }

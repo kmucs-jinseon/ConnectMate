@@ -5,43 +5,56 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="#f5f5f5"
     tools:context=".FriendsActivity">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        app:title="My Friends"
+        android:background="@color/primary_blue"
+        app:navigationIcon="@drawable/ic_arrow_left"
+        app:navigationIconTint="@color/white"
+        app:title="@string/my_friends"
         app:titleTextColor="@android:color/white" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="Friends"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:text="@string/friends"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/friends_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/item_user" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Friend Requests"
-        android:textAppearance="@style/TextAppearance.AppCompat.Large"
-        android:padding="16dp"/>
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:text="@string/friend_requests"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/friend_requests_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/item_user" />
 

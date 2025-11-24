@@ -82,6 +82,14 @@
     <string name="share_app">앱 공유</string>
     <string name="about">소개</string>
     <string name="logout">로그아웃</string>
+    
+    <!-- Friends -->
+    <string name="my_friends">내 친구</string>
+    <string name="friends">친구</string>
+    <string name="friend_requests">친구 요청</string>
+    <string name="remove">삭제</string>
+    <string name="accept">수락</string>
+
 
     <!-- Visibility Options -->
     <string-array name="visibility_options">
@@ -113,7 +121,7 @@
 
     <!-- Firebase Google Sign-In -->
     <!-- TODO: Replace with actual client_id from google-services.json after enabling Google Sign-In in Firebase Console -->
-    <string name="default_web_client_id">697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">697385814271-n1dd8n72이제 `item_user.xml` 파일의 한글화 작업이 완료되었습니다. `strings.xml`에 "삭제", "수락" 문자열을 추가하고, 레이아웃 파일에서 해당 문자열 리소스를 참조하도록 수정했습니다.9mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
     <string name="your_name">이름</string>
     <string name="nick_name">닉네임</string>
     <string name="self_intro">자기소개가 여기에 들어갑니다.</string>

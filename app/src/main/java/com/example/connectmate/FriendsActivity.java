@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.FirebaseChatManager;
@@ -37,6 +38,11 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_friends);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
         friendsRecyclerView = findViewById(R.id.friends_recycler_view);
         friendRequestsRecyclerView = findViewById(R.id.friend_requests_recycler_view);

@@ -60,7 +60,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
             addFriendButton.setOnClickListener(v -> {
                 sendFriendRequest(participantId);
                 addFriendButton.setVisibility(View.GONE);
-                Toast.makeText(context, "Friend request sent.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "친구 추가를 요청했습니다", Toast.LENGTH_SHORT).show();
             });
         }
 
