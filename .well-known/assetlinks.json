@@ -1,1 +1,13 @@
-
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.connectmate",
+      "sha256_cert_fingerprints": [
+        "DB:E8:C3:A0:BC:E3:5F:7B:03:10:F3:07:0A:DC:2A:DF:D9:5A:61:FA:51:7D:93:86:B4:72:D7:C6:77:34:8D:BD",
+        "66:62:20:B1:42:63:EB:CA:29:1A:32:B8:F7:E0:71:23:91:8D:A7:B3:36:3B:E0:93:D1:A6:32:52:48:35:6C:CF"
+      ]
+    }
+  }
+]
