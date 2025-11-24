@@ -1,0 +1,34 @@
+ <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <title>Email Verification</title>
+      <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+  </head>
+  <body>
+      <div id="message">Verifying email...</div>
+      <script>
+          const params = new URLSearchParams(window.location.search);
+          const mode = params.get('mode');
+          const oobCode = params.get('oobCode');
+
+          if (mode === 'verifyEmail' && oobCode) {
+              firebase.initializeApp({
+                  apiKey: "YOUR_API_KEY",
+                  authDomain: "connect-mate-25.firebaseapp.com"
+              });
+
+              firebase.auth().applyActionCode(oobCode)
+                  .then(() => {
+                      document.getElementById('message').innerHTML =
+                          '<h2>이메일 인증 완료!</h2><p>앱으로 돌아가서 로그인해 주세요.</p>';
+                  })
+                  .catch((error) => {
+                      document.getElementById('message').innerHTML =
+                          '<h2>인증 실패</h2><p>' + error.message + '</p>';
+                  });
+          }
+      </script>
+  </body>
+  </html>
