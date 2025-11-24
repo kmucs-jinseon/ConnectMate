@@ -42,7 +42,7 @@
           const mode = params.get('mode');
           const oobCode = params.get('oobCode');
 
-          if (mode === 'verifyEmail' && oobCode) {
+           if ((mode === 'verifyEmail' || mode === 'signIn') && oobCode) {
               firebase.initializeApp({
                   apiKey: "AIzaSyCsbHWm9HfZccYxGXhHfdWrYJ0W-faAoYE",
                   authDomain: "connect-mate-25.firebaseapp.com"
