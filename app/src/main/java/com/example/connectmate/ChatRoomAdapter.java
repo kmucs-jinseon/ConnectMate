@@ -11,11 +11,13 @@ import com.bumptech.glide.Glide;
 import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.CategoryMapper;
 import com.google.android.material.chip.Chip;
+import com.google.firebase.auth.FirebaseAuth;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRoomViewHolder> {
 
@@ -71,7 +73,17 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         }
 
         public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener) {
-            chatName.setText(chatRoom.getName());
+            String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            if ("private".equals(chatRoom.getCategory()) && chatRoom.getMembers() != null) {
+                for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
+                    if (!entry.getKey().equals(currentUserId)) {
+                        chatName.setText(entry.getValue().getName());
+                        break;
+                    }
+                }
+            } else {
+                chatName.setText(chatRoom.getName());
+            }
 
             // Category chip is hidden but data is kept for filtering
             // No need to set visibility or styling as it's hidden in XML

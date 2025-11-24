@@ -139,7 +139,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
             public void onSuccess(ChatRoom chatRoom) {
                 if (chatRoom == null) {
                     // Create new chat room
-                    String chatRoomName = user.getDisplayName() + " and " + FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
+                    String chatRoomName = user.getDisplayName();
                     ChatRoom newChatRoom = new ChatRoom(chatRoomName, null);
                     newChatRoom.setId(chatRoomId);
                     newChatRoom.setCategory("private");
@@ -152,7 +152,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                     FirebaseChatManager.getInstance().saveChatRoom(newChatRoom, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
                         @Override
                         public void onSuccess(ChatRoom result) {
-                            openChatRoom(result);
+                            openChatRoom(result, chatRoomName);
                         }
 
                         @Override
@@ -161,7 +161,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                         }
                     });
                 } else {
-                    openChatRoom(chatRoom);
+                    openChatRoom(chatRoom, user.getDisplayName());
                 }
             }
 
@@ -172,9 +172,10 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
         });
     }
 
-    private void openChatRoom(ChatRoom chatRoom) {
+    private void openChatRoom(ChatRoom chatRoom, String chatRoomName) {
         Intent intent = new Intent(this, ChatRoomActivity.class);
         intent.putExtra("chat_room", chatRoom);
+        intent.putExtra("chat_room_name", chatRoomName);
         startActivity(intent);
     }
 
@@ -189,9 +190,9 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
     @Override
     public void onRemoveFriendClick(User user) {
         new AlertDialog.Builder(this)
-                .setTitle("Remove Friend")
-                .setMessage("Are you sure you want to remove " + user.getDisplayName() + " as your friend? This will also delete your 1-on-1 chat room.")
-                .setPositiveButton("Remove", (dialog, which) -> {
+                .setTitle(R.string.remove_friend_title)
+                .setMessage(getString(R.string.remove_friend_message, user.getDisplayName()))
+                .setPositiveButton(R.string.remove, (dialog, which) -> {
                     // Remove friend from both users' friend lists
                     usersRef.child(currentUserId).child("friends").child(user.getUserId()).removeValue();
                     usersRef.child(user.getUserId()).child("friends").child(currentUserId).removeValue();
@@ -214,12 +215,13 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                     friendList.remove(user);
                     userAdapter.notifyDataSetChanged();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
     @Override
     public void onFriendRequestAccepted(User user) {
-        // The ValueEventListeners in loadFriends() and loadFriendRequests() will handle the UI updates.
+        friendRequestList.remove(user);
+        friendRequestAdapter.notifyDataSetChanged();
     }
 }

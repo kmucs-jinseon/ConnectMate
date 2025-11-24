@@ -92,6 +92,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         // Get chat room from intent
         chatRoom = (ChatRoom) getIntent().getSerializableExtra("chat_room");
+        String chatRoomName = getIntent().getStringExtra("chat_room_name");
 
         // Get current user info
         getCurrentUserInfo();
@@ -112,6 +113,9 @@ public class ChatRoomActivity extends AppCompatActivity {
                 return;
             }
         } else {
+            if (chatRoomName != null) {
+                chatRoom.setName(chatRoomName);
+            }
             setupToolbar();
             loadMessagesFromFirebase();
             listenForChatRoomUpdates();
@@ -178,7 +182,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             String finalFriendId = friendId;
             new AlertDialog.Builder(this)
                 .setTitle("친구 끊기")
-                .setMessage("정말 친구를 끊으시겠습니까? 이 채팅방은 삭제됩니다.")
+                .setMessage("정말 친구를 끊으시겠습니까?\n이 채팅방은 삭제됩니다.")
                 .setPositiveButton("끊기", (dialog, which) -> {
                     DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
                     usersRef.child(currentUserId).child("friends").child(finalFriendId).removeValue();
@@ -420,10 +424,17 @@ public class ChatRoomActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
-        // Set custom toolbar title and participant count
-        if (toolbarTitle != null) {
+        if ("private".equals(chatRoom.getCategory()) && chatRoom.getMembers() != null) {
+            for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
+                if (!entry.getKey().equals(currentUserId)) {
+                    toolbarTitle.setText(entry.getValue().getName());
+                    break;
+                }
+            }
+        } else if (toolbarTitle != null) {
             toolbarTitle.setText(chatRoom.getName());
         }
+
         if (toolbarParticipantCount != null) {
             int memberCount = chatRoom.getMemberCount();
             toolbarParticipantCount.setText(memberCount + "명 참여중");
