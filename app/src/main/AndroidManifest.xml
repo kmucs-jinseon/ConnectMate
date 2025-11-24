@@ -62,8 +62,38 @@
 
         <activity
             android:name=".LoginActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTop">
+            <!-- Email Link Authentication Handler -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app"
+                    android:pathPrefix="/__/auth/action" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app"
+                    android:path="/finishSignUp" />
+            </intent-filter>
+            <!-- Fallback for Firebase default domain -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connect-mate-25.firebaseapp.com"
+                    android:pathPrefix="/__/auth/action" />
+                <data
+                    android:scheme="https"
+                    android:host="connect-mate-25.firebaseapp.com"
+                    android:path="/finishSignUp" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".SignUpActivity"
@@ -80,13 +110,34 @@
             android:name=".MainActivity"
             android:exported="true"
             android:hardwareAccelerated="true"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop">
+            <!-- App Links for connectmate.app -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".MapActivity"
             android:exported="true"
             android:hardwareAccelerated="true"
             android:label="Map">
+            <!-- App Links for map -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app"
+                    android:path="/map" />
+            </intent-filter>
+
             <!-- Intent filter for direct access and deep linking -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -114,16 +165,38 @@
 
         <activity
             android:name=".ActivityDetailActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="Activity Details"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity">
+            <!-- App Links for activity details -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app"
+                    android:pathPrefix="/activity" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ChatRoomActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="Chat Room"
             android:windowSoftInputMode="adjustResize"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity">
+            <!-- App Links for chat rooms -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="connectmate.app"
+                    android:pathPrefix="/chat" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".FriendsActivity"

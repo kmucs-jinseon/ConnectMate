@@ -279,7 +279,13 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         // Set temporary values while loading from database
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-        currentUserName = prefs.getString("user_name", "Guest");
+        String tempName = prefs.getString("user_name", null);
+        // Never use email or blank as name - use default if needed
+        if (tempName != null && !tempName.isEmpty() && !tempName.contains("@")) {
+            currentUserName = tempName;
+        } else {
+            currentUserName = "사용자"; // Default name until loaded from Firebase
+        }
         currentUserProfileUrl = prefs.getString("profile_image_url", null);
 
         // Fetch real displayName and profileImageUrl from Firebase Realtime Database
@@ -305,11 +311,22 @@ public class ChatRoomActivity extends AppCompatActivity {
                 @Override
                 public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
                     if (snapshot.exists()) {
-                        // Get displayName from database
+                        // Get displayName from database - this is the real name (이름)
                         String displayName = snapshot.child("displayName").getValue(String.class);
                         if (displayName != null && !displayName.isEmpty()) {
                             currentUserName = displayName;
                             Log.d(TAG, "Loaded displayName from Firebase: " + currentUserName);
+                        } else {
+                            // Fallback: try to get name from other fields, but NEVER use email
+                            String username = snapshot.child("username").getValue(String.class);
+                            if (username != null && !username.isEmpty()) {
+                                currentUserName = username;
+                                Log.d(TAG, "Using username as fallback: " + currentUserName);
+                            } else {
+                                // Last resort: use a default name, never blank or email
+                                currentUserName = "사용자";
+                                Log.d(TAG, "Using default name: " + currentUserName);
+                            }
                         }
 
                         // Get profileImageUrl from database
@@ -326,12 +343,16 @@ public class ChatRoomActivity extends AppCompatActivity {
                         Log.d(TAG, "Profile URL is " + (currentUserProfileUrl != null && !currentUserProfileUrl.isEmpty() ? "VALID" : "NULL/EMPTY"));
                     } else {
                         Log.w(TAG, "User not found in Firebase: " + userId);
+                        // Set default name if user not found
+                        currentUserName = "사용자";
                     }
                 }
 
                 @Override
                 public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
                     Log.e(TAG, "Failed to load user info from Firebase", error.toException());
+                    // Set default name on error
+                    currentUserName = "사용자";
                 }
             });
     }

@@ -190,66 +190,81 @@ public class SignUpActivity extends AppCompatActivity {
         // Disable button to prevent multiple clicks
         signUpButton.setEnabled(false);
 
-        // Create user with Firebase
+        Log.d(TAG, "Creating user account for: " + email);
+
+        // Create user with email and password
         mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener(result -> {
-                    FirebaseUser fu = result.getUser();
-                    if(fu != null){
-                        String uid = fu.getUid();
-                        String mail = fu.getEmail();
-                        String name = fu.getDisplayName();
-                        String photo = fu.getPhotoUrl() != null ? fu.getPhotoUrl().toString() : null;
+                .addOnSuccessListener(authResult -> {
+                    Log.d(TAG, "User account created successfully");
+                    FirebaseUser user = authResult.getUser();
 
-                        Log.d(TAG, "[SIGNUP] calling saveUserToRealtimeDatabase uid=" + uid);
-                        saveUserToRealtimeDatabase(uid, mail, name, photo, "email");
-
+                    if (user != null) {
                         // Send email verification
-                        Log.d(TAG, "Attempting to send verification email to: " + mail);
-                        fu.sendEmailVerification()
+                        user.sendEmailVerification()
                                 .addOnSuccessListener(aVoid -> {
-                                    Log.d(TAG, "Verification email sent successfully to: " + mail);
-
-                                    // Sign out user until they verify email
+                                    Log.d(TAG, "Verification email sent to: " + email);
+                                    // Sign out until email is verified
                                     mAuth.signOut();
-
-                                    // Show verification dialog
-                                    showEmailVerificationDialog(mail);
+                                    // Show success dialog
+                                    showEmailVerificationSentDialog(email);
                                 })
                                 .addOnFailureListener(e -> {
-                                    Log.e(TAG, "Failed to send verification email: " + e.getMessage(), e);
-                                    String errorMsg = "인증 이메일 발송에 실패했습니다.";
-                                    if (e.getMessage() != null) {
-                                        if (e.getMessage().contains("too many requests") || e.getMessage().contains("TOO_MANY_REQUESTS")) {
-                                            errorMsg = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
-                                        } else if (e.getMessage().contains("network")) {
-                                            errorMsg = "네트워크 오류입니다. 연결을 확인해 주세요.";
-                                        }
-                                        Log.e(TAG, "Error details: " + e.getMessage());
-                                    }
-                                    Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
-                                    signUpButton.setEnabled(true);
+                                    Log.e(TAG, "Failed to send verification email", e);
+                                    // Still sign out and show dialog
+                                    mAuth.signOut();
+                                    showEmailVerificationSentDialog(email);
                                 });
-                    } else {
-                        signUpButton.setEnabled(true);
-                        Toast.makeText(this, "회원가입에 실패했습니다.", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "createUserWithEmail failed", e);
-                    String msg = "회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.";
-                    if (e instanceof com.google.firebase.auth.FirebaseAuthException) {
-                        String code = ((com.google.firebase.auth.FirebaseAuthException) e).getErrorCode();
-                        switch (code) {
-                            case "ERROR_EMAIL_ALREADY_IN_USE": msg = "이미 사용 중인 이메일입니다."; break;
-                            case "ERROR_INVALID_EMAIL":        msg = "이메일 형식이 올바르지 않습니다."; break;
-                            case "ERROR_WEAK_PASSWORD":        msg = "비밀번호가 너무 약합니다."; break;
-                            case "ERROR_NETWORK_REQUEST_FAILED": msg = "네트워크 오류입니다. 연결을 확인해 주세요."; break;
-                            case "ERROR_TOO_MANY_REQUESTS":    msg = "요청이 많습니다. 잠시 후 다시 시도해 주세요."; break;
+                    Log.e(TAG, "Failed to create user: " + e.getMessage(), e);
+                    String errorMsg = "회원가입에 실패했습니다.";
+                    if (e.getMessage() != null) {
+                        if (e.getMessage().contains("email address is already in use")) {
+                            errorMsg = "이미 사용 중인 이메일입니다.";
+                        } else if (e.getMessage().contains("too many requests") || e.getMessage().contains("TOO_MANY_REQUESTS")) {
+                            errorMsg = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+                        } else if (e.getMessage().contains("network")) {
+                            errorMsg = "네트워크 오류입니다. 연결을 확인해 주세요.";
+                        } else if (e.getMessage().contains("INVALID_EMAIL")) {
+                            errorMsg = "이메일 형식이 올바르지 않습니다.";
+                        } else if (e.getMessage().contains("WEAK_PASSWORD")) {
+                            errorMsg = "비밀번호가 너무 약합니다. 6자 이상 입력해 주세요.";
                         }
+                        Log.e(TAG, "Error details: " + e.getMessage());
                     }
-                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
                     signUpButton.setEnabled(true);
                 });
+    }
+
+    private void showEmailVerificationSentDialog(String email) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("인증 이메일 발송 완료")
+                .setMessage("인증 이메일을 " + email + "로 발송했습니다.\n\n이메일의 인증 링크를 클릭한 후 로그인해 주세요.")
+                .setPositiveButton("확인", (dialog, which) -> {
+                    signUpButton.setEnabled(true);
+                    // Go back to login screen
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private void showEmailLinkSentDialog(String email) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("인증 이메일 발송 완료")
+                .setMessage("인증 링크를 " + email + "로 발송했습니다.\n\n이메일을 확인하고 링크를 클릭하면 회원가입이 완료됩니다.")
+                .setPositiveButton("확인", (dialog, which) -> {
+                    signUpButton.setEnabled(true);
+                    // Go back to login screen
+                    Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private void showEmailVerificationDialog(String email) {

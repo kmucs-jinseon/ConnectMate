@@ -93,6 +93,125 @@ public class LoginActivity extends AppCompatActivity {
         configureOAuthWebViewLauncher();
         configureSocialLoginButtons();
         setupClickListeners();
+
+        // Check if this activity was opened via email link
+        handleEmailLinkIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Handle email link when activity is already open
+        handleEmailLinkIntent(intent);
+    }
+
+    private void handleEmailLinkIntent(Intent intent) {
+        if (intent == null || intent.getData() == null) {
+            return;
+        }
+
+        String emailLink = intent.getData().toString();
+        Log.d(TAG, "Received intent with data: " + emailLink);
+
+        // Check if this is a sign-in link
+        if (mAuth.isSignInWithEmailLink(emailLink)) {
+            Log.d(TAG, "This is a valid sign-in link");
+
+            // Get saved email and password from SharedPreferences
+            SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            String email = prefs.getString("pending_signup_email", null);
+            String password = prefs.getString("pending_signup_password", null);
+
+            if (email == null || email.isEmpty()) {
+                // Email not found, ask user to enter it
+                showEmailInputDialog(emailLink);
+                return;
+            }
+
+            // Complete the email link sign-in
+            completeEmailLinkSignUp(email, password, emailLink);
+        }
+    }
+
+    private void showEmailInputDialog(String emailLink) {
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint("이메일 주소");
+        input.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("이메일 주소 입력")
+                .setMessage("회원가입 시 사용한 이메일 주소를 입력해 주세요.")
+                .setView(input)
+                .setPositiveButton("확인", (dialog, which) -> {
+                    String email = input.getText().toString().trim();
+                    if (!email.isEmpty()) {
+                        completeEmailLinkSignUp(email, null, emailLink);
+                    }
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+
+    private void completeEmailLinkSignUp(String email, String password, String emailLink) {
+        Log.d(TAG, "Completing email link sign-up for: " + email);
+
+        mAuth.signInWithEmailLink(email, emailLink)
+                .addOnSuccessListener(authResult -> {
+                    Log.d(TAG, "signInWithEmailLink success");
+                    FirebaseUser user = authResult.getUser();
+
+                    if (user != null) {
+                        // If we have a password, update the user's password
+                        if (password != null && !password.isEmpty()) {
+                            user.updatePassword(password)
+                                    .addOnSuccessListener(aVoid -> {
+                                        Log.d(TAG, "Password updated successfully");
+                                        completeUserRegistration(user, email);
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Log.e(TAG, "Failed to update password", e);
+                                        // Still complete registration even if password update fails
+                                        completeUserRegistration(user, email);
+                                    });
+                        } else {
+                            completeUserRegistration(user, email);
+                        }
+                    }
+
+                    // Clear pending signup data
+                    SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+                    prefs.edit()
+                            .remove("pending_signup_email")
+                            .remove("pending_signup_password")
+                            .apply();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "signInWithEmailLink failed", e);
+                    String errorMsg = "이메일 인증에 실패했습니다.";
+                    if (e.getMessage() != null) {
+                        if (e.getMessage().contains("expired")) {
+                            errorMsg = "인증 링크가 만료되었습니다. 다시 회원가입해 주세요.";
+                        } else if (e.getMessage().contains("invalid")) {
+                            errorMsg = "유효하지 않은 인증 링크입니다.";
+                        }
+                    }
+                    Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void completeUserRegistration(FirebaseUser user, String email) {
+        String uid = user.getUid();
+        String displayName = user.getDisplayName();
+
+        Log.d(TAG, "Completing user registration: " + uid);
+
+        // Save user to database
+        saveUserToRealtimeDatabase(uid, email, displayName, null, "email");
+
+        // Save login state
+        saveLoginState("email", uid);
+
+        Toast.makeText(this, "회원가입이 완료되었습니다!", Toast.LENGTH_SHORT).show();
     }
 
     private void initViews() {
