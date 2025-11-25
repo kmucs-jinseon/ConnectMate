@@ -1046,11 +1046,20 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    // User exists, update last login time and profile image if available
+                    // User exists, update last login time
                     Log.d(TAG, "User exists, updating lastLoginAt");
                     userRef.child("lastLoginAt").setValue(System.currentTimeMillis());
-                    if (profileImageUrl != null) {
+
+                    // Only update profile image if user doesn't have a custom one (Base64 image)
+                    String existingProfileImage = snapshot.child("profileImageUrl").getValue(String.class);
+                    boolean hasCustomImage = existingProfileImage != null && existingProfileImage.startsWith("data:image/");
+
+                    if (profileImageUrl != null && !hasCustomImage) {
+                        // Only update if user doesn't have a custom uploaded image
                         userRef.child("profileImageUrl").setValue(profileImageUrl);
+                        Log.d(TAG, "Updated profile image from social provider");
+                    } else if (hasCustomImage) {
+                        Log.d(TAG, "Preserving user's custom uploaded profile image");
                     }
                     
                     // Check for the 'friends' node and add it if it's missing

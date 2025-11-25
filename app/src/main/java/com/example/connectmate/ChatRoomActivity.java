@@ -413,7 +413,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         ListView participantsListView = dialogView.findViewById(R.id.participants_list_view);
 
         // Create and set the adapter
-        ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
+        ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds, currentUserId);
         participantsListView.setAdapter(adapter);
 
         // Build and show the dialog

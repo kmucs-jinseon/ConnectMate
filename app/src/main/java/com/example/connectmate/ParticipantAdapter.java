@@ -12,7 +12,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.bumptech.glide.Glide;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import java.util.List;
@@ -24,12 +23,12 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
     private List<String> friendIds;
     private String currentUserId;
 
-    public ParticipantAdapter(@NonNull Context context, List<Participant> participants, List<String> friendIds) {
+    public ParticipantAdapter(@NonNull Context context, List<Participant> participants, List<String> friendIds, String currentUserId) {
         super(context, 0, participants);
         this.context = context;
         this.participants = participants;
         this.friendIds = friendIds;
-        this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        this.currentUserId = currentUserId;
     }
 
     @NonNull
