@@ -68,6 +68,17 @@ public class SettingsFragment extends Fragment {
                 transaction.commit();
             });
         }
+
+        // Find the About item
+        LinearLayout itemAbout = view.findViewById(R.id.itemAbout);
+
+        // Set click listener to open AboutActivity
+        if (itemAbout != null) {
+            itemAbout.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(requireContext(), AboutActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void initializeViews(View view) {
