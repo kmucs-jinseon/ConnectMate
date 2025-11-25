@@ -10,8 +10,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import java.util.List;
@@ -32,13 +30,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         void onFriendRequestRejected(User user);
     }
 
-    public FriendRequestAdapter(Context context, List<User> userList, OnFriendRequestAcceptedListener listener) {
+    public FriendRequestAdapter(Context context, List<User> userList, OnFriendRequestAcceptedListener listener, String currentUserId) {
         this.context = context;
         this.userList = userList;
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            this.currentUserId = currentUser.getUid();
-        }
+        this.currentUserId = currentUserId;
         this.listener = listener;
     }
 

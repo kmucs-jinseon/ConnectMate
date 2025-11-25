@@ -78,7 +78,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
 
         // Initialize adapters
         userAdapter = new UserAdapter(this, friendList, this, this);
-        friendRequestAdapter = new FriendRequestAdapter(this, friendRequestList, this);
+        friendRequestAdapter = new FriendRequestAdapter(this, friendRequestList, this, currentUserId);
         friendRequestAdapter.setOnFriendRequestRejectedListener(this);
 
         // Setup ViewPager2 with tabs

@@ -113,8 +113,11 @@ public class ChatListFragment extends Fragment {
         allChatRooms = new ArrayList<>();
         filteredChatRooms = new ArrayList<>();
 
+        // Get current user ID
+        String currentUserId = getCurrentUserId();
+
         // Setup main chat RecyclerView
-        chatRoomAdapter = new ChatRoomAdapter(filteredChatRooms, this::onChatRoomClick);
+        chatRoomAdapter = new ChatRoomAdapter(filteredChatRooms, this::onChatRoomClick, currentUserId);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         chatRecyclerView.setAdapter(chatRoomAdapter);
     }

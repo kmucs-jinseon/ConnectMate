@@ -23,14 +23,16 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
 
     private final List<ChatRoom> chatRooms;
     private final OnChatRoomClickListener listener;
+    private final String currentUserId;
 
     public interface OnChatRoomClickListener {
         void onChatRoomClick(ChatRoom chatRoom);
     }
 
-    public ChatRoomAdapter(List<ChatRoom> chatRooms, OnChatRoomClickListener listener) {
+    public ChatRoomAdapter(List<ChatRoom> chatRooms, OnChatRoomClickListener listener, String currentUserId) {
         this.chatRooms = chatRooms;
         this.listener = listener;
+        this.currentUserId = currentUserId;
     }
 
     @NonNull
@@ -44,7 +46,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     @Override
     public void onBindViewHolder(@NonNull ChatRoomViewHolder holder, int position) {
         ChatRoom chatRoom = chatRooms.get(position);
-        holder.bind(chatRoom, listener);
+        holder.bind(chatRoom, listener, currentUserId);
     }
 
     @Override
@@ -72,8 +74,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             unreadCount = itemView.findViewById(R.id.unread_count);
         }
 
-        public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener) {
-            String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener, String currentUserId) {
             if ("private".equals(chatRoom.getCategory()) && chatRoom.getMembers() != null) {
                 for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
                     if (!entry.getKey().equals(currentUserId)) {
