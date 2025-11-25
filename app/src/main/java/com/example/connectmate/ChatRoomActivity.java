@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -65,6 +66,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private TextView toolbarTitle;
     private TextView toolbarParticipantCount;
+    private MaterialButton btnEndActivity;
     private RecyclerView messagesRecyclerView;
     private LinearLayout emptyState;
     private TextInputEditText messageInput;
@@ -225,6 +227,17 @@ public class ChatRoomActivity extends AppCompatActivity {
             && chatRoom.getHostId().equals(currentUserId);
     }
 
+    private void updateHostControls() {
+        if (btnEndActivity == null) {
+            return;
+        }
+        if (isCurrentUserHost() && chatRoom != null && !TextUtils.isEmpty(chatRoom.getActivityId())) {
+            btnEndActivity.setVisibility(View.VISIBLE);
+        } else {
+            btnEndActivity.setVisibility(View.GONE);
+        }
+    }
+
     private void showDeleteChatRoomDialog() {
         if (!isCurrentUserHost()) {
             Toast.makeText(this, "방장만 삭제할 수 있습니다.", Toast.LENGTH_SHORT).show();
@@ -234,47 +247,85 @@ public class ChatRoomActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
             .setTitle("채팅방 삭제")
             .setMessage("채팅방과 연관된 활동이 삭제되며 모든 참여자가 나가게 됩니다. 계속하시겠습니까?")
-            .setPositiveButton("삭제", (dialog, which) -> deleteChatRoomAsHost())
+            .setPositiveButton("삭제", (dialog, which) -> deleteChatRoomAsHost(null, false))
             .setNegativeButton("취소", null)
             .show();
     }
 
-    private void deleteChatRoomAsHost() {
+    private void showEndActivityDialog() {
+        if (!isCurrentUserHost()) {
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("활동 종료")
+            .setMessage("활동을 종료하시겠습니까? 만남이 제대로 이루어졌는지 확인해주세요.")
+            .setPositiveButton("확인", (dialog, which) -> deleteChatRoomAsHost("활동이 종료되었습니다.", true))
+            .setNegativeButton("취소", null)
+            .show();
+    }
+
+    private void deleteChatRoomAsHost(@Nullable String successMessage, boolean incrementParticipation) {
         if (chatRoom == null) {
             Toast.makeText(this, "채팅방 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String activityId = chatRoom.getActivityId();
-        if (activityId != null && !activityId.isEmpty()) {
-            FirebaseActivityManager.getInstance().deleteActivity(activityId, new FirebaseActivityManager.OnCompleteListener<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    Toast.makeText(ChatRoomActivity.this, "채팅방이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    Log.e(TAG, "Failed to delete activity/chat", e);
-                    Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    Toast.makeText(ChatRoomActivity.this, "채팅방이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    Log.e(TAG, "Failed to delete chat room", e);
-                    Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
+        if (!TextUtils.isEmpty(activityId)) {
+            deleteActivityAndChat(activityId, successMessage, incrementParticipation);
+            return;
         }
+
+        FirebaseChatManager.getInstance().getChatRoomById(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom result) {
+                if (result != null && !TextUtils.isEmpty(result.getActivityId())) {
+                    deleteActivityAndChat(result.getActivityId(), successMessage, incrementParticipation);
+                } else {
+                    deleteChatRoomDirectly(successMessage);
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to resolve activity for chat room", e);
+                deleteChatRoomDirectly(successMessage);
+            }
+        });
+    }
+
+    private void deleteActivityAndChat(String activityId, @Nullable String successMessage, boolean incrementParticipation) {
+        final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
+        FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, new FirebaseActivityManager.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to delete activity/chat", e);
+                Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void deleteChatRoomDirectly(@Nullable String successMessage) {
+        final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
+        FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Failed to delete chat room", e);
+                Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 
@@ -532,6 +583,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.toolbar);
         toolbarTitle = findViewById(R.id.toolbar_chat_room_title);
         toolbarParticipantCount = findViewById(R.id.toolbar_participant_count);
+        btnEndActivity = findViewById(R.id.btn_end_activity);
+        if (btnEndActivity != null) {
+            btnEndActivity.setOnClickListener(v -> showEndActivityDialog());
+        }
         messagesRecyclerView = findViewById(R.id.messages_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         messageInput = findViewById(R.id.message_input);
@@ -590,6 +645,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
 
         invalidateOptionsMenu();
+        updateHostControls();
     }
 
     private void setupRecyclerView() {
@@ -872,6 +928,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                         Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
                     invalidateOptionsMenu();
+                    updateHostControls();
                 });
             }
 

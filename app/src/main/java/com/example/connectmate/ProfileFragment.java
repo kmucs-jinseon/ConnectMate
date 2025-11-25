@@ -232,7 +232,13 @@ public class ProfileFragment extends Fragment {
         if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 0.0)));
         if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
         if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
+        int participation = u.participationCount;
+        updateParticipationCount(participation);
 
+
+        SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt("participation_count", participation);
 
         // Load profile image using Glide
         if (profileAvatar != null) {
@@ -243,17 +249,18 @@ public class ProfileFragment extends Fragment {
                     .placeholder(R.drawable.circle_logo)
                     .error(R.drawable.circle_logo)
                     .into(profileAvatar);
-
-                // Save profile URL to SharedPreferences for use in chat
-                SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                prefs.edit().putString("profile_image_url", url).apply();
+                editor.putString("profile_image_url", url);
             } else {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
-
-                // Clear profile URL from SharedPreferences if not available
-                SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                prefs.edit().remove("profile_image_url").apply();
+                editor.remove("profile_image_url");
             }
+        }
+        editor.apply();
+    }
+
+    private void updateParticipationCount(int count) {
+        if (monthlyActivitiesCount != null) {
+            monthlyActivitiesCount.setText(count + "회");
         }
     }
 
@@ -341,6 +348,9 @@ public class ProfileFragment extends Fragment {
         if (ratingText != null) {
             ratingText.setText("0.0");
         }
+
+        int participationCount = prefs.getInt("participation_count", 0);
+        updateParticipationCount(participationCount);
 
         // Load profile image using Glide
         String imageUrlString = prefs.getString("profile_image_url", "");

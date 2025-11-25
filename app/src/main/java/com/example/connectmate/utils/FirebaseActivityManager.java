@@ -16,7 +16,9 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Query;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -35,9 +37,11 @@ public class FirebaseActivityManager {
     private static final String PATH_ACTIVITIES = "activities";
     private static final String PATH_USER_ACTIVITIES = "userActivities";
     private static final String PATH_PARTICIPANTS = "participants";
+    private static final String PATH_USERS = "users";
 
     private final DatabaseReference activitiesRef;
     private final DatabaseReference userActivitiesRef;
+    private final DatabaseReference usersRef;
     private final FirebaseAuth auth;
 
     private static FirebaseActivityManager instance;
@@ -58,6 +62,7 @@ public class FirebaseActivityManager {
 
         activitiesRef = database.getReference(PATH_ACTIVITIES);
         userActivitiesRef = database.getReference(PATH_USER_ACTIVITIES);
+        usersRef = database.getReference(PATH_USERS);
         auth = FirebaseAuth.getInstance();
 
         // Keep data synced locally
@@ -355,6 +360,10 @@ public class FirebaseActivityManager {
      * Delete an activity and its associated chat room.
      */
     public void deleteActivity(String activityId, OnCompleteListener<Void> listener) {
+        deleteActivity(activityId, false, listener);
+    }
+
+    public void deleteActivity(String activityId, boolean incrementParticipationCount, OnCompleteListener<Void> listener) {
         Log.d(TAG, "🗑️ deleteActivity() called for activityId: " + activityId);
 
         // Step 1: Get all participants first so we can clean up userActivities
@@ -371,6 +380,10 @@ public class FirebaseActivityManager {
                         }
                     }
                     Log.d(TAG, "Found " + participantIds.size() + " participants to clean up");
+
+                    if (incrementParticipationCount && !participantIds.isEmpty()) {
+                        incrementParticipationCounts(participantIds);
+                    }
 
                     // Step 2: Delete the chat room
                     deleteChatRoomForActivity(activityId, () -> {
@@ -414,6 +427,33 @@ public class FirebaseActivityManager {
                     });
                 }
             });
+    }
+
+    private void incrementParticipationCounts(List<String> participantIds) {
+        for (String userId : participantIds) {
+            if (userId == null || userId.isEmpty()) {
+                continue;
+            }
+            usersRef.child(userId).child("participationCount").runTransaction(new Transaction.Handler() {
+                @NonNull
+                @Override
+                public Transaction.Result doTransaction(@NonNull MutableData currentData) {
+                    Long current = currentData.getValue(Long.class);
+                    if (current == null) {
+                        current = 0L;
+                    }
+                    currentData.setValue(current + 1);
+                    return Transaction.success(currentData);
+                }
+
+                @Override
+                public void onComplete(@Nullable DatabaseError error, boolean committed, @Nullable DataSnapshot currentData) {
+                    if (error != null) {
+                        Log.e(TAG, "Failed to increment participation count for user: " + userId, error.toException());
+                    }
+                }
+            });
+        }
     }
 
     /**

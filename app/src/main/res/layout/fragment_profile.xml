@@ -373,7 +373,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="이번 달 활동 참여"
+                        android:text="참여한 활동 수"
                         android:textSize="14sp"
                         android:textColor="@color/text_secondary" />
 
@@ -381,7 +381,7 @@
                         android:id="@+id/monthly_activities_count"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="5회"
+                        android:text="0회"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary_blue" />

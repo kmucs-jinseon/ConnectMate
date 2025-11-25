@@ -180,6 +180,7 @@ public class SettingsFragment extends Fragment {
         if (user.getBio() != null) editor.putString("user_bio", user.getBio());
         if (user.getMbti() != null) editor.putString("user_mbti", user.getMbti());
         if (user.getProfileImageUrl() != null) editor.putString("profile_image_url", user.getProfileImageUrl());
+        editor.putInt("participation_count", user.getParticipationCount());
 
         editor.apply();
         android.util.Log.d("SettingsFragment", "User data synced to SharedPreferences - Name: " + user.getDisplayName() + ", Email: " + user.getEmail());

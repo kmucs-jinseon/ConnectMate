@@ -19,6 +19,7 @@ public class User {
     public boolean profileCompleted;  // Whether user has completed profile setup
     public double rating;
     public int activitiesCount;
+    public int participationCount;
     public int connectionsCount;
     public int badgesCount;
     public long createdAt;
@@ -41,6 +42,7 @@ public class User {
         this.profileCompleted = false;
         this.rating = 0.0;
         this.activitiesCount = 0;
+        this.participationCount = 0;
         this.connectionsCount = 0;
         this.badgesCount = 0;
         this.createdAt = System.currentTimeMillis();
@@ -135,6 +137,14 @@ public class User {
         this.activitiesCount = activitiesCount;
     }
 
+    public int getParticipationCount() {
+        return participationCount;
+    }
+
+    public void setParticipationCount(int participationCount) {
+        this.participationCount = participationCount;
+    }
+
     public int getConnectionsCount() {
         return connectionsCount;
     }
@@ -204,6 +214,7 @@ public class User {
         result.put("profileCompleted", profileCompleted);
         result.put("rating", rating);
         result.put("activitiesCount", activitiesCount);
+        result.put("participationCount", participationCount);
         result.put("connectionsCount", connectionsCount);
         result.put("badgesCount", badgesCount);
         result.put("createdAt", createdAt);
