@@ -12,13 +12,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.connectmate.NotificationAdapter;
 import com.example.connectmate.models.ChatRoom;
+import com.example.connectmate.models.NotificationItem;
 import com.example.connectmate.utils.FirebaseChatManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
@@ -26,7 +31,14 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatListFragment extends Fragment {
@@ -35,6 +47,7 @@ public class ChatListFragment extends Fragment {
 
     // UI Components
     private ImageButton btnMyFriends;
+    private ImageButton btnNotifications;
     private ImageButton btnSearch;
     private ImageButton btnFilter;
     private TextInputLayout searchLayout;
@@ -78,6 +91,7 @@ public class ChatListFragment extends Fragment {
     private void initializeViews(View view) {
         // Header buttons
         btnMyFriends = view.findViewById(R.id.btn_my_friends);
+        btnNotifications = view.findViewById(R.id.btn_notifications);
         btnSearch = view.findViewById(R.id.btn_search);
         btnFilter = view.findViewById(R.id.btn_filter);
 
@@ -111,6 +125,12 @@ public class ChatListFragment extends Fragment {
             Intent intent = new Intent(requireContext(), FriendsActivity.class);
             startActivity(intent);
         });
+
+        if (btnNotifications != null) {
+            btnNotifications.setOnClickListener(v -> {
+                showNotificationsDialog();
+            });
+        }
 
         // Search button - toggle search input visibility
         btnSearch.setOnClickListener(v -> toggleSearch());
@@ -146,6 +166,56 @@ public class ChatListFragment extends Fragment {
                 public void afterTextChanged(Editable s) {}
             });
         }
+    }
+
+    private void showNotificationsDialog() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(requireContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_notifications, null);
+        RecyclerView recyclerView = dialogView.findViewById(R.id.notifications_recycler_view);
+        TextView emptyText = dialogView.findViewById(R.id.notifications_empty_text);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        List<NotificationItem> notifications = new ArrayList<>();
+        NotificationAdapter adapter = new NotificationAdapter(notifications);
+        recyclerView.setAdapter(adapter);
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+            .setTitle("알림")
+            .setView(dialogView)
+            .setPositiveButton("닫기", null)
+            .create();
+        dialog.show();
+
+        DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
+            .getReference("userNotifications")
+            .child(currentUser.getUid());
+
+        notificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                notifications.clear();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    NotificationItem item = child.getValue(NotificationItem.class);
+                    if (item != null) {
+                        notifications.add(item);
+                    }
+                }
+                Collections.sort(notifications, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+                adapter.notifyDataSetChanged();
+                emptyText.setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to load notifications", error.toException());
+                Toast.makeText(requireContext(), "알림을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show();
+                emptyText.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     private void toggleSearch() {

@@ -296,7 +296,8 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void deleteActivityAndChat(String activityId, @Nullable String successMessage, boolean incrementParticipation) {
         final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
-        FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, new FirebaseActivityManager.OnCompleteListener<Void>() {
+        String activityTitle = chatRoom != null ? chatRoom.getName() : null;
+        FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, activityTitle, new FirebaseActivityManager.OnCompleteListener<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();

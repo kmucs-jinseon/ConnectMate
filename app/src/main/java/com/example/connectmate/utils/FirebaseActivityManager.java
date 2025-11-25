@@ -2,6 +2,7 @@ package com.example.connectmate.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -37,11 +38,13 @@ public class FirebaseActivityManager {
     private static final String PATH_ACTIVITIES = "activities";
     private static final String PATH_USER_ACTIVITIES = "userActivities";
     private static final String PATH_PARTICIPANTS = "participants";
+    private static final String PATH_USER_NOTIFICATIONS = "userNotifications";
     private static final String PATH_USERS = "users";
 
     private final DatabaseReference activitiesRef;
     private final DatabaseReference userActivitiesRef;
     private final DatabaseReference usersRef;
+    private final DatabaseReference userNotificationsRef;
     private final FirebaseAuth auth;
 
     private static FirebaseActivityManager instance;
@@ -63,10 +66,14 @@ public class FirebaseActivityManager {
         activitiesRef = database.getReference(PATH_ACTIVITIES);
         userActivitiesRef = database.getReference(PATH_USER_ACTIVITIES);
         usersRef = database.getReference(PATH_USERS);
+        userNotificationsRef = database.getReference(PATH_USER_NOTIFICATIONS);
         auth = FirebaseAuth.getInstance();
 
         // Keep data synced locally
         activitiesRef.keepSynced(true);
+        userActivitiesRef.keepSynced(true);
+        usersRef.keepSynced(true);
+        userNotificationsRef.keepSynced(true);
     }
 
     /**
@@ -360,20 +367,33 @@ public class FirebaseActivityManager {
      * Delete an activity and its associated chat room.
      */
     public void deleteActivity(String activityId, OnCompleteListener<Void> listener) {
-        deleteActivity(activityId, false, listener);
+        deleteActivity(activityId, false, null, listener);
     }
 
     public void deleteActivity(String activityId, boolean incrementParticipationCount, OnCompleteListener<Void> listener) {
+        deleteActivity(activityId, incrementParticipationCount, ActivityDeletionMode.SILENT, null, listener);
+    }
+
+    public void deleteActivity(String activityId, boolean incrementParticipationCount, @Nullable String activityTitle, OnCompleteListener<Void> listener) {
+        deleteActivity(activityId, incrementParticipationCount, ActivityDeletionMode.WITH_NOTIFICATIONS, activityTitle, listener);
+    }
+
+    public void deleteActivity(String activityId, boolean incrementParticipationCount, ActivityDeletionMode mode, @Nullable String activityTitle, OnCompleteListener<Void> listener) {
         Log.d(TAG, "🗑️ deleteActivity() called for activityId: " + activityId);
 
-        // Step 1: Get all participants first so we can clean up userActivities
-        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+        activitiesRef.child(activityId)
             .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String resolvedTitle = activityTitle;
+                    if (TextUtils.isEmpty(resolvedTitle)) {
+                        resolvedTitle = snapshot.child("title").getValue(String.class);
+                    }
+
+                    DataSnapshot participantsSnapshot = snapshot.child(PATH_PARTICIPANTS);
                     // Store participant IDs for cleanup
                     List<String> participantIds = new ArrayList<>();
-                    for (DataSnapshot child : snapshot.getChildren()) {
+                    for (DataSnapshot child : participantsSnapshot.getChildren()) {
                         String userId = child.getKey();
                         if (userId != null) {
                             participantIds.add(userId);
@@ -383,6 +403,9 @@ public class FirebaseActivityManager {
 
                     if (incrementParticipationCount && !participantIds.isEmpty()) {
                         incrementParticipationCounts(participantIds);
+                        if (mode == ActivityDeletionMode.WITH_NOTIFICATIONS) {
+                            addNotificationsForParticipants(resolvedTitle, participantIds);
+                        }
                     }
 
                     // Step 2: Delete the chat room
@@ -454,6 +477,43 @@ public class FirebaseActivityManager {
                 }
             });
         }
+    }
+
+    private void addNotificationsForParticipants(@Nullable String activityTitle, List<String> participantIds) {
+        String title = !TextUtils.isEmpty(activityTitle) ? activityTitle : "활동";
+        String endMessage = title + " 활동이 종료되었습니다.";
+        String reviewMessage = "함께한 멤버를 평가해주세요.";
+
+        for (String userId : participantIds) {
+            if (userId == null || userId.isEmpty()) continue;
+            DatabaseReference userRef = userNotificationsRef.child(userId);
+            long timestamp = System.currentTimeMillis();
+
+            String endId = userRef.push().getKey();
+            if (endId != null) {
+                Map<String, Object> endNotif = new HashMap<>();
+                endNotif.put("id", endId);
+                endNotif.put("title", "활동 종료");
+                endNotif.put("message", endMessage);
+                endNotif.put("timestamp", timestamp);
+                userRef.child(endId).setValue(endNotif);
+            }
+
+            String reviewId = userRef.push().getKey();
+            if (reviewId != null) {
+                Map<String, Object> reviewNotif = new HashMap<>();
+                reviewNotif.put("id", reviewId);
+                reviewNotif.put("title", "참여자 평가 요청");
+                reviewNotif.put("message", reviewMessage);
+                reviewNotif.put("timestamp", timestamp + 1);
+                userRef.child(reviewId).setValue(reviewNotif);
+            }
+        }
+    }
+
+    public enum ActivityDeletionMode {
+        SILENT,
+        WITH_NOTIFICATIONS
     }
 
     /**
@@ -784,7 +844,7 @@ public class FirebaseActivityManager {
      * Get participants for an activity
      */
     public void getParticipants(String activityId, ParticipantsListener listener) {
-        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+        activitiesRef.child(activityId)
             .addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
