@@ -38,6 +38,7 @@ import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
 import com.navercorp.nid.oauth.OAuthLoginCallback;
 
+import java.util.HashMap;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
 
@@ -1051,6 +1052,13 @@ public class LoginActivity extends AppCompatActivity {
                     if (profileImageUrl != null) {
                         userRef.child("profileImageUrl").setValue(profileImageUrl);
                     }
+                    
+                    // Check for the 'friends' node and add it if it's missing
+                    if (!snapshot.hasChild("friends")) {
+                        Log.d(TAG, "User is missing 'friends' node. Adding it now.");
+                        userRef.child("friends").setValue(new HashMap<>());
+                    }
+
                     Log.d(TAG, "User updated successfully");
                     saveUserToSharedPreferences(snapshot);
 

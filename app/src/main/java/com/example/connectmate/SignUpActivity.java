@@ -36,6 +36,8 @@ import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
 import com.navercorp.nid.oauth.OAuthLoginCallback;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import kotlin.Unit;
@@ -762,10 +764,15 @@ public class SignUpActivity extends AppCompatActivity {
                     if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
                         user.setProfileImageUrl(profileImageUrl);
                     }
+                    
+                    Map<String, Object> userValues = user.toMap();
+                    userValues.put("friends", new HashMap<>());
+                    userValues.put("friendRequests", new HashMap<>());
 
-                    userRef.setValue(user)
+
+                    userRef.setValue(userValues)
                             .addOnSuccessListener(aVoid -> {
-                                Log.d(TAG, "User created successfully");
+                                Log.d(TAG, "User created successfully with friends and friendRequests nodes.");
                                 SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putString("user_name", displayName);

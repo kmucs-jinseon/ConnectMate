@@ -190,4 +190,26 @@ public class User {
     public void setFriendRequests(Map<String, Boolean> friendRequests) {
         this.friendRequests = friendRequests;
     }
+    
+    public Map<String, Object> toMap() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("email", email);
+        result.put("displayName", displayName);
+        result.put("username", username);
+        result.put("profileImageUrl", profileImageUrl);
+        result.put("loginMethod", loginMethod);
+        result.put("bio", bio);
+        result.put("mbti", mbti);
+        result.put("profileCompleted", profileCompleted);
+        result.put("rating", rating);
+        result.put("activitiesCount", activitiesCount);
+        result.put("connectionsCount", connectionsCount);
+        result.put("badgesCount", badgesCount);
+        result.put("createdAt", createdAt);
+        result.put("lastLoginAt", lastLoginAt);
+        result.put("friends", friends);
+        result.put("friendRequests", friendRequests);
+        return result;
+    }
 }

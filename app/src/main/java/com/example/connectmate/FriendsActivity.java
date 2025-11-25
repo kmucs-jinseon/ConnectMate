@@ -1,6 +1,8 @@
 package com.example.connectmate;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -51,15 +53,17 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
             getSupportActionBar().setTitle(R.string.my_friends); // Set title
         }
         toolbar.setNavigationOnClickListener(v -> finish());
+        
+        // Get user ID from SharedPreferences for consistency across all login methods
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("user_id", null);
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
-            Log.e(TAG, "User is not logged in. Finishing FriendsActivity.");
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Log.e(TAG, "User ID not found in SharedPreferences. Finishing FriendsActivity.");
             Toast.makeText(this, "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
-        currentUserId = currentUser.getUid();
         
         usersRef = FirebaseDatabase.getInstance().getReference("users");
 
@@ -94,6 +98,12 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 friendList.clear();
+                 if (!snapshot.exists()) {
+                    // This is normal if the user has no friends or the node was just created.
+                    Log.d(TAG, "Friends node does not exist or is empty.");
+                    userAdapter.notifyDataSetChanged();
+                    return;
+                }
                 for (DataSnapshot friendSnapshot : snapshot.getChildren()) {
                     String friendId = friendSnapshot.getKey();
                     if (friendId != null) {
@@ -101,8 +111,11 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                             @Override
                             public void onDataChange(@NonNull DataSnapshot userSnapshot) {
                                 User user = userSnapshot.getValue(User.class);
-                                if (user != null && user.getFriends() != null && user.getFriends().containsKey(currentUserId)) {
-                                    friendList.add(user);
+                                if (user != null) {
+                                     // Check if they are mutually friends before adding
+                                    if (user.getFriends() != null && user.getFriends().containsKey(currentUserId)) {
+                                        friendList.add(user);
+                                    }
                                 }
                                 userAdapter.notifyDataSetChanged();
                             }
@@ -128,6 +141,10 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 friendRequestList.clear();
+                if (!snapshot.exists()){
+                     friendRequestAdapter.notifyDataSetChanged();
+                     return;
+                }
                 for (DataSnapshot requestSnapshot : snapshot.getChildren()) {
                     String requesterId = requestSnapshot.getKey();
                     if (requesterId != null) {
@@ -171,10 +188,9 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                     newChatRoom.setCategory("private");
 
                     Map<String, ChatRoom.Member> members = new HashMap<>();
-                    FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-                    if (currentUser == null) return;
+                    String currentUserName = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE).getString("user_name", "Unknown User");
                     
-                    members.put(currentUserId, new ChatRoom.Member(currentUser.getDisplayName(), 0));
+                    members.put(currentUserId, new ChatRoom.Member(currentUserName, 0));
                     members.put(user.getUserId(), new ChatRoom.Member(user.getDisplayName(), 0));
                     newChatRoom.setMembers(members);
 
