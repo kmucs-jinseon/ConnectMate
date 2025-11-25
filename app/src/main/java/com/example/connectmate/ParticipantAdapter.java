@@ -42,6 +42,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         String participantName = participant.getName();
 
         TextView participantNameTextView = convertView.findViewById(R.id.participant_name);
+        View hostBadge = convertView.findViewById(R.id.host_badge);
         Button addFriendButton = convertView.findViewById(R.id.add_friend_button);
 
         boolean isFriend = friendIds.contains(participantId);
@@ -51,6 +52,12 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
             participantNameTextView.setText(participantName + " - 친구");
         } else {
             participantNameTextView.setText(participantName);
+        }
+
+        if (participant.isHost()) {
+            hostBadge.setVisibility(View.VISIBLE);
+        } else {
+            hostBadge.setVisibility(View.GONE);
         }
 
         if (isCurrentUser || isFriend) {

@@ -32,9 +32,11 @@ public class FirebaseChatManager {
     // Firebase paths
     private static final String PATH_CHAT_ROOMS = "chatRooms";
     private static final String PATH_MESSAGES = "messages";
+    private static final String PATH_USERS = "users";
 
     private final DatabaseReference chatRoomsRef;
     private final DatabaseReference messagesRef;
+    private final DatabaseReference usersRef;
     private final FirebaseAuth auth;
 
     private static FirebaseChatManager instance;
@@ -55,10 +57,12 @@ public class FirebaseChatManager {
 
         chatRoomsRef = database.getReference(PATH_CHAT_ROOMS);
         messagesRef = database.getReference(PATH_MESSAGES);
+        usersRef = database.getReference(PATH_USERS);
         auth = FirebaseAuth.getInstance();
 
         // Keep chat data synced locally
         chatRoomsRef.keepSynced(true);
+        usersRef.keepSynced(true);
     }
 
     /**
@@ -74,17 +78,68 @@ public class FirebaseChatManager {
     /**
      * Create or get existing chat room for an activity
      */
-    public void createOrGetChatRoom(String activityId, String activityTitle, String activityCategory, OnCompleteListener<ChatRoom> listener) {
-        // Query for existing chat room with this activity ID
+    public void createOrGetChatRoom(String activityId, String activityTitle, String activityCategory,
+                                    String hostId, String hostName,
+                                    OnCompleteListener<ChatRoom> listener) {
+        resolveHostName(hostId, hostName, resolvedHostName ->
+            createOrGetChatRoomInternal(activityId, activityTitle, activityCategory, hostId, resolvedHostName, listener)
+        );
+    }
+
+    private void resolveHostName(String hostId, String providedName, HostNameCallback callback) {
+        if (callback == null) {
+            return;
+        }
+
+        if (hostId == null || hostId.isEmpty()) {
+            callback.onResolved(null);
+            return;
+        }
+
+        if (providedName != null && !providedName.isEmpty()) {
+            callback.onResolved(providedName);
+            return;
+        }
+
+        usersRef.child(hostId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String resolvedName = snapshot.child("displayName").getValue(String.class);
+                if (isNullOrEmpty(resolvedName)) {
+                    resolvedName = snapshot.child("name").getValue(String.class);
+                }
+                if (isNullOrEmpty(resolvedName)) {
+                    resolvedName = snapshot.child("username").getValue(String.class);
+                }
+                if (isNullOrEmpty(resolvedName)) {
+                    resolvedName = snapshot.child("email").getValue(String.class);
+                }
+                if (isNullOrEmpty(resolvedName)) {
+                    resolvedName = hostId;
+                }
+                callback.onResolved(resolvedName);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to resolve host name", error.toException());
+                callback.onResolved(hostId);
+            }
+        });
+    }
+
+    private void createOrGetChatRoomInternal(String activityId, String activityTitle, String activityCategory,
+                                             String hostId, String hostName,
+                                             OnCompleteListener<ChatRoom> listener) {
         chatRoomsRef.orderByChild("activityId").equalTo(activityId)
             .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
-                        // Chat room already exists
                         for (DataSnapshot child : snapshot.getChildren()) {
                             ChatRoom existingRoom = child.getValue(ChatRoom.class);
                             if (existingRoom != null && listener != null) {
+                                maybeBackfillHost(existingRoom, hostId, hostName);
                                 Log.d(TAG, "Chat room already exists for activity: " + activityId);
                                 listener.onSuccess(existingRoom);
                                 return;
@@ -92,9 +147,12 @@ public class FirebaseChatManager {
                         }
                     }
 
-                    // Create new chat room with category
                     ChatRoom chatRoom = new ChatRoom(activityTitle, activityId);
                     chatRoom.setCategory(activityCategory);
+                    if (hostId != null && !hostId.isEmpty()) {
+                        chatRoom.setHostId(hostId);
+                        chatRoom.setHostName(hostName);
+                    }
                     saveChatRoom(chatRoom, listener);
                 }
 
@@ -106,6 +164,34 @@ public class FirebaseChatManager {
                     }
                 }
             });
+    }
+
+    private void maybeBackfillHost(ChatRoom chatRoom, String hostId, String hostName) {
+        if (chatRoom == null || chatRoom.getId() == null) {
+            return;
+        }
+        boolean needsHost = chatRoom.getHostId() == null || chatRoom.getHostId().isEmpty();
+        if (!needsHost || hostId == null || hostId.isEmpty() || isNullOrEmpty(hostName)) {
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("hostId", hostId);
+        updates.put("hostName", hostName);
+        chatRoomsRef.child(chatRoom.getId()).updateChildren(updates)
+            .addOnSuccessListener(aVoid -> Log.d(TAG, "Backfilled host info for chat room " + chatRoom.getId()))
+            .addOnFailureListener(e -> Log.e(TAG, "Failed to backfill host info", e));
+
+        chatRoom.setHostId(hostId);
+        chatRoom.setHostName(hostName);
+    }
+
+    private boolean isNullOrEmpty(String value) {
+        return value == null || value.isEmpty();
+    }
+
+    private interface HostNameCallback {
+        void onResolved(String resolvedName);
     }
 
     /**

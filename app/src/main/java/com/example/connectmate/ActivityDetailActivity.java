@@ -420,7 +420,13 @@ public class ActivityDetailActivity extends AppCompatActivity {
                 }
 
                 // User is not a participant, proceed with joining
-                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), activity.getCategory(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                chatManager.createOrGetChatRoom(
+                        activity.getId(),
+                        activity.getTitle(),
+                        activity.getCategory(),
+                        activity.getCreatorId(),
+                        activity.getCreatorName(),
+                        new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
                     @Override
                     public void onSuccess(ChatRoom chatRoom) {
                         // First, add user as participant to the activity
