@@ -47,7 +47,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         ImageView profileImageView = convertView.findViewById(R.id.participant_profile_image);
         TextView participantNameTextView = convertView.findViewById(R.id.participant_name);
         ImageButton addFriendButton = convertView.findViewById(R.id.add_friend_button);
-        TextView hostBadge = convertView.findViewById(R.id.host_badge);
+        ImageView hostBadge = convertView.findViewById(R.id.host_badge);
 
         // Load profile image
         if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
