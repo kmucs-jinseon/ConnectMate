@@ -39,6 +39,10 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -93,6 +97,7 @@ public class CreateActivityActivity extends AppCompatActivity {
     // Edit mode variables
     private boolean isEditMode = false;
     private Activity editingActivity = null;
+    private String cachedCreatorName;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -102,6 +107,7 @@ public class CreateActivityActivity extends AppCompatActivity {
         // Initialize location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         getCurrentUserLocation();
+        preloadCreatorName();
 
         initViews();
         setupLocationInput(); // Setup listener before handling intent
@@ -602,20 +608,28 @@ public class CreateActivityActivity extends AppCompatActivity {
 
                 // Get current user info
                 String creatorId = "";
-                String creatorName = "Anonymous";
+                String creatorName = cachedCreatorName != null ? cachedCreatorName : "Anonymous";
 
                 // Try Firebase Auth
                 FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
                 if (firebaseUser != null) {
                     creatorId = firebaseUser.getUid();
-                    creatorName = (firebaseUser.getDisplayName() != null) ?
-                        firebaseUser.getDisplayName() : firebaseUser.getEmail();
+                    if (cachedCreatorName == null) {
+                        creatorName = (firebaseUser.getDisplayName() != null) ?
+                            firebaseUser.getDisplayName() : firebaseUser.getEmail();
+                    }
                     Log.d(TAG, "Firebase user: " + creatorName);
                 } else {
                     // Try SharedPreferences for social login
                     SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
                     creatorId = prefs.getString("user_id", "");
                     creatorName = prefs.getString("user_name", "Anonymous");
+                    if (cachedCreatorName == null && creatorName != null && creatorName.contains("@")) {
+                        String prefName = prefs.getString("user_name", null);
+                        if (prefName != null && !prefName.isEmpty()) {
+                            creatorName = prefName;
+                        }
+                    }
                     Log.d(TAG, "Social login user: " + creatorName);
                 }
 
@@ -913,6 +927,43 @@ public class CreateActivityActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Exception while getting location", e);
         }
+    }
+
+    private void preloadCreatorName() {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) {
+            SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+            cachedCreatorName = prefs.getString("user_name", null);
+            return;
+        }
+
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        String prefName = prefs.getString("user_name", null);
+        if (prefName != null && !prefName.isEmpty()) {
+            cachedCreatorName = prefName;
+        }
+
+        FirebaseDatabase.getInstance().getReference("users")
+            .child(firebaseUser.getUid())
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String displayName = snapshot.child("displayName").getValue(String.class);
+                    if (displayName != null && !displayName.isEmpty()) {
+                        cachedCreatorName = displayName;
+                    } else if (cachedCreatorName == null) {
+                        String email = firebaseUser.getEmail();
+                        if (email != null) {
+                            cachedCreatorName = email;
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Failed to load creator name", error.toException());
+                }
+            });
     }
 
     /**
