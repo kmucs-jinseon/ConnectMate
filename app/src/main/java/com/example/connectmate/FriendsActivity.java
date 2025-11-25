@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,10 +15,16 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 import com.example.connectmate.models.ChatRoom;
 import com.example.connectmate.utils.FirebaseChatManager;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -32,14 +41,14 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
 
     private static final String TAG = "FriendsActivity";
 
-    private RecyclerView friendsRecyclerView;
-    private RecyclerView friendRequestsRecyclerView;
-    private UserAdapter userAdapter;
-    private FriendRequestAdapter friendRequestAdapter;
-    private List<User> friendList;
-    private List<User> friendRequestList;
-    private DatabaseReference usersRef;
+    private TabLayout tabLayout;
+    private ViewPager2 viewPager;
     private String currentUserId;
+    public DatabaseReference usersRef;
+    public List<User> friendList = new ArrayList<>();
+    public List<User> friendRequestList = new ArrayList<>();
+    public UserAdapter userAdapter;
+    public FriendRequestAdapter friendRequestAdapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -50,10 +59,10 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle(R.string.my_friends); // Set title
+            getSupportActionBar().setTitle(R.string.my_friends);
         }
         toolbar.setNavigationOnClickListener(v -> finish());
-        
+
         // Get user ID from SharedPreferences for consistency across all login methods
         SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         currentUserId = prefs.getString("user_id", null);
@@ -64,33 +73,36 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
             finish();
             return;
         }
-        
+
         usersRef = FirebaseDatabase.getInstance().getReference("users");
 
-        initializeViews();
-        setupAdapters();
+        // Initialize adapters
+        userAdapter = new UserAdapter(this, friendList, this, this);
+        friendRequestAdapter = new FriendRequestAdapter(this, friendRequestList, this);
+
+        // Setup ViewPager2 with tabs
+        setupViewPager();
         loadFriends();
         loadFriendRequests();
     }
 
-    private void initializeViews() {
-        friendsRecyclerView = findViewById(R.id.friends_recycler_view);
-        friendRequestsRecyclerView = findViewById(R.id.friend_requests_recycler_view);
+    private void setupViewPager() {
+        tabLayout = findViewById(R.id.tab_layout);
+        viewPager = findViewById(R.id.view_pager);
 
-        // Set LayoutManagers
-        friendsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        friendRequestsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-    }
+        FriendsViewPagerAdapter adapter = new FriendsViewPagerAdapter(this);
+        viewPager.setAdapter(adapter);
 
-    private void setupAdapters() {
-        friendList = new ArrayList<>();
-        friendRequestList = new ArrayList<>();
-
-        userAdapter = new UserAdapter(this, friendList, this, this);
-        friendRequestAdapter = new FriendRequestAdapter(this, friendRequestList, this);
-
-        friendsRecyclerView.setAdapter(userAdapter);
-        friendRequestsRecyclerView.setAdapter(friendRequestAdapter);
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("친구");
+                    break;
+                case 1:
+                    tab.setText("친구 요청");
+                    break;
+            }
+        }).attach();
     }
 
     private void loadFriends() {
@@ -264,5 +276,76 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
     public void onFriendRequestAccepted(User user) {
         friendRequestList.remove(user);
         friendRequestAdapter.notifyDataSetChanged();
+    }
+
+    // ViewPager Adapter
+    private class FriendsViewPagerAdapter extends FragmentStateAdapter {
+        public FriendsViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+            super(fragmentActivity);
+        }
+
+        @NonNull
+        @Override
+        public Fragment createFragment(int position) {
+            switch (position) {
+                case 0:
+                    return new FriendsListFragment();
+                case 1:
+                    return new FriendRequestsFragment();
+                default:
+                    return new FriendsListFragment();
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return 2;
+        }
+    }
+
+    // Friends List Fragment
+    public static class FriendsListFragment extends Fragment {
+        private RecyclerView recyclerView;
+
+        @Nullable
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+            return inflater.inflate(R.layout.fragment_friends_list, container, false);
+        }
+
+        @Override
+        public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            recyclerView = view.findViewById(R.id.friends_recycler_view);
+            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+            if (getActivity() instanceof FriendsActivity) {
+                FriendsActivity activity = (FriendsActivity) getActivity();
+                recyclerView.setAdapter(activity.userAdapter);
+            }
+        }
+    }
+
+    // Friend Requests Fragment
+    public static class FriendRequestsFragment extends Fragment {
+        private RecyclerView recyclerView;
+
+        @Nullable
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+            return inflater.inflate(R.layout.fragment_friend_requests, container, false);
+        }
+
+        @Override
+        public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            recyclerView = view.findViewById(R.id.friend_requests_recycler_view);
+            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+            if (getActivity() instanceof FriendsActivity) {
+                FriendsActivity activity = (FriendsActivity) getActivity();
+                recyclerView.setAdapter(activity.friendRequestAdapter);
+            }
+        }
     }
 }

@@ -306,7 +306,8 @@ public class ProfileSetupFragment extends Fragment {
                                     Glide.with(ProfileSetupFragment.this)
                                         .load(user.profileImageUrl)
                                         .circleCrop()
-                                        .placeholder(R.drawable.ic_person_placeholder)
+                                        .placeholder(R.drawable.circle_logo)
+                                        .error(R.drawable.circle_logo)
                                         .into(profileImage);
                                 }
                             }

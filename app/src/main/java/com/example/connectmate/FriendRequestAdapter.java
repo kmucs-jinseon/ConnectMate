@@ -50,17 +50,21 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         holder.userName.setText(user.getDisplayName());
 
         if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-            Glide.with(context).load(user.getProfileImageUrl()).placeholder(R.drawable.ic_profile).into(holder.userProfileImage);
+            Glide.with(context)
+                    .load(user.getProfileImageUrl())
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .into(holder.userProfileImage);
         } else {
-            holder.userProfileImage.setImageResource(R.drawable.ic_profile);
+            holder.userProfileImage.setImageResource(R.drawable.circle_logo);
         }
 
         // In FriendRequestAdapter, only "add" button is visible.
         if (holder.chatButton != null) {
             holder.chatButton.setVisibility(View.GONE);
         }
-        if (holder.removeFriendButton != null) {
-            holder.removeFriendButton.setVisibility(View.GONE);
+        if (holder.moreOptionsButton != null) {
+            holder.moreOptionsButton.setVisibility(View.GONE);
         }
         if (holder.addFriendButton != null) {
             holder.addFriendButton.setVisibility(View.VISIBLE);
@@ -97,7 +101,7 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         TextView userName;
         ImageButton addFriendButton;
         ImageButton chatButton;
-        ImageButton removeFriendButton;
+        ImageButton moreOptionsButton;
 
         public FriendRequestViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -105,7 +109,7 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
             userName = itemView.findViewById(R.id.user_name);
             addFriendButton = itemView.findViewById(R.id.add_friend_button);
             chatButton = itemView.findViewById(R.id.chat_button);
-            removeFriendButton = itemView.findViewById(R.id.remove_friend_button);
+            moreOptionsButton = itemView.findViewById(R.id.more_options_button);
         }
     }
 }

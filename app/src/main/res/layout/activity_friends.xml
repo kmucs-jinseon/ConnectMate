@@ -19,44 +19,23 @@
         app:titleTextColor="@android:color/white"
         app:titleTextAppearance="@style/ToolbarTitleBold" />
 
-    <TextView
-        android:layout_width="wrap_content"
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="@string/friends"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+        android:background="@android:color/white"
+        app:tabTextColor="@color/gray_600"
+        app:tabSelectedTextColor="@color/primary_blue"
+        app:tabIndicatorColor="@color/primary_blue"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="fixed"
+        app:tabGravity="fill" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/friends_recycler_view"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="8dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_user" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="@string/friend_requests"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/friend_requests_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="8dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_user" />
+        android:background="#f5f5f5" />
 
 </LinearLayout>

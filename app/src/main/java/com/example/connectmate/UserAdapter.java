@@ -6,8 +6,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import java.util.List;
@@ -47,9 +49,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         holder.userName.setText(user.getDisplayName());
 
         if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
-            Glide.with(context).load(user.getProfileImageUrl()).placeholder(R.drawable.ic_profile).into(holder.userProfileImage);
+            Glide.with(context)
+                    .load(user.getProfileImageUrl())
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .into(holder.userProfileImage);
         } else {
-            holder.userProfileImage.setImageResource(R.drawable.ic_profile);
+            holder.userProfileImage.setImageResource(R.drawable.circle_logo);
         }
 
         // In UserAdapter, we are dealing with friends, so "add" button is hidden.
@@ -60,9 +66,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             holder.chatButton.setVisibility(View.VISIBLE);
             holder.chatButton.setOnClickListener(v -> chatClickListener.onChatClick(user));
         }
-        if (holder.removeFriendButton != null) {
-            holder.removeFriendButton.setVisibility(View.VISIBLE);
-            holder.removeFriendButton.setOnClickListener(v -> removeFriendClickListener.onRemoveFriendClick(user));
+        if (holder.moreOptionsButton != null) {
+            holder.moreOptionsButton.setVisibility(View.VISIBLE);
+            holder.moreOptionsButton.setOnClickListener(v -> showOptionsMenu(v, user));
         }
     }
 
@@ -71,12 +77,40 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return userList.size();
     }
 
+    private void showOptionsMenu(View view, User user) {
+        PopupMenu popup = new PopupMenu(context, view);
+        popup.getMenuInflater().inflate(R.menu.friend_options_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_remove_friend) {
+                showRemoveFriendConfirmation(user);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
+    }
+
+    private void showRemoveFriendConfirmation(User user) {
+        new AlertDialog.Builder(context)
+                .setTitle("친구 삭제")
+                .setMessage("정말로 친구를 삭제하시겠습니까?")
+                .setPositiveButton("예", (dialog, which) -> {
+                    if (removeFriendClickListener != null) {
+                        removeFriendClickListener.onRemoveFriendClick(user);
+                    }
+                })
+                .setNegativeButton("아니오", null)
+                .show();
+    }
+
     public static class UserViewHolder extends RecyclerView.ViewHolder {
         ImageView userProfileImage;
         TextView userName;
         ImageButton addFriendButton;
         ImageButton chatButton;
-        ImageButton removeFriendButton;
+        ImageButton moreOptionsButton;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -84,7 +118,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             userName = itemView.findViewById(R.id.user_name);
             addFriendButton = itemView.findViewById(R.id.add_friend_button);
             chatButton = itemView.findViewById(R.id.chat_button);
-            removeFriendButton = itemView.findViewById(R.id.remove_friend_button);
+            moreOptionsButton = itemView.findViewById(R.id.more_options_button);
         }
     }
 }

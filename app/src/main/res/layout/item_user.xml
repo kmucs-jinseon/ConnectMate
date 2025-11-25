@@ -22,7 +22,7 @@
             android:id="@+id/user_profile_image"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_profile" />
+            android:src="@drawable/circle_logo" />
 
         <TextView
             android:id="@+id/user_name"
@@ -48,6 +48,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_check"
+                android:tint="@color/primary_blue"
                 android:contentDescription="@string/accept_friend_request"
                 android:visibility="gone"
                 tools:visibility="visible"/>
@@ -59,18 +60,20 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_chat"
+                android:tint="@color/primary_blue"
                 android:contentDescription="@string/chat_with_friend"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
-            <!-- Remove Friend/Request Button -->
+            <!-- More Options Button (Three Dots) -->
             <ImageButton
-                android:id="@+id/remove_friend_button"
+                android:id="@+id/more_options_button"
                 style="?attr/borderlessButtonStyle"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/ic_delete"
-                android:contentDescription="@string/remove_friend"
+                android:src="@drawable/ic_more_vertical"
+                android:tint="@color/primary_blue"
+                android:contentDescription="More options"
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
