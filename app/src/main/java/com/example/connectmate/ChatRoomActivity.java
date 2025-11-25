@@ -84,6 +84,10 @@ public class ChatRoomActivity extends AppCompatActivity {
     private java.util.ArrayList<Uri> selectedFileUris; // Multiple file support
     private ActivityResultLauncher<Intent> pickImageLauncher;
 
+    // Track if initial messages have been loaded
+    private boolean isInitialLoad = true;
+    private boolean hasScrolledToUnread = false;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -289,30 +293,52 @@ public class ChatRoomActivity extends AppCompatActivity {
                     friendIds.add(friendSnapshot.getKey());
                 }
 
+                // Fetch profile images for all participants
                 List<Participant> participants = new ArrayList<>();
                 String hostId = chatRoom.getHostId();
+                int totalMembers = chatRoom.getMembers().size();
+                final int[] loadedCount = {0}; // Counter for loaded profiles
+
                 for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
-                    boolean isHost = hostId != null && hostId.equals(entry.getKey());
-                    participants.add(new Participant(entry.getKey(), entry.getValue().getName(), isHost));
+                    String userId = entry.getKey();
+                    String userName = entry.getValue().getName();
+                    boolean isHost = hostId != null && hostId.equals(userId);
+
+                    // Fetch profile image URL from Firebase
+                    DatabaseReference userRef = FirebaseDatabase.getInstance()
+                            .getReference("users")
+                            .child(userId)
+                            .child("profileImageUrl");
+
+                    userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot profileSnapshot) {
+                            String profileImageUrl = profileSnapshot.getValue(String.class);
+
+                            // Create participant with profile image URL
+                            participants.add(new Participant(userId, userName, isHost, profileImageUrl));
+                            loadedCount[0]++;
+
+                            // Show dialog when all profiles are loaded
+                            if (loadedCount[0] == totalMembers) {
+                                displayParticipantsDialog(participants, friendIds);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Log.e(TAG, "Failed to load profile for user: " + userId, error.toException());
+                            // Add participant without profile image
+                            participants.add(new Participant(userId, userName, isHost, null));
+                            loadedCount[0]++;
+
+                            // Show dialog when all profiles are loaded
+                            if (loadedCount[0] == totalMembers) {
+                                displayParticipantsDialog(participants, friendIds);
+                            }
+                        }
+                    });
                 }
-                
-                // Inflate the custom dialog layout
-                LayoutInflater inflater = getLayoutInflater();
-                View dialogView = inflater.inflate(R.layout.dialog_participants, null);
-                
-                // Find the ListView in the custom layout
-                ListView participantsListView = dialogView.findViewById(R.id.participants_list_view);
-
-                // Create and set the adapter
-                ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
-                participantsListView.setAdapter(adapter);
-
-                // Build and show the dialog
-                new AlertDialog.Builder(ChatRoomActivity.this)
-                        .setTitle("참여자 목록 (" + participants.size() + "명)")
-                        .setView(dialogView)
-                        .setPositiveButton("확인", null)
-                        .show();
             }
 
             @Override
@@ -321,6 +347,29 @@ public class ChatRoomActivity extends AppCompatActivity {
                 Toast.makeText(ChatRoomActivity.this, "친구 목록을 불러오는데 실패했습니다.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * Display the participants dialog with loaded data
+     */
+    private void displayParticipantsDialog(List<Participant> participants, List<String> friendIds) {
+        // Inflate the custom dialog layout
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_participants, null);
+
+        // Find the ListView in the custom layout
+        ListView participantsListView = dialogView.findViewById(R.id.participants_list_view);
+
+        // Create and set the adapter
+        ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
+        participantsListView.setAdapter(adapter);
+
+        // Build and show the dialog
+        new AlertDialog.Builder(ChatRoomActivity.this)
+                .setTitle("참여자 목록 (" + participants.size() + "명)")
+                .setView(dialogView)
+                .setPositiveButton("확인", null)
+                .show();
     }
 
     private void leaveChatRoom() {
@@ -745,9 +794,24 @@ public class ChatRoomActivity extends AppCompatActivity {
                     messages.add(message);
                     messageAdapter.notifyItemInserted(messages.size() - 1);
 
-                    // Auto-scroll to bottom if near the bottom or if it's the user's own message
-                    if (shouldAutoScroll() || message.getSenderId().equals(currentUserId)) {
-                        messagesRecyclerView.scrollToPosition(messages.size() - 1);
+                    // Handle scrolling based on whether it's initial load or new message
+                    if (isInitialLoad) {
+                        // During initial load, wait for all messages then scroll to unread
+                        if (!hasScrolledToUnread && messages.size() > 0) {
+                            // Use a slight delay to ensure all initial messages are loaded
+                            messagesRecyclerView.postDelayed(() -> {
+                                if (!hasScrolledToUnread) {
+                                    scrollToUnreadOrBottom();
+                                    hasScrolledToUnread = true;
+                                    isInitialLoad = false;
+                                }
+                            }, 500);
+                        }
+                    } else {
+                        // For new messages after initial load, use existing logic
+                        if (shouldAutoScroll() || message.getSenderId().equals(currentUserId)) {
+                            messagesRecyclerView.scrollToPosition(messages.size() - 1);
+                        }
                     }
 
                     updateUI();
@@ -1336,9 +1400,83 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Save the last read timestamp for this chat room
+     */
+    private void saveLastReadTimestamp() {
+        if (chatRoom == null || currentUserId == null) return;
+
+        long currentTime = System.currentTimeMillis();
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        prefs.edit()
+            .putLong("last_read_" + chatRoom.getId() + "_" + currentUserId, currentTime)
+            .apply();
+        Log.d(TAG, "Saved last read timestamp: " + currentTime + " for chat " + chatRoom.getId());
+    }
+
+    /**
+     * Get the last read timestamp for this chat room
+     */
+    private long getLastReadTimestamp() {
+        if (chatRoom == null || currentUserId == null) return 0;
+
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        return prefs.getLong("last_read_" + chatRoom.getId() + "_" + currentUserId, 0);
+    }
+
+    /**
+     * Find the first unread message position
+     */
+    private int findFirstUnreadPosition() {
+        long lastReadTime = getLastReadTimestamp();
+        if (lastReadTime == 0) return -1; // No previous read position
+
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage msg = messages.get(i);
+            if (msg.getTimestamp() > lastReadTime) {
+                Log.d(TAG, "First unread message at position: " + i);
+                return i;
+            }
+        }
+
+        return -1; // All messages are read
+    }
+
+    /**
+     * Scroll to first unread message or bottom
+     */
+    private void scrollToUnreadOrBottom() {
+        if (messages.isEmpty()) return;
+
+        int unreadPosition = findFirstUnreadPosition();
+
+        if (unreadPosition > 0) {
+            // Scroll to first unread message
+            messagesRecyclerView.post(() -> {
+                messagesRecyclerView.scrollToPosition(unreadPosition);
+                Log.d(TAG, "Scrolled to first unread message at position: " + unreadPosition);
+            });
+        } else {
+            // No unread messages or first time opening, scroll to bottom
+            messagesRecyclerView.post(() -> {
+                messagesRecyclerView.scrollToPosition(messages.size() - 1);
+                Log.d(TAG, "Scrolled to bottom (latest message)");
+            });
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Save last read timestamp when user leaves the chat
+        saveLastReadTimestamp();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Save last read timestamp one more time
+        saveLastReadTimestamp();
         // Clean up Firebase listeners
         if (chatRoom != null) {
             FirebaseChatManager.getInstance().removeMessageListener(chatRoom.getId());

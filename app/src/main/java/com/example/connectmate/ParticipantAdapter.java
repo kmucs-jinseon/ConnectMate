@@ -6,10 +6,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -40,11 +42,24 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         Participant participant = participants.get(position);
         String participantId = participant.getId();
         String participantName = participant.getName();
+        String profileImageUrl = participant.getProfileImageUrl();
 
+        ImageView profileImageView = convertView.findViewById(R.id.participant_profile_image);
         TextView participantNameTextView = convertView.findViewById(R.id.participant_name);
         ImageButton addFriendButton = convertView.findViewById(R.id.add_friend_button);
         TextView hostBadge = convertView.findViewById(R.id.host_badge);
 
+        // Load profile image
+        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+            Glide.with(context)
+                    .load(profileImageUrl)
+                    .placeholder(R.drawable.circle_logo)
+                    .error(R.drawable.circle_logo)
+                    .circleCrop()
+                    .into(profileImageView);
+        } else {
+            profileImageView.setImageResource(R.drawable.circle_logo);
+        }
 
         boolean isFriend = friendIds.contains(participantId);
         boolean isCurrentUser = participantId.equals(currentUserId);

@@ -157,4 +157,12 @@
         <item name="android:elevation">2dp</item>
     </style>
 
+    <!-- =============================== -->
+    <!--      Toolbar Title Style        -->
+    <!-- =============================== -->
+    <style name="ToolbarTitleBold" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/pretendard_extrabold</item>
+    </style>
+
 </resources>

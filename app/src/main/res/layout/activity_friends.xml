@@ -16,7 +16,8 @@
         app:navigationIcon="@drawable/ic_arrow_left"
         app:navigationIconTint="@color/white"
         app:title="@string/my_friends"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@android:color/white"
+        app:titleTextAppearance="@style/ToolbarTitleBold" />
 
     <TextView
         android:layout_width="wrap_content"

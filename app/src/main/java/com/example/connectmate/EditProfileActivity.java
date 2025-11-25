@@ -443,6 +443,13 @@ public class EditProfileActivity extends AppCompatActivity {
                 .updateChildren(updates)
                 .addOnSuccessListener(aVoid -> {
                     android.util.Log.d("EditProfileActivity", "Profile updated successfully in Firebase");
+
+                    // If profile photo was updated, propagate it everywhere
+                    if (imageData != null && !imageData.isEmpty()) {
+                        String base64WithPrefix = "data:image/jpeg;base64," + imageData;
+                        syncProfilePhotoEverywhere(userId, base64WithPrefix, name);
+                    }
+
                     Toast.makeText(this, "프로필이 저장되었습니다", Toast.LENGTH_SHORT).show();
                     finish();
                 })
@@ -450,6 +457,140 @@ public class EditProfileActivity extends AppCompatActivity {
                     android.util.Log.e("EditProfileActivity", "Error updating profile in Realtime Database", e);
                     Toast.makeText(this, "프로필 저장 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    /**
+     * Synchronize profile photo everywhere when updated
+     * Updates: chat messages, activities, chat rooms
+     */
+    private void syncProfilePhotoEverywhere(String userId, String newProfileUrl, String userName) {
+        android.util.Log.d("EditProfileActivity", "Starting profile photo sync for user: " + userId);
+
+        // Update all chat messages from this user
+        updateProfilePhotoInChatMessages(userId, newProfileUrl, userName);
+
+        // Update all activities where user is a participant
+        updateProfilePhotoInActivities(userId, newProfileUrl);
+
+        // Update chat room member lists
+        updateProfilePhotoInChatRooms(userId, newProfileUrl);
+    }
+
+    /**
+     * Update profile photo in all chat messages sent by this user
+     */
+    private void updateProfilePhotoInChatMessages(String userId, String newProfileUrl, String userName) {
+        // Get all chat rooms
+        dbRef.child("chatRooms").addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot dataSnapshot) {
+                for (com.google.firebase.database.DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
+                    String chatRoomId = roomSnapshot.getKey();
+                    if (chatRoomId == null) continue;
+
+                    // Check messages in this chat room
+                    dbRef.child("messages").child(chatRoomId).addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+                        @Override
+                        public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot messagesSnapshot) {
+                            for (com.google.firebase.database.DataSnapshot messageSnapshot : messagesSnapshot.getChildren()) {
+                                String messageId = messageSnapshot.getKey();
+                                String senderId = messageSnapshot.child("senderId").getValue(String.class);
+
+                                // Update if this message is from the user
+                                if (userId.equals(senderId)) {
+                                    Map<String, Object> updates = new HashMap<>();
+                                    updates.put("senderProfileUrl", newProfileUrl);
+                                    updates.put("senderName", userName);
+
+                                    dbRef.child("messages").child(chatRoomId).child(messageId)
+                                            .updateChildren(updates);
+                                    android.util.Log.d("EditProfileActivity", "Updated message " + messageId + " in chat " + chatRoomId);
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                            android.util.Log.e("EditProfileActivity", "Error updating messages in chat " + chatRoomId, error.toException());
+                        }
+                    });
+                }
+                android.util.Log.d("EditProfileActivity", "Chat messages update initiated");
+            }
+
+            @Override
+            public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                android.util.Log.e("EditProfileActivity", "Error fetching chat rooms", error.toException());
+            }
+        });
+    }
+
+    /**
+     * Update profile photo in all activities where user is a participant
+     */
+    private void updateProfilePhotoInActivities(String userId, String newProfileUrl) {
+        dbRef.child("activities").addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot dataSnapshot) {
+                for (com.google.firebase.database.DataSnapshot activitySnapshot : dataSnapshot.getChildren()) {
+                    String activityId = activitySnapshot.getKey();
+                    if (activityId == null) continue;
+
+                    // Check if user is a participant
+                    com.google.firebase.database.DataSnapshot participantsSnapshot = activitySnapshot.child("participants");
+                    if (participantsSnapshot.hasChild(userId)) {
+                        // Update participant profile photo
+                        dbRef.child("activities").child(activityId).child("participants").child(userId).child("profileImageUrl")
+                                .setValue(newProfileUrl);
+                        android.util.Log.d("EditProfileActivity", "Updated profile in activity: " + activityId);
+                    }
+
+                    // Check if user is the creator
+                    String creatorId = activitySnapshot.child("creatorId").getValue(String.class);
+                    if (userId.equals(creatorId)) {
+                        dbRef.child("activities").child(activityId).child("creatorProfileUrl")
+                                .setValue(newProfileUrl);
+                        android.util.Log.d("EditProfileActivity", "Updated creator profile in activity: " + activityId);
+                    }
+                }
+                android.util.Log.d("EditProfileActivity", "Activities update completed");
+            }
+
+            @Override
+            public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                android.util.Log.e("EditProfileActivity", "Error updating activities", error.toException());
+            }
+        });
+    }
+
+    /**
+     * Update profile photo in chat room member lists
+     */
+    private void updateProfilePhotoInChatRooms(String userId, String newProfileUrl) {
+        dbRef.child("chatRooms").addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot dataSnapshot) {
+                for (com.google.firebase.database.DataSnapshot roomSnapshot : dataSnapshot.getChildren()) {
+                    String chatRoomId = roomSnapshot.getKey();
+                    if (chatRoomId == null) continue;
+
+                    // Check if user is a member
+                    com.google.firebase.database.DataSnapshot membersSnapshot = roomSnapshot.child("members");
+                    if (membersSnapshot.hasChild(userId)) {
+                        // Update member profile photo
+                        dbRef.child("chatRooms").child(chatRoomId).child("members").child(userId).child("profileImageUrl")
+                                .setValue(newProfileUrl);
+                        android.util.Log.d("EditProfileActivity", "Updated profile in chat room: " + chatRoomId);
+                    }
+                }
+                android.util.Log.d("EditProfileActivity", "Chat rooms update completed");
+            }
+
+            @Override
+            public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                android.util.Log.e("EditProfileActivity", "Error updating chat rooms", error.toException());
+            }
+        });
     }
 
     /**

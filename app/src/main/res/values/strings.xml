@@ -177,6 +177,6 @@
     <string name="chat_with_friend">친구와 채팅하기</string>
     <string name="remove_friend">친구 삭제</string>
     <string name="participant_name">참여자 이름</string>
-    <string name="host_badge">호스트 뱃지</string>
+    <string name="host_badge">호스트</string>
     <string name="add_friend">친구 추가</string>
 </resources>
