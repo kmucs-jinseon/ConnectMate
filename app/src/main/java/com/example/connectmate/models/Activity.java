@@ -1,6 +1,7 @@
 package com.example.connectmate.models;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -23,6 +24,11 @@ public class Activity implements Serializable {
     private long createdTimestamp;
     private double latitude;  // GPS latitude for map display
     private double longitude; // GPS longitude for map display
+
+    // Fields for backward compatibility with old Firebase data
+    private String dateTime;  // Old combined date/time field
+    private Map<String, Object> participants;  // Old participants structure (Object to handle both String and Boolean)
+    private String creatorProfileUrl;  // Creator's profile image URL
 
     // Default constructor
     public Activity() {
@@ -200,6 +206,11 @@ public class Activity implements Serializable {
      * Get formatted date and time string
      */
     public String getDateTime() {
+        // Return the old dateTime field if it exists (for backward compatibility)
+        if (dateTime != null && !dateTime.isEmpty()) {
+            return dateTime;
+        }
+        // Otherwise, combine date and time
         if (date != null && time != null) {
             return date + " " + time;
         } else if (date != null) {
@@ -208,5 +219,31 @@ public class Activity implements Serializable {
             return time;
         }
         return "";
+    }
+
+    /**
+     * Set dateTime field (for backward compatibility with old Firebase data)
+     * This allows Firebase to deserialize old "dateTime" field without errors
+     */
+    public void setDateTime(String dateTime) {
+        this.dateTime = dateTime;
+        // Optionally parse it into separate date and time if needed
+        // For now, just store it to avoid deserialization errors
+    }
+
+    public Map<String, Object> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(Map<String, Object> participants) {
+        this.participants = participants;
+    }
+
+    public String getCreatorProfileUrl() {
+        return creatorProfileUrl;
+    }
+
+    public void setCreatorProfileUrl(String creatorProfileUrl) {
+        this.creatorProfileUrl = creatorProfileUrl;
     }
 }

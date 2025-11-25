@@ -579,21 +579,31 @@ public class FirebaseActivityManager {
     }
 
     /**
-     * Get activities by exact location.
+     * Get activities by location with tolerance for floating-point comparison.
+     * Uses a small epsilon value to account for GPS coordinate precision.
      */
     public void getActivitiesByLocation(double latitude, double longitude, OnCompleteListener<List<Activity>> listener) {
-        // Firebase can only query on one order-by clause. We'll query by latitude and then filter by longitude.
-        activitiesRef.orderByChild("latitude").equalTo(latitude).addListenerForSingleValueEvent(new ValueEventListener() {
+        // Small tolerance for double comparison (approximately 1 meter)
+        final double EPSILON = 0.00001;
+
+        // Firebase doesn't support range queries on multiple fields, so we need to fetch all activities
+        // and filter by both latitude and longitude with tolerance
+        activitiesRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 List<Activity> matchingActivities = new ArrayList<>();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Activity activity = snapshot.getValue(Activity.class);
-                    // Check if the longitude also matches
-                    if (activity != null && activity.getLongitude() == longitude) {
+                    // Check if both latitude and longitude match within tolerance
+                    if (activity != null &&
+                        Math.abs(activity.getLatitude() - latitude) < EPSILON &&
+                        Math.abs(activity.getLongitude() - longitude) < EPSILON) {
                         matchingActivities.add(activity);
+                        Log.d(TAG, "Found activity at location: " + activity.getTitle() +
+                              " (" + activity.getLatitude() + ", " + activity.getLongitude() + ")");
                     }
                 }
+                Log.d(TAG, "Found " + matchingActivities.size() + " activities at location (" + latitude + ", " + longitude + ")");
                 if (listener != null) {
                     listener.onSuccess(matchingActivities);
                 }

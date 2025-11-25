@@ -36,8 +36,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -58,7 +56,6 @@ public class ProfileSetupFragment extends Fragment {
 
     private FirebaseAuth mAuth;
     private DatabaseReference databaseReference;
-    private StorageReference storageReference;
     private SharedPreferences prefs;
     private ProfileSetupHost host;
 
@@ -156,7 +153,6 @@ public class ProfileSetupFragment extends Fragment {
 
         mAuth = FirebaseAuth.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference();
-        storageReference = FirebaseStorage.getInstance().getReference();
         prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
         if (getArguments() != null) {
@@ -407,29 +403,55 @@ public class ProfileSetupFragment extends Fragment {
     }
 
     private void uploadImageAndSaveProfile(String name, String username, String mbti, String bio) {
-        StorageReference imageRef = storageReference.child("profile_images/" + userId + ".jpg");
+        // Convert image to Base64 (works on free tier without Firebase Storage)
+        try {
+            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(selectedImageUri);
+            android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(inputStream);
 
-        imageRef.putFile(selectedImageUri)
-            .addOnSuccessListener(taskSnapshot -> {
-                // Get download URL
-                imageRef.getDownloadUrl()
-                    .addOnSuccessListener(uri -> {
-                        profileImageUrl = uri.toString();
-                        Log.d(TAG, "Image uploaded successfully: " + profileImageUrl);
-                        saveProfileToFirebase(name, username, mbti, bio, profileImageUrl);
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Failed to get download URL", e);
-                        // Continue saving profile without image
-                        saveProfileToFirebase(name, username, mbti, bio, null);
-                    });
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to upload image", e);
-                Toast.makeText(requireContext(), "이미지 업로드 실패. 프로필만 저장합니다.", Toast.LENGTH_SHORT).show();
-                // Continue saving profile without image
+            if (bitmap == null) {
+                Log.e(TAG, "Failed to decode image");
+                Toast.makeText(requireContext(), "이미지 처리 실패. 프로필만 저장합니다.", Toast.LENGTH_SHORT).show();
                 saveProfileToFirebase(name, username, mbti, bio, null);
-            });
+                return;
+            }
+
+            // Resize image to reduce size (max 400x400 pixels)
+            int maxSize = 400;
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            float scale = Math.min(((float) maxSize / width), ((float) maxSize / height));
+
+            int newWidth = Math.round(width * scale);
+            int newHeight = Math.round(height * scale);
+
+            android.graphics.Bitmap resizedBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+            Log.d(TAG, "Resized image from " + width + "x" + height + " to " + newWidth + "x" + newHeight);
+
+            // Convert to Base64
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            resizedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, baos);
+            byte[] imageBytes = baos.toByteArray();
+            String base64Image = android.util.Base64.encodeToString(imageBytes, android.util.Base64.DEFAULT);
+
+            Log.d(TAG, "Base64 string size: " + base64Image.length() + " characters");
+
+            // Clean up
+            bitmap.recycle();
+            resizedBitmap.recycle();
+            inputStream.close();
+
+            // Save with Base64 string
+            String base64WithPrefix = "data:image/jpeg;base64," + base64Image;
+            profileImageUrl = base64WithPrefix;
+            Log.d(TAG, "Image converted to Base64 successfully");
+            saveProfileToFirebase(name, username, mbti, bio, base64WithPrefix);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to convert image to Base64", e);
+            Toast.makeText(requireContext(), "이미지 처리 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // Continue saving profile without image
+            saveProfileToFirebase(name, username, mbti, bio, null);
+        }
     }
 
     private void saveProfileToFirebase(String name, String username, String mbti, String bio, String imageUrl) {

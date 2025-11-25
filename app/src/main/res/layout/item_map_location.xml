@@ -27,7 +27,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_gravity="center"
-            android:src="@drawable/ic_map_pin"
+            android:src="@drawable/ic_my_location_marker"
             app:tint="@color/white"
             android:contentDescription="@string/location_icon"/>
 

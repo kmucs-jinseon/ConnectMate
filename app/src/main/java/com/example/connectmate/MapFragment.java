@@ -562,8 +562,31 @@ public class MapFragment extends Fragment {
                 currentLocationLabel = null;
             }
 
-            // Create marker style for current location
-            LabelStyle labelStyle = LabelStyle.from(R.drawable.ic_my_location_marker)
+            // Create bitmap from vector drawable (Kakao Maps doesn't support vector drawables directly)
+            android.graphics.drawable.Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_my_location_marker);
+            Bitmap markerBitmap;
+
+            if (drawable != null) {
+                // Convert drawable to bitmap
+                int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 64;
+                int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 64;
+                markerBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(markerBitmap);
+                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                drawable.draw(canvas);
+            } else {
+                // Fallback: create a simple blue circle
+                int size = (int) (32 * getResources().getDisplayMetrics().density);
+                markerBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(markerBitmap);
+                android.graphics.Paint paint = new android.graphics.Paint();
+                paint.setColor(ContextCompat.getColor(requireContext(), R.color.primary_blue));
+                paint.setAntiAlias(true);
+                canvas.drawCircle(size / 2f, size / 2f, size / 2f * 0.8f, paint);
+            }
+
+            // Create marker style for current location using the bitmap
+            LabelStyle labelStyle = LabelStyle.from(markerBitmap)
                 .setAnchorPoint(0.5f, 0.5f)  // Anchor at center for circular marker
                 .setZoomLevel(0);  // Visible at all zoom levels
 
@@ -576,7 +599,7 @@ public class MapFragment extends Fragment {
                 LatLng.from(latitude, longitude)
             ).setStyles(styles)
              .setClickable(false)  // Not clickable
-             .setRank(1);  // Higher rank to appear on top of other markers
+             .setRank(100);  // Very high rank to appear on top of all other markers
 
             // Add marker to map
             currentLocationLabel = labelLayer.addLabel(options);
