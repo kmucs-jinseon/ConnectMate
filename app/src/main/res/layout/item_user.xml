@@ -53,6 +53,18 @@
                 android:visibility="gone"
                 tools:visibility="visible"/>
 
+            <!-- Reject Friend Request Button -->
+            <ImageButton
+                android:id="@+id/reject_friend_button"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_close"
+                android:tint="#FF5252"
+                android:contentDescription="거절"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
             <!-- Chat Button -->
             <ImageButton
                 android:id="@+id/chat_button"

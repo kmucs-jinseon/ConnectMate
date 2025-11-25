@@ -563,8 +563,8 @@ public class MapFragment extends Fragment {
             }
 
             // Create marker style for current location
-            LabelStyle labelStyle = LabelStyle.from(R.drawable.ic_location_marker)
-                .setAnchorPoint(0.5f, 1.0f)  // Anchor at bottom center
+            LabelStyle labelStyle = LabelStyle.from(R.drawable.ic_my_location_marker)
+                .setAnchorPoint(0.5f, 0.5f)  // Anchor at center for circular marker
                 .setZoomLevel(0);  // Visible at all zoom levels
 
             LabelStyles styles = kakaoMap.getLabelManager()

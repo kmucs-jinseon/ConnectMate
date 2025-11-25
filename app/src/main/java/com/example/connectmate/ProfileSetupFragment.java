@@ -189,6 +189,12 @@ public class ProfileSetupFragment extends Fragment {
         bioInput = view.findViewById(R.id.profile_setup_bio_input);
         completeButton = view.findViewById(R.id.profile_setup_complete_button);
         progressBar = view.findViewById(R.id.profile_setup_progress);
+
+        // Also set click listener on the card
+        View profileImageCard = view.findViewById(R.id.profile_image_card);
+        if (profileImageCard != null) {
+            profileImageCard.setOnClickListener(v -> checkPermissionAndPickImage());
+        }
     }
 
     private void setupAutoUsername() {

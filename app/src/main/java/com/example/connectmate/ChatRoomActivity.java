@@ -854,14 +854,14 @@ public class ChatRoomActivity extends AppCompatActivity {
                     if (isInitialLoad) {
                         // During initial load, wait for all messages then scroll to unread
                         if (!hasScrolledToUnread && messages.size() > 0) {
-                            // Use a slight delay to ensure all initial messages are loaded
+                            // Use a delay to ensure all initial messages are loaded
                             messagesRecyclerView.postDelayed(() -> {
                                 if (!hasScrolledToUnread) {
                                     scrollToUnreadOrBottom();
                                     hasScrolledToUnread = true;
                                     isInitialLoad = false;
                                 }
-                            }, 500);
+                            }, 1000);
                         }
                     } else {
                         // For new messages after initial load, use existing logic
@@ -1507,7 +1507,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         int unreadPosition = findFirstUnreadPosition();
 
-        if (unreadPosition > 0) {
+        if (unreadPosition >= 0) {
             // Scroll to first unread message
             messagesRecyclerView.post(() -> {
                 messagesRecyclerView.scrollToPosition(unreadPosition);

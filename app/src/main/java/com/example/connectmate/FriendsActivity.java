@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FriendsActivity extends AppCompatActivity implements UserAdapter.OnChatClickListener, UserAdapter.OnRemoveFriendClickListener, FriendRequestAdapter.OnFriendRequestAcceptedListener {
+public class FriendsActivity extends AppCompatActivity implements UserAdapter.OnChatClickListener, UserAdapter.OnRemoveFriendClickListener, FriendRequestAdapter.OnFriendRequestAcceptedListener, FriendRequestAdapter.OnFriendRequestRejectedListener {
 
     private static final String TAG = "FriendsActivity";
 
@@ -79,6 +79,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
         // Initialize adapters
         userAdapter = new UserAdapter(this, friendList, this, this);
         friendRequestAdapter = new FriendRequestAdapter(this, friendRequestList, this);
+        friendRequestAdapter.setOnFriendRequestRejectedListener(this);
 
         // Setup ViewPager2 with tabs
         setupViewPager();
@@ -276,6 +277,13 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
     public void onFriendRequestAccepted(User user) {
         friendRequestList.remove(user);
         friendRequestAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onFriendRequestRejected(User user) {
+        friendRequestList.remove(user);
+        friendRequestAdapter.notifyDataSetChanged();
+        Toast.makeText(this, user.getDisplayName() + "님의 친구 요청을 거절했습니다.", Toast.LENGTH_SHORT).show();
     }
 
     // ViewPager Adapter

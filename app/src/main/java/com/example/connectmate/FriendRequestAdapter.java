@@ -22,9 +22,14 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     private List<User> userList;
     private String currentUserId;
     private OnFriendRequestAcceptedListener listener;
+    private OnFriendRequestRejectedListener rejectListener;
 
     public interface OnFriendRequestAcceptedListener {
         void onFriendRequestAccepted(User user);
+    }
+
+    public interface OnFriendRequestRejectedListener {
+        void onFriendRequestRejected(User user);
     }
 
     public FriendRequestAdapter(Context context, List<User> userList, OnFriendRequestAcceptedListener listener) {
@@ -35,6 +40,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
             this.currentUserId = currentUser.getUid();
         }
         this.listener = listener;
+    }
+
+    public void setOnFriendRequestRejectedListener(OnFriendRequestRejectedListener listener) {
+        this.rejectListener = listener;
     }
 
     @NonNull
@@ -59,7 +68,7 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
             holder.userProfileImage.setImageResource(R.drawable.circle_logo);
         }
 
-        // In FriendRequestAdapter, only "add" button is visible.
+        // In FriendRequestAdapter, only "add" and "reject" buttons are visible.
         if (holder.chatButton != null) {
             holder.chatButton.setVisibility(View.GONE);
         }
@@ -69,6 +78,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         if (holder.addFriendButton != null) {
             holder.addFriendButton.setVisibility(View.VISIBLE);
             holder.addFriendButton.setOnClickListener(v -> acceptFriendRequest(user));
+        }
+        if (holder.rejectFriendButton != null) {
+            holder.rejectFriendButton.setVisibility(View.VISIBLE);
+            holder.rejectFriendButton.setOnClickListener(v -> rejectFriendRequest(user));
         }
     }
 
@@ -96,10 +109,25 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         });
     }
 
+    private void rejectFriendRequest(User user) {
+        if (currentUserId == null) return; // Do nothing if user is not logged in
+
+        // Simply remove the friend request without adding to friends
+        DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friendRequests").child(user.getUserId());
+        friendRequestRef.removeValue().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                if (rejectListener != null) {
+                    rejectListener.onFriendRequestRejected(user);
+                }
+            }
+        });
+    }
+
     public static class FriendRequestViewHolder extends RecyclerView.ViewHolder {
         ImageView userProfileImage;
         TextView userName;
         ImageButton addFriendButton;
+        ImageButton rejectFriendButton;
         ImageButton chatButton;
         ImageButton moreOptionsButton;
 
@@ -108,6 +136,7 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
             userProfileImage = itemView.findViewById(R.id.user_profile_image);
             userName = itemView.findViewById(R.id.user_name);
             addFriendButton = itemView.findViewById(R.id.add_friend_button);
+            rejectFriendButton = itemView.findViewById(R.id.reject_friend_button);
             chatButton = itemView.findViewById(R.id.chat_button);
             moreOptionsButton = itemView.findViewById(R.id.more_options_button);
         }

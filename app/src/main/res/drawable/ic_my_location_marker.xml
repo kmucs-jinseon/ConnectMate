@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- Outer pulse circle (light blue) -->
+    <path
+        android:fillColor="#4D00BCD4"
+        android:pathData="M16,16m-14,0a14,14 0,1 1,28 0a14,14 0,1 1,-28 0"/>
+
+    <!-- Main blue circle -->
+    <path
+        android:fillColor="#00BCD4"
+        android:pathData="M16,16m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0"/>
+
+    <!-- White border circle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,16m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0"/>
+
+    <!-- Inner blue dot -->
+    <path
+        android:fillColor="#0277BD"
+        android:pathData="M16,16m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+</vector>
