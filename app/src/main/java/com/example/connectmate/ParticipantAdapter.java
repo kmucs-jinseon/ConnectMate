@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -42,24 +42,36 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         String participantName = participant.getName();
 
         TextView participantNameTextView = convertView.findViewById(R.id.participant_name);
-        Button addFriendButton = convertView.findViewById(R.id.add_friend_button);
+        ImageButton addFriendButton = convertView.findViewById(R.id.add_friend_button);
+        TextView hostBadge = convertView.findViewById(R.id.host_badge);
+
 
         boolean isFriend = friendIds.contains(participantId);
         boolean isCurrentUser = participantId.equals(currentUserId);
 
+        // Set participant name
         if (isFriend) {
-            participantNameTextView.setText(participantName + " - 친구");
+            participantNameTextView.setText(participantName + " (친구)");
         } else {
             participantNameTextView.setText(participantName);
         }
 
+        // Show host badge if the participant is the host
+        if (participant.isHost()) {
+            hostBadge.setVisibility(View.VISIBLE);
+        } else {
+            hostBadge.setVisibility(View.GONE);
+        }
+
+
+        // Handle 'Add Friend' button visibility
         if (isCurrentUser || isFriend) {
-            addFriendButton.setVisibility(View.GONE);
+            addFriendButton.setVisibility(View.INVISIBLE); // Keep the space
         } else {
             addFriendButton.setVisibility(View.VISIBLE);
             addFriendButton.setOnClickListener(v -> {
                 sendFriendRequest(participantId);
-                addFriendButton.setVisibility(View.GONE);
+                addFriendButton.setVisibility(View.INVISIBLE); // Hide button after click, but keep space
                 Toast.makeText(context, "친구 추가를 요청했습니다", Toast.LENGTH_SHORT).show();
             });
         }

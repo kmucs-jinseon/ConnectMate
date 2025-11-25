@@ -8,12 +8,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Intent;
@@ -293,19 +295,30 @@ public class ChatRoomActivity extends AppCompatActivity {
                     boolean isHost = hostId != null && hostId.equals(entry.getKey());
                     participants.add(new Participant(entry.getKey(), entry.getValue().getName(), isHost));
                 }
+                
+                // Inflate the custom dialog layout
+                LayoutInflater inflater = getLayoutInflater();
+                View dialogView = inflater.inflate(R.layout.dialog_participants, null);
+                
+                // Find the ListView in the custom layout
+                ListView participantsListView = dialogView.findViewById(R.id.participants_list_view);
 
+                // Create and set the adapter
                 ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
+                participantsListView.setAdapter(adapter);
 
+                // Build and show the dialog
                 new AlertDialog.Builder(ChatRoomActivity.this)
                         .setTitle("참여자 목록 (" + participants.size() + "명)")
-                        .setAdapter(adapter, null)
+                        .setView(dialogView)
                         .setPositiveButton("확인", null)
                         .show();
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                // Handle error
+                Log.e(TAG, "Failed to load friend list", error.toException());
+                Toast.makeText(ChatRoomActivity.this, "친구 목록을 불러오는데 실패했습니다.", Toast.LENGTH_SHORT).show();
             }
         });
     }
