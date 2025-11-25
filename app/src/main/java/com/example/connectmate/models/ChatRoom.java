@@ -26,6 +26,8 @@ public class ChatRoom implements Serializable {
     private int unreadCount;
     private String profileImageUrl;
     private long createdTimestamp;
+    private String hostId; // User ID of the host (activity creator)
+    private String hostName; // Display name of the host
 
     /**
      * Member inner class for Firebase structure
@@ -198,6 +200,22 @@ public class ChatRoom implements Serializable {
 
     public void setCreatedTimestamp(long createdTimestamp) {
         this.createdTimestamp = createdTimestamp;
+    }
+
+    public String getHostId() {
+        return hostId;
+    }
+
+    public void setHostId(String hostId) {
+        this.hostId = hostId;
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
     }
 
     /**

@@ -145,6 +145,12 @@ public class ChatRoomActivity extends AppCompatActivity {
                 leaveItem.setTitle("친구 끊기");
             }
         }
+
+        MenuItem deleteItem = menu.findItem(R.id.action_delete_room);
+        if (deleteItem != null) {
+            deleteItem.setVisible(isCurrentUserHost());
+        }
+
         return true;
     }
 
@@ -160,6 +166,9 @@ public class ChatRoomActivity extends AppCompatActivity {
             return true;
         } else if (itemId == R.id.action_view_participants) {
             showParticipantsDialog();
+            return true;
+        } else if (itemId == R.id.action_delete_room) {
+            showDeleteChatRoomDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -204,6 +213,64 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isCurrentUserHost() {
+        return chatRoom != null
+            && chatRoom.getHostId() != null
+            && chatRoom.getHostId().equals(currentUserId);
+    }
+
+    private void showDeleteChatRoomDialog() {
+        if (!isCurrentUserHost()) {
+            Toast.makeText(this, "방장만 삭제할 수 있습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+            .setTitle("채팅방 삭제")
+            .setMessage("채팅방과 연관된 활동이 삭제되며 모든 참여자가 나가게 됩니다. 계속하시겠습니까?")
+            .setPositiveButton("삭제", (dialog, which) -> deleteChatRoomAsHost())
+            .setNegativeButton("취소", null)
+            .show();
+    }
+
+    private void deleteChatRoomAsHost() {
+        if (chatRoom == null) {
+            Toast.makeText(this, "채팅방 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String activityId = chatRoom.getActivityId();
+        if (activityId != null && !activityId.isEmpty()) {
+            FirebaseActivityManager.getInstance().deleteActivity(activityId, new FirebaseActivityManager.OnCompleteListener<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    Toast.makeText(ChatRoomActivity.this, "채팅방이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Failed to delete activity/chat", e);
+                    Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    Toast.makeText(ChatRoomActivity.this, "채팅방이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Failed to delete chat room", e);
+                    Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
 
     private void showParticipantsDialog() {
         if (chatRoom == null || chatRoom.getMembers().isEmpty()) {
@@ -221,8 +288,10 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
 
                 List<Participant> participants = new ArrayList<>();
+                String hostId = chatRoom.getHostId();
                 for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
-                    participants.add(new Participant(entry.getKey(), entry.getValue().getName()));
+                    boolean isHost = hostId != null && hostId.equals(entry.getKey());
+                    participants.add(new Participant(entry.getKey(), entry.getValue().getName(), isHost));
                 }
 
                 ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds);
@@ -457,6 +526,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
 
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        invalidateOptionsMenu();
     }
 
     private void setupRecyclerView() {
@@ -723,6 +794,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                         toolbarParticipantCount.setText(memberCount + "명 참여중");
                         Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
+                    invalidateOptionsMenu();
                 });
             }
 

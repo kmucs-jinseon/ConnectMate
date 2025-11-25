@@ -131,7 +131,13 @@ public class FirebaseActivityManager {
 
                 // Step 2b: Create the chat room and add the creator as a member
                 FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-                chatManager.createOrGetChatRoom(activity.getId(), activity.getTitle(), activity.getCategory(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+                chatManager.createOrGetChatRoom(
+                        activity.getId(),
+                        activity.getTitle(),
+                        activity.getCategory(),
+                        activity.getCreatorId(),
+                        activity.getCreatorName(),
+                        new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
                     @Override
                     public void onSuccess(ChatRoom chatRoom) {
                         Log.d(TAG, "Chat room created or retrieved: " + chatRoom.getId());
