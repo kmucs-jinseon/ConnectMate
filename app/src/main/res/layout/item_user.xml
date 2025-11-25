@@ -35,39 +35,45 @@
             tools:text="User Name" />
 
         <LinearLayout
-            android:layout_width="100dp"
+            android:id="@+id/button_container"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="end">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/chat_button"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="40dp"
-                android:text="@string/chat"
-                android:visibility="gone"
-                tools:visibility="visible"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/remove_friend_button"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:minHeight="40dp"
-                android:text="@string/remove"
-                android:visibility="gone"
-                tools:visibility="visible"/>
-
-            <com.google.android.material.button.MaterialButton
+            <!-- Accept Friend Request Button -->
+            <ImageButton
                 android:id="@+id/add_friend_button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="40dp"
-                android:text="@string/accept"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_check"
+                android:contentDescription="@string/accept_friend_request"
                 android:visibility="gone"
                 tools:visibility="visible"/>
+
+            <!-- Chat Button -->
+            <ImageButton
+                android:id="@+id/chat_button"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_chat"
+                android:contentDescription="@string/chat_with_friend"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- Remove Friend/Request Button -->
+            <ImageButton
+                android:id="@+id/remove_friend_button"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_delete"
+                android:contentDescription="@string/remove_friend"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
         </LinearLayout>
 
     </LinearLayout>

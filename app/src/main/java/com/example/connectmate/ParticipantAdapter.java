@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -42,7 +42,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         String participantName = participant.getName();
 
         TextView participantNameTextView = convertView.findViewById(R.id.participant_name);
-        Button addFriendButton = convertView.findViewById(R.id.add_friend_button);
+        ImageButton addFriendButton = convertView.findViewById(R.id.add_friend_button);
 
         boolean isFriend = friendIds.contains(participantId);
         boolean isCurrentUser = participantId.equals(currentUserId);

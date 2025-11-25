@@ -4,7 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -45,14 +45,25 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User user = userList.get(position);
         holder.userName.setText(user.getDisplayName());
-        Glide.with(context).load(user.getProfileImageUrl()).into(holder.userProfileImage);
 
-        holder.addFriendButton.setVisibility(View.GONE);
-        holder.chatButton.setVisibility(View.VISIBLE);
-        holder.removeFriendButton.setVisibility(View.VISIBLE);
+        if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+            Glide.with(context).load(user.getProfileImageUrl()).placeholder(R.drawable.ic_profile).into(holder.userProfileImage);
+        } else {
+            holder.userProfileImage.setImageResource(R.drawable.ic_profile);
+        }
 
-        holder.chatButton.setOnClickListener(v -> chatClickListener.onChatClick(user));
-        holder.removeFriendButton.setOnClickListener(v -> removeFriendClickListener.onRemoveFriendClick(user));
+        // In UserAdapter, we are dealing with friends, so "add" button is hidden.
+        if (holder.addFriendButton != null) {
+            holder.addFriendButton.setVisibility(View.GONE);
+        }
+        if (holder.chatButton != null) {
+            holder.chatButton.setVisibility(View.VISIBLE);
+            holder.chatButton.setOnClickListener(v -> chatClickListener.onChatClick(user));
+        }
+        if (holder.removeFriendButton != null) {
+            holder.removeFriendButton.setVisibility(View.VISIBLE);
+            holder.removeFriendButton.setOnClickListener(v -> removeFriendClickListener.onRemoveFriendClick(user));
+        }
     }
 
     @Override
@@ -63,9 +74,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public static class UserViewHolder extends RecyclerView.ViewHolder {
         ImageView userProfileImage;
         TextView userName;
-        Button addFriendButton;
-        Button chatButton;
-        Button removeFriendButton;
+        ImageButton addFriendButton;
+        ImageButton chatButton;
+        ImageButton removeFriendButton;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);

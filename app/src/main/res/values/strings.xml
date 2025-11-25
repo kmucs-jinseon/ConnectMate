@@ -171,4 +171,9 @@
     <string name="notification">알림</string>
     <string name="last_message">최근 메세지</string>
     <string name="system_message">시스템 메세지</string>
+
+    <!-- Content Descriptions for Icons -->
+    <string name="accept_friend_request">친구 요청 수락</string>
+    <string name="chat_with_friend">친구와 채팅하기</string>
+    <string name="remove_friend">친구 삭제</string>
 </resources>

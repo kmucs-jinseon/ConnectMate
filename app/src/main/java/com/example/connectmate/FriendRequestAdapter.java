@@ -4,13 +4,14 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import java.util.List;
@@ -29,7 +30,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     public FriendRequestAdapter(Context context, List<User> userList, OnFriendRequestAcceptedListener listener) {
         this.context = context;
         this.userList = userList;
-        this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            this.currentUserId = currentUser.getUid();
+        }
         this.listener = listener;
     }
 
@@ -44,15 +48,24 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     public void onBindViewHolder(@NonNull FriendRequestViewHolder holder, int position) {
         User user = userList.get(position);
         holder.userName.setText(user.getDisplayName());
-        Glide.with(context).load(user.getProfileImageUrl()).into(holder.userProfileImage);
 
-        holder.chatButton.setVisibility(View.GONE);
-        holder.removeFriendButton.setVisibility(View.GONE);
-        holder.addFriendButton.setVisibility(View.VISIBLE);
-        holder.addFriendButton.setText(R.string.accept);
-        holder.addFriendButton.setOnClickListener(v -> {
-            acceptFriendRequest(user);
-        });
+        if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+            Glide.with(context).load(user.getProfileImageUrl()).placeholder(R.drawable.ic_profile).into(holder.userProfileImage);
+        } else {
+            holder.userProfileImage.setImageResource(R.drawable.ic_profile);
+        }
+
+        // In FriendRequestAdapter, only "add" button is visible.
+        if (holder.chatButton != null) {
+            holder.chatButton.setVisibility(View.GONE);
+        }
+        if (holder.removeFriendButton != null) {
+            holder.removeFriendButton.setVisibility(View.GONE);
+        }
+        if (holder.addFriendButton != null) {
+            holder.addFriendButton.setVisibility(View.VISIBLE);
+            holder.addFriendButton.setOnClickListener(v -> acceptFriendRequest(user));
+        }
     }
 
     @Override
@@ -61,6 +74,8 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     }
 
     private void acceptFriendRequest(User user) {
+        if (currentUserId == null) return; // Do nothing if user is not logged in
+
         DatabaseReference currentUserFriendsRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friends").child(user.getUserId());
         currentUserFriendsRef.setValue(true);
 
@@ -80,9 +95,9 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     public static class FriendRequestViewHolder extends RecyclerView.ViewHolder {
         ImageView userProfileImage;
         TextView userName;
-        Button addFriendButton;
-        Button chatButton;
-        Button removeFriendButton;
+        ImageButton addFriendButton;
+        ImageButton chatButton;
+        ImageButton removeFriendButton;
 
         public FriendRequestViewHolder(@NonNull View itemView) {
             super(itemView);
