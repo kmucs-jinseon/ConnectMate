@@ -1,36 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="16dp"
     android:paddingTop="8dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="8dp"
-    android:gravity="center_vertical">
+    android:paddingBottom="8dp">
 
     <ImageView
         android:id="@+id/participant_profile_image"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginEnd="12dp"
-        android:src="@drawable/circle_logo"
-        android:scaleType="centerCrop"
         android:background="@drawable/circle_background"
         android:clipToOutline="true"
-        android:contentDescription="Profile photo" />
+        android:contentDescription="Profile photo"
+        android:scaleType="centerCrop"
+        android:src="@drawable/circle_logo" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/participant_name"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="@string/participant_name"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
@@ -40,22 +44,37 @@
             android:layout_height="24dp"
             android:layout_marginStart="6dp"
             android:background="@drawable/host_badge_background"
+            android:contentDescription="@string/host_badge"
+            android:elevation="2dp"
             android:padding="5dp"
             android:src="@drawable/ic_star_filled"
             android:tint="@android:color/white"
-            android:elevation="2dp"
-            android:contentDescription="@string/host_badge"
             android:visibility="gone" />
 
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/add_friend_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/add_friend"
-        android:src="@drawable/ic_person_add"
-        android:tint="@color/primary_blue"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/add_friend_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/add_friend"
+            android:src="@drawable/ic_person_add"
+            app:tint="@color/primary_blue" />
+
+        <ImageButton
+            android:id="@+id/more_options_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="More options"
+            android:src="@drawable/ic_more_vertical"
+            app:tint="@color/gray_600" />
+    </LinearLayout>
 
 </LinearLayout>

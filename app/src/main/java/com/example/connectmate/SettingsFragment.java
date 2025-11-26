@@ -58,15 +58,7 @@ public class SettingsFragment extends Fragment {
         // Set click listener to navigate to ProfileFragment
         if (itemAccount != null) {
             itemAccount.setOnClickListener(v -> {
-                // Create ProfileFragment instance
-                ProfileFragment profileFragment = new ProfileFragment();
-
-                // Navigate to ProfileFragment
-                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right);
-                transaction.replace(R.id.main_container, profileFragment);
-                transaction.addToBackStack(null);  // Add to back stack so user can go back
-                transaction.commit();
+                navigateToProfile();
             });
         }
 
@@ -98,6 +90,17 @@ public class SettingsFragment extends Fragment {
                 startActivity(intent);
             });
         }
+    }
+
+    public void navigateToProfile() {
+        if (!isAdded()) return; // 프래그먼트가 Activity에 추가되지 않았으면 실행하지 않음
+
+        ProfileFragment profileFragment = new ProfileFragment();
+        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+        transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right);
+        transaction.replace(R.id.main_container, profileFragment, "TAG_PROFILE"); // 태그 추가
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
     private void initializeViews(View view) {

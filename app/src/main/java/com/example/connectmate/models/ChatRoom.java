@@ -35,6 +35,7 @@ public class ChatRoom implements Serializable {
     public static class Member implements Serializable {
         private String name;
         private int unreadCount;
+        private long joinTimestamp;
 
         public Member() {
         }
@@ -42,6 +43,7 @@ public class ChatRoom implements Serializable {
         public Member(String name, int unreadCount) {
             this.name = name;
             this.unreadCount = unreadCount;
+            this.joinTimestamp = System.currentTimeMillis();
         }
 
         public String getName() {
@@ -58,6 +60,14 @@ public class ChatRoom implements Serializable {
 
         public void setUnreadCount(int unreadCount) {
             this.unreadCount = unreadCount;
+        }
+
+        public long getJoinTimestamp() {
+            return joinTimestamp;
+        }
+
+        public void setJoinTimestamp(long joinTimestamp) {
+            this.joinTimestamp = joinTimestamp;
         }
     }
 

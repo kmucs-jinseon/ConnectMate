@@ -50,10 +50,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class ChatRoomActivity extends AppCompatActivity {
+public class ChatRoomActivity extends AppCompatActivity implements ParticipantAdapter.OnParticipantActionListener {
 
     private static final String TAG = "ChatRoomActivity";
 
@@ -61,6 +62,8 @@ public class ChatRoomActivity extends AppCompatActivity {
     private String currentUserId;
     private String currentUserName;
     private String currentUserProfileUrl;
+    private AlertDialog participantsDialog;
+
 
     // UI Components
     private Toolbar toolbar;
@@ -76,7 +79,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ImageView imagePreview;
     private View filePreview; // Document preview
     private TextView fileNamePreview; // Filename preview
-    private ImageButton btnRemoveImage;
 
     // Adapter
     private ChatMessageAdapter messageAdapter;
@@ -166,8 +168,8 @@ public class ChatRoomActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.action_leave_room) {
-            if (chatRoom != null && "private".equals(chatRoom.getCategory())) {
-                removeFriend();
+            if (isCurrentUserHost()) {
+                handleHostLeave();
             } else {
                 leaveChatRoom();
             }
@@ -180,6 +182,55 @@ public class ChatRoomActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+    
+    private void handleHostLeave() {
+        // Case 1: Host is the last person in the room
+        if (chatRoom.getMemberCount() <= 1) {
+            new AlertDialog.Builder(this)
+                .setTitle("채팅방 삭제")
+                .setMessage("마지막 참여자입니다. 채팅방을 나가면 활동과 채팅방이 삭제됩니다.")
+                .setPositiveButton("나가기 및 삭제", (dialog, which) -> deleteChatRoomAsHost(null, false))
+                .setNegativeButton("취소", null)
+                .show();
+        } 
+        // Case 2: Host is leaving but others remain
+        else {
+            new AlertDialog.Builder(this)
+                .setTitle("방장 권한 위임")
+                .setMessage("방장 권한이 다른 참여자에게 자동으로 위임됩니다. 정말 나가시겠습니까?")
+                .setPositiveButton("나가기", (dialog, which) -> findAndDelegateNewHost())
+                .setNegativeButton("취소", null)
+                .show();
+        }
+    }
+    
+    private void findAndDelegateNewHost() {
+        List<String> otherMemberIds = new ArrayList<>();
+        for (String memberId : chatRoom.getMembers().keySet()) {
+            if (!memberId.equals(currentUserId)) {
+                otherMemberIds.add(memberId);
+            }
+        }
+    
+        if (!otherMemberIds.isEmpty()) {
+            Collections.shuffle(otherMemberIds);
+            String newHostId = otherMemberIds.get(0);
+            
+            DatabaseReference chatRoomRef = FirebaseDatabase.getInstance().getReference("chatRooms").child(chatRoom.getId()).child("hostId");
+            chatRoomRef.setValue(newHostId).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    Toast.makeText(this, "방장 권한이 위임되었습니다.", Toast.LENGTH_SHORT).show();
+                    // Now, proceed with leaving the room
+                    leaveChatRoom();
+                } else {
+                    Toast.makeText(this, "방장 위임에 실패했습니다. 다시 시도해주세요.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            // This case should ideally not be reached if member count > 1, but as a fallback:
+            deleteChatRoomAsHost(null, false);
+        }
     }
 
     private void removeFriend() {
@@ -204,7 +255,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
                     usersRef.child(currentUserId).child("friends").child(finalFriendId).removeValue();
                     usersRef.child(finalFriendId).child("friends").child(currentUserId).removeValue();
-                    FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+                    FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<>() {
                         @Override
                         public void onSuccess(Void aVoid) {
                             Toast.makeText(ChatRoomActivity.this, "친구 관계를 끊었습니다.", Toast.LENGTH_SHORT).show();
@@ -246,7 +297,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         new AlertDialog.Builder(this)
             .setTitle("채팅방 삭제")
-            .setMessage("채팅방과 연관된 활동이 삭제되며 모든 참여자가 나가게 됩니다. 계속하시겠습니까?")
+            .setMessage("활동 기록이 남지 않습니다. 활동이 정상적으로 종료되었다면 '활동 종료' 버튼을 이용해주세요.\n\n채팅방을 삭제하면 모든 참여자가 나가게 되며, 활동 기록도 남지 않습니다. 계속하시겠습니까?")
             .setPositiveButton("삭제", (dialog, which) -> deleteChatRoomAsHost(null, false))
             .setNegativeButton("취소", null)
             .show();
@@ -276,7 +327,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             return;
         }
 
-        FirebaseChatManager.getInstance().getChatRoomById(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+        FirebaseChatManager.getInstance().getChatRoomById(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(ChatRoom result) {
                 if (result != null && !TextUtils.isEmpty(result.getActivityId())) {
@@ -297,7 +348,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     private void deleteActivityAndChat(String activityId, @Nullable String successMessage, boolean incrementParticipation) {
         final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
         String activityTitle = chatRoom != null ? chatRoom.getName() : null;
-        FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, activityTitle, new FirebaseActivityManager.OnCompleteListener<Void>() {
+        FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, activityTitle, new FirebaseActivityManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
@@ -314,7 +365,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void deleteChatRoomDirectly(@Nullable String successMessage) {
         final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
-        FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+        FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
@@ -347,14 +398,12 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                 // Fetch profile images for all participants
                 List<Participant> participants = new ArrayList<>();
-                String hostId = chatRoom.getHostId();
                 int totalMembers = chatRoom.getMembers().size();
                 final int[] loadedCount = {0}; // Counter for loaded profiles
 
                 for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
                     String userId = entry.getKey();
                     String userName = entry.getValue().getName();
-                    boolean isHost = hostId != null && hostId.equals(userId);
 
                     // Fetch profile image URL from Firebase
                     DatabaseReference userRef = FirebaseDatabase.getInstance()
@@ -368,7 +417,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                             String profileImageUrl = profileSnapshot.getValue(String.class);
 
                             // Create participant with profile image URL
-                            participants.add(new Participant(userId, userName, isHost, profileImageUrl));
+                            participants.add(new Participant(userId, userName, false, profileImageUrl));
                             loadedCount[0]++;
 
                             // Show dialog when all profiles are loaded
@@ -381,7 +430,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                         public void onCancelled(@NonNull DatabaseError error) {
                             Log.e(TAG, "Failed to load profile for user: " + userId, error.toException());
                             // Add participant without profile image
-                            participants.add(new Participant(userId, userName, isHost, null));
+                            participants.add(new Participant(userId, userName, false, null));
                             loadedCount[0]++;
 
                             // Show dialog when all profiles are loaded
@@ -413,16 +462,83 @@ public class ChatRoomActivity extends AppCompatActivity {
         ListView participantsListView = dialogView.findViewById(R.id.participants_list_view);
 
         // Create and set the adapter
-        ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds, currentUserId);
+        ParticipantAdapter adapter = new ParticipantAdapter(ChatRoomActivity.this, participants, friendIds, currentUserId, chatRoom.getHostId(), this);
         participantsListView.setAdapter(adapter);
 
         // Build and show the dialog
-        new AlertDialog.Builder(ChatRoomActivity.this)
+        AlertDialog.Builder builder = new AlertDialog.Builder(ChatRoomActivity.this)
                 .setTitle("참여자 목록 (" + participants.size() + "명)")
                 .setView(dialogView)
-                .setPositiveButton("확인", null)
+                .setPositiveButton("확인", null);
+        
+        participantsDialog = builder.create();
+        participantsDialog.show();
+    }
+
+    @Override
+    public void onKickParticipant(Participant participant) {
+        new AlertDialog.Builder(this)
+                .setTitle("강퇴하기")
+                .setMessage(participant.getName() + "님을 강퇴하시겠습니까?")
+                .setPositiveButton("강퇴", (dialog, which) -> {
+                    FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), participant.getId(), new FirebaseActivityManager.OnCompleteListener<>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Toast.makeText(ChatRoomActivity.this, participant.getName() + "님을 강퇴했습니다.", Toast.LENGTH_SHORT).show();
+                            if (participantsDialog != null && participantsDialog.isShowing()) {
+                                participantsDialog.dismiss();
+                            }
+                            showParticipantsDialog();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(ChatRoomActivity.this, "강퇴 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("취소", null)
                 .show();
     }
+
+    @Override
+    public void onGrantAdmin(Participant participant) {
+        new AlertDialog.Builder(this)
+                .setTitle("관리자 권한 부여")
+                .setMessage(participant.getName() + "님에게 방장 권한을 넘기시겠습니까?")
+                .setPositiveButton("확인", (dialog, which) -> {
+                    DatabaseReference chatRoomRef = FirebaseDatabase.getInstance().getReference("chatRooms").child(chatRoom.getId()).child("hostId");
+                    chatRoomRef.setValue(participant.getId()).addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(ChatRoomActivity.this, participant.getName() + "님에게 관리자 권한을 부여했습니다.", Toast.LENGTH_SHORT).show();
+                            if (participantsDialog != null && participantsDialog.isShowing()) {
+                                participantsDialog.dismiss();
+                            }
+                            showParticipantsDialog();
+                        } else {
+                            Toast.makeText(ChatRoomActivity.this, "관리자 권한 부여에 실패했습니다.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
+    
+    @Override
+    public void onViewProfile(Participant participant) {
+        if (participant.getId().equals(currentUserId)) {
+            // It's the current user, navigate to the Profile tab in MainActivity
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("NAVIGATE_TO", "PROFILE");
+            startActivity(intent);
+            finish(); // Close ChatRoomActivity
+        } else {
+            // It's another user, show a toast for now
+            Toast.makeText(this, "다른 사용자의 프로필 보기 기능은 아직 구현되지 않았습니다.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     private void leaveChatRoom() {
         if (chatRoom == null || currentUserId == null || currentUserId.isEmpty()) {
@@ -437,7 +553,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 .setPositiveButton("나가기", (dialog, which) -> {
 
                     // Remove member through FirebaseActivityManager
-                    FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<Void>() {
+                    FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<>() {
                         @Override
                         public void onSuccess(Void aVoid) {
                             Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
@@ -491,12 +607,12 @@ public class ChatRoomActivity extends AppCompatActivity {
      */
     private void loadUserInfoFromFirebase(String userId) {
         Log.d(TAG, "Loading user info from Firebase for user: " + userId);
-        com.google.firebase.database.FirebaseDatabase.getInstance()
+        FirebaseDatabase.getInstance()
             .getReference("users")
             .child(userId)
-            .addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
-                public void onDataChange(@androidx.annotation.NonNull com.google.firebase.database.DataSnapshot snapshot) {
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
                         // Get displayName from database - this is the real name (이름)
                         String displayName = snapshot.child("displayName").getValue(String.class);
@@ -536,47 +652,11 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onCancelled(@androidx.annotation.NonNull com.google.firebase.database.DatabaseError error) {
+                public void onCancelled(@NonNull DatabaseError error) {
                     Log.e(TAG, "Failed to load user info from Firebase", error.toException());
                     // Set default name on error
                     currentUserName = "사용자";
                 }
-            });
-    }
-
-    /**
-     * Load profile URL from Firebase Realtime Database
-     * Loads Base64 encoded images or Firebase Storage URLs
-     */
-    private void loadProfileUrlFromFirebase(String userId) {
-        Log.d(TAG, "Loading profile URL from Firebase for user: " + userId);
-        com.google.firebase.database.FirebaseDatabase.getInstance()
-            .getReference("users")
-            .child(userId)
-            .child("profileImageUrl")
-            .get()
-            .addOnSuccessListener(dataSnapshot -> {
-                if (dataSnapshot.exists()) {
-                    String profileUrl = dataSnapshot.getValue(String.class);
-                    if (profileUrl != null && !profileUrl.isEmpty()) {
-                        currentUserProfileUrl = profileUrl;
-                        // Save to SharedPreferences for future use
-                        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
-                        prefs.edit().putString("profile_image_url", profileUrl).apply();
-
-                        String logMsg = profileUrl.startsWith("data:image") ?
-                            "Loaded Base64 image from Firebase (length: " + profileUrl.length() + ")" :
-                            "Loaded Firebase Storage URL: " + profileUrl;
-                        Log.d(TAG, logMsg);
-                    } else {
-                        Log.d(TAG, "Profile URL exists in Firebase but is null/empty");
-                    }
-                } else {
-                    Log.d(TAG, "No profileImageUrl found in Firebase for user: " + userId);
-                }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Failed to load profile URL from Firebase", e);
             });
     }
 
@@ -597,7 +677,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         imagePreview = findViewById(R.id.image_preview); // 추가
         filePreview = findViewById(R.id.file_preview); // 추가
         fileNamePreview = findViewById(R.id.file_name_preview); // 추가
-        btnRemoveImage = findViewById(R.id.btn_remove_image); // 추가
+        ImageButton btnRemoveImage = findViewById(R.id.btn_remove_image); // 추가
 
         // Setup remove image button
         btnRemoveImage.setOnClickListener(v -> clearImageSelection());
@@ -624,7 +704,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         if (toolbarParticipantCount != null) {
             int memberCount = chatRoom.getMemberCount();
-            toolbarParticipantCount.setText(memberCount + "명 참여중");
+            toolbarParticipantCount.setText(String.format("%d명 참여중", memberCount));
         }
 
         // Set navigation icon tint to white using DrawableCompat for compatibility
@@ -654,11 +734,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         messageAdapter = new ChatMessageAdapter(messages, currentUserId);
 
         // Set image click listener
-        messageAdapter.setOnImageClickListener(imageUrl -> showImageViewerDialog(imageUrl));
+        messageAdapter.setOnImageClickListener(this::showImageViewerDialog);
 
         // Set document click listener
-        messageAdapter.setOnDocumentClickListener((fileUrl, fileName, fileType) ->
-            downloadDocumentToDownloads(fileUrl, fileName, fileType));
+        messageAdapter.setOnDocumentClickListener(this::downloadDocumentToDownloads);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true); // Start from bottom
@@ -807,7 +886,7 @@ public class ChatRoomActivity extends AppCompatActivity {
      */
     private void loadChatRoomFromFirebase(String chatRoomId) {
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-        chatManager.getChatRoomById(chatRoomId, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+        chatManager.getChatRoomById(chatRoomId, new FirebaseChatManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(ChatRoom result) {
                 chatRoom = result;
@@ -854,7 +933,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     // Handle scrolling based on whether it's initial load or new message
                     if (isInitialLoad) {
                         // During initial load, wait for all messages then scroll to unread
-                        if (!hasScrolledToUnread && messages.size() > 0) {
+                        if (!hasScrolledToUnread && !messages.isEmpty()) {
                             // Use a delay to ensure all initial messages are loaded
                             messagesRecyclerView.postDelayed(() -> {
                                 if (!hasScrolledToUnread) {
@@ -918,14 +997,14 @@ public class ChatRoomActivity extends AppCompatActivity {
         if (chatRoom == null) return;
 
         FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-        chatManager.listenToChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+        chatManager.listenToChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(ChatRoom updatedRoom) {
                 chatRoom = updatedRoom;
                 runOnUiThread(() -> {
                     if (toolbarParticipantCount != null) {
                         int memberCount = chatRoom.getMemberCount();
-                        toolbarParticipantCount.setText(memberCount + "명 참여중");
+                        toolbarParticipantCount.setText(String.format("%d명 참여중", memberCount));
                         Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
                     invalidateOptionsMenu();
@@ -1015,7 +1094,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
             // Send message to Firebase
             FirebaseChatManager chatManager = FirebaseChatManager.getInstance();
-            chatManager.sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+            chatManager.sendMessage(message, new FirebaseChatManager.OnCompleteListener<>() {
                 @Override
                 public void onSuccess(ChatMessage result) {
                     // Clear input on successful send
@@ -1029,9 +1108,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 @Override
                 public void onError(Exception e) {
                     Log.e(TAG, "Failed to send message", e);
-                    runOnUiThread(() -> {
-                        Toast.makeText(ChatRoomActivity.this, "메시지 전송 실패", Toast.LENGTH_SHORT).show();
-                    });
+                    runOnUiThread(() -> Toast.makeText(ChatRoomActivity.this, "메시지 전송 실패", Toast.LENGTH_SHORT).show());
                 }
             });
         }
@@ -1078,15 +1155,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
-    // Encode file to Base64 and send message (legacy method)
-    private void uploadImageAndSendMessage(String messageText) {
-        if (selectedFileUris.isEmpty()) {
-            Toast.makeText(this, "선택된 파일이 없습니다.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        uploadMultipleFilesAndSendMessages(messageText);
-    }
-
     // Process a single image file
     private void processImageFile(Uri imageUri, String messageText) {
         Log.d(TAG, "Starting image encoding...");
@@ -1101,9 +1169,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 // Read image from URI
                 java.io.InputStream inputStream = getContentResolver().openInputStream(imageUri);
                 if (inputStream == null) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "이미지를 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
-                    });
+                    runOnUiThread(() -> Toast.makeText(this, "이미지를 읽을 수 없습니다.", Toast.LENGTH_SHORT).show());
                     return;
                 }
 
@@ -1112,9 +1178,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 inputStream.close();
 
                 if (bitmap == null) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "이미지 처리 실패", Toast.LENGTH_SHORT).show();
-                    });
+                    runOnUiThread(() -> Toast.makeText(this, "이미지 처리 실패", Toast.LENGTH_SHORT).show());
                     return;
                 }
 
@@ -1153,7 +1217,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     }
 
                     Log.d(TAG, "Sending message with Base64 image...");
-                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<>() {
                         @Override
                         public void onSuccess(ChatMessage result) {
                             Log.d(TAG, "Image message sent successfully");
@@ -1167,18 +1231,14 @@ public class ChatRoomActivity extends AppCompatActivity {
                         @Override
                         public void onError(Exception e) {
                             Log.e(TAG, "Failed to send image message", e);
-                            runOnUiThread(() -> {
-                                Toast.makeText(ChatRoomActivity.this, "사진 메시지 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
+                            runOnUiThread(() -> Toast.makeText(ChatRoomActivity.this, "사진 메시지 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                         }
                     });
                 });
 
             } catch (Exception e) {
                 Log.e(TAG, "Failed to encode image", e);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "이미지 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                runOnUiThread(() -> Toast.makeText(this, "이미지 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
             }
         }).start();
     }
@@ -1196,9 +1256,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 // Read file data
                 java.io.InputStream inputStream = getContentResolver().openInputStream(fileUri);
                 if (inputStream == null) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "파일을 읽을 수 없습니다.", Toast.LENGTH_SHORT).show();
-                    });
+                    runOnUiThread(() -> Toast.makeText(this, "파일을 읽을 수 없습니다.", Toast.LENGTH_SHORT).show());
                     return;
                 }
 
@@ -1237,7 +1295,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     }
 
                     Log.d(TAG, "Sending message with document...");
-                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
+                    FirebaseChatManager.getInstance().sendMessage(message, new FirebaseChatManager.OnCompleteListener<>() {
                         @Override
                         public void onSuccess(ChatMessage result) {
                             Log.d(TAG, "Document message sent successfully");
@@ -1251,18 +1309,14 @@ public class ChatRoomActivity extends AppCompatActivity {
                         @Override
                         public void onError(Exception e) {
                             Log.e(TAG, "Failed to send document message", e);
-                            runOnUiThread(() -> {
-                                Toast.makeText(ChatRoomActivity.this, "파일 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
+                            runOnUiThread(() -> Toast.makeText(ChatRoomActivity.this, "파일 전송 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                         }
                     });
                 });
 
             } catch (Exception e) {
                 Log.e(TAG, "Failed to encode document", e);
-                runOnUiThread(() -> {
-                    Toast.makeText(this, "파일 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                runOnUiThread(() -> Toast.makeText(this, "파일 처리 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show());
             }
         }).start();
     }
@@ -1270,7 +1324,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     // Get filename from URI
     private String getFileName(Uri uri) {
         String result = null;
-        if (uri.getScheme().equals("content")) {
+        if (uri.getScheme() != null && uri.getScheme().equals("content")) {
             try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
                 if (cursor != null && cursor.moveToFirst()) {
                     int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
@@ -1282,9 +1336,11 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
         if (result == null) {
             result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) {
-                result = result.substring(cut + 1);
+            if (result != null) {
+                int cut = result.lastIndexOf('/');
+                if (cut != -1) {
+                    result = result.substring(cut + 1);
+                }
             }
         }
         return result;
@@ -1313,9 +1369,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnClose.setOnClickListener(v -> dialog.dismiss());
 
         // Download button
-        btnDownload.setOnClickListener(v -> {
-            downloadImageToGallery(imageUrl);
-        });
+        btnDownload.setOnClickListener(v -> downloadImageToGallery(imageUrl));
 
         dialog.show();
     }
@@ -1354,7 +1408,9 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                     if (uri != null) {
                         try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
-                            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, outputStream);
+                            if (outputStream != null) {
+                                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 100, outputStream);
+                            }
                             runOnUiThread(() -> Toast.makeText(this, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show());
                         }
                     } else {
@@ -1422,8 +1478,10 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                     if (uri != null) {
                         try (java.io.OutputStream outputStream = getContentResolver().openOutputStream(uri)) {
-                            outputStream.write(fileBytes);
-                            outputStream.flush();
+                            if (outputStream != null) {
+                                outputStream.write(fileBytes);
+                                outputStream.flush();
+                            }
                             runOnUiThread(() -> Toast.makeText(this, "다운로드 폴더에 저장되었습니다: " + fileName, Toast.LENGTH_LONG).show());
                         }
                     } else {

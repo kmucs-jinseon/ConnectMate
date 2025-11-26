@@ -68,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_CHAT = "TAG_CHAT";
     private static final String TAG_ACTIVITY = "TAG_ACTIVITY";
     private static final String TAG_SETTING = "TAG_SETTING";
+    private static final String TAG_PROFILE = "TAG_PROFILE";
+
 
     // Fragment instances
     private Fragment mapFragment;
@@ -137,9 +139,28 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Handle intent to navigate to specific location on map
      */
-    private void handleMapNavigationIntent() {
-        Intent intent = getIntent();
-        if (intent != null && intent.getBooleanExtra("navigate_to_map", false)) {
+    private void handleNavigationIntent(Intent intent) {
+        if (intent == null) return;
+
+        // Handle navigation to a specific tab
+        if (intent.hasExtra("NAVIGATE_TO")) {
+            String target = intent.getStringExtra("NAVIGATE_TO");
+            if ("PROFILE".equals(target)) {
+                bottomNavigationView.setSelectedItemId(R.id.nav_settings);
+                getSupportFragmentManager().executePendingTransactions(); // 트랜잭션 즉시 실행
+
+                // SettingsFragment의 인스턴스를 찾아 navigateToProfile() 호출
+                Fragment fragment = getSupportFragmentManager().findFragmentByTag(TAG_SETTING);
+                if (fragment instanceof SettingsFragment) {
+                    ((SettingsFragment) fragment).navigateToProfile();
+                }
+                // 한 번 사용한 extra는 제거하여 반복 실행 방지
+                intent.removeExtra("NAVIGATE_TO");
+            }
+        }
+
+        // Handle map navigation
+        if (intent.getBooleanExtra("navigate_to_map", false)) {
             double latitude = intent.getDoubleExtra("map_latitude", 0.0);
             double longitude = intent.getDoubleExtra("map_longitude", 0.0);
             String title = intent.getStringExtra("map_title");
@@ -171,6 +192,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
 
     private void checkProfileCompletionAndInit(Bundle savedInstanceState) {
         // Get user ID from either Firebase or SharedPreferences (for social logins)
@@ -277,7 +299,7 @@ public class MainActivity extends AppCompatActivity {
         setupFloatingActionButton();
 
         // Handle map navigation intent
-        handleMapNavigationIntent();
+        handleNavigationIntent(getIntent());
 
         // Auto-load current location display after map is ready
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
@@ -887,7 +909,7 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);  // Update the intent
         Log.d(TAG, "MainActivity onNewIntent called");
-        handleMapNavigationIntent();
+        handleNavigationIntent(intent);
     }
 
     @Override
@@ -1087,7 +1109,7 @@ public class MainActivity extends AppCompatActivity {
             boolean autoLoginEnabled = prefs.getBoolean("auto_login", false);
             Log.d(TAG, "Auto-login preference: " + autoLoginEnabled);
             if (!autoLoginEnabled) {
-                Log.d(TAG, "Auto-login is disabled - redirecting to login page");
+                Log.d(TAG, "Auto-login is disabled - redirecting to login");
                 return false;
             }
 
