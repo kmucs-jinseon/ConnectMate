@@ -1,5 +1,7 @@
 package com.example.connectmate;
 
+import com.example.connectmate.models.UserReview;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +20,8 @@ public class User {
     public String mbti;
     public boolean profileCompleted;  // Whether user has completed profile setup
     public double rating;
+    public double ratingSum;
+    public int reviewCount;
     public int activitiesCount;
     public int participationCount;
     public int connectionsCount;
@@ -26,6 +30,7 @@ public class User {
     public long lastLoginAt;
     public Map<String, Boolean> friends = new HashMap<>(); // Key: friend's user ID, Value: true
     public Map<String, Boolean> friendRequests = new HashMap<>(); // Key: user ID who sent the request, Value: true
+    public Map<String, UserReview> reviews = new HashMap<>();
 
     // Required empty constructor for Firebase Realtime Database
     public User() {
@@ -41,6 +46,8 @@ public class User {
         this.mbti = "ENFP";
         this.profileCompleted = false;
         this.rating = 0.0;
+        this.ratingSum = 0.0;
+        this.reviewCount = 0;
         this.activitiesCount = 0;
         this.participationCount = 0;
         this.connectionsCount = 0;
@@ -129,6 +136,22 @@ public class User {
         this.rating = rating;
     }
 
+    public double getRatingSum() {
+        return ratingSum;
+    }
+
+    public void setRatingSum(double ratingSum) {
+        this.ratingSum = ratingSum;
+    }
+
+    public int getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(int reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
     public int getActivitiesCount() {
         return activitiesCount;
     }
@@ -200,6 +223,14 @@ public class User {
     public void setFriendRequests(Map<String, Boolean> friendRequests) {
         this.friendRequests = friendRequests;
     }
+
+    public Map<String, UserReview> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(Map<String, UserReview> reviews) {
+        this.reviews = reviews;
+    }
     
     public Map<String, Object> toMap() {
         HashMap<String, Object> result = new HashMap<>();
@@ -213,6 +244,8 @@ public class User {
         result.put("mbti", mbti);
         result.put("profileCompleted", profileCompleted);
         result.put("rating", rating);
+        result.put("ratingSum", ratingSum);
+        result.put("reviewCount", reviewCount);
         result.put("activitiesCount", activitiesCount);
         result.put("participationCount", participationCount);
         result.put("connectionsCount", connectionsCount);
@@ -221,6 +254,7 @@ public class User {
         result.put("lastLoginAt", lastLoginAt);
         result.put("friends", friends);
         result.put("friendRequests", friendRequests);
+        result.put("reviews", reviews);
         return result;
     }
 }

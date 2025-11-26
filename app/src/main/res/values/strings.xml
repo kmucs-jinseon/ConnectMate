@@ -198,6 +198,7 @@
     <string name="system_message">시스템 메세지</string>
 
     <!-- Content Descriptions for Icons -->
+    <string name="profile_image">프로필 이미지</string>
     <string name="accept_friend_request">친구 요청 수락</string>
     <string name="chat_with_friend">친구와 채팅하기</string>
     <string name="remove_friend">친구 삭제</string>

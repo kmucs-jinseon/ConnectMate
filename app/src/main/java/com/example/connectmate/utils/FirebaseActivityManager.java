@@ -39,12 +39,14 @@ public class FirebaseActivityManager {
     private static final String PATH_USER_ACTIVITIES = "userActivities";
     private static final String PATH_PARTICIPANTS = "participants";
     private static final String PATH_USER_NOTIFICATIONS = "userNotifications";
+    private static final String PATH_PENDING_REVIEWS = "pendingReviews";
     private static final String PATH_USERS = "users";
 
     private final DatabaseReference activitiesRef;
     private final DatabaseReference userActivitiesRef;
     private final DatabaseReference usersRef;
     private final DatabaseReference userNotificationsRef;
+    private final DatabaseReference pendingReviewsRef;
     private final FirebaseAuth auth;
 
     private static FirebaseActivityManager instance;
@@ -67,6 +69,7 @@ public class FirebaseActivityManager {
         userActivitiesRef = database.getReference(PATH_USER_ACTIVITIES);
         usersRef = database.getReference(PATH_USERS);
         userNotificationsRef = database.getReference(PATH_USER_NOTIFICATIONS);
+        pendingReviewsRef = database.getReference(PATH_PENDING_REVIEWS);
         auth = FirebaseAuth.getInstance();
 
         // Keep data synced locally
@@ -74,6 +77,7 @@ public class FirebaseActivityManager {
         userActivitiesRef.keepSynced(true);
         usersRef.keepSynced(true);
         userNotificationsRef.keepSynced(true);
+        pendingReviewsRef.keepSynced(true);
     }
 
     /**
@@ -406,6 +410,7 @@ public class FirebaseActivityManager {
                         if (mode == ActivityDeletionMode.WITH_NOTIFICATIONS) {
                             addNotificationsForParticipants(resolvedTitle, participantIds);
                         }
+                        createPendingReviewRequests(activityId, resolvedTitle, participantIds);
                     }
 
                     // Step 2: Delete the chat room
@@ -507,6 +512,34 @@ public class FirebaseActivityManager {
                 reviewNotif.put("message", reviewMessage);
                 reviewNotif.put("timestamp", timestamp + 1);
                 userRef.child(reviewId).setValue(reviewNotif);
+            }
+        }
+    }
+
+    private void createPendingReviewRequests(@Nullable String activityId,
+                                             @Nullable String activityTitle,
+                                             List<String> participantIds) {
+        if (TextUtils.isEmpty(activityId) || participantIds == null || participantIds.size() < 2) {
+            return;
+        }
+
+        String title = !TextUtils.isEmpty(activityTitle) ? activityTitle : "활동";
+        long timestamp = System.currentTimeMillis();
+
+        for (String reviewerId : participantIds) {
+            if (TextUtils.isEmpty(reviewerId)) continue;
+            for (String targetId : participantIds) {
+                if (TextUtils.isEmpty(targetId) || TextUtils.equals(reviewerId, targetId)) continue;
+                String entryId = activityId + "_" + targetId;
+                DatabaseReference reviewRef = pendingReviewsRef.child(reviewerId).child(entryId);
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", entryId);
+                data.put("targetUserId", targetId);
+                data.put("activityId", activityId);
+                data.put("activityTitle", title);
+                data.put("timestamp", timestamp);
+                data.put("status", "pending");
+                reviewRef.setValue(data);
             }
         }
     }

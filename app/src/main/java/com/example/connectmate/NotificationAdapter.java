@@ -17,12 +17,19 @@ import java.util.Locale;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
 
+    public interface OnNotificationClickListener {
+        void onNotificationClick(NotificationItem item);
+    }
+
     private final List<NotificationItem> notifications;
+    private final OnNotificationClickListener listener;
     private final SimpleDateFormat dateFormat =
         new SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault());
 
-    public NotificationAdapter(List<NotificationItem> notifications) {
+    public NotificationAdapter(List<NotificationItem> notifications,
+                               OnNotificationClickListener listener) {
         this.notifications = notifications;
+        this.listener = listener;
     }
 
     @NonNull
@@ -35,7 +42,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public void onBindViewHolder(@NonNull NotificationViewHolder holder, int position) {
-        holder.bind(notifications.get(position));
+        holder.bind(notifications.get(position), listener);
     }
 
     @Override
@@ -57,10 +64,15 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             timestamp = itemView.findViewById(R.id.notification_timestamp);
         }
 
-        void bind(NotificationItem item) {
+        void bind(NotificationItem item, OnNotificationClickListener listener) {
             title.setText(item.getTitle());
             message.setText(item.getMessage());
             timestamp.setText(formatTime(item.getTimestamp()));
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onNotificationClick(item);
+                }
+            });
         }
 
         private String formatTime(long ts) {

@@ -183,14 +183,20 @@ public class ChatListFragment extends Fragment {
         TextView emptyText = dialogView.findViewById(R.id.notifications_empty_text);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         List<NotificationItem> notifications = new ArrayList<>();
-        NotificationAdapter adapter = new NotificationAdapter(notifications);
-        recyclerView.setAdapter(adapter);
-
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
             .setTitle("알림")
             .setView(dialogView)
             .setPositiveButton("닫기", null)
             .create();
+
+        NotificationAdapter adapter = new NotificationAdapter(notifications, item -> {
+            if ("참여자 평가 요청".equals(item.getTitle())) {
+                dialog.dismiss();
+                openPendingReviewsFragment();
+            }
+        });
+        recyclerView.setAdapter(adapter);
+
         dialog.show();
 
         DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
@@ -219,6 +225,14 @@ public class ChatListFragment extends Fragment {
                 emptyText.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    private void openPendingReviewsFragment() {
+        requireActivity().getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.main_container, new PendingReviewsFragment())
+            .addToBackStack("PendingReviews")
+            .commit();
     }
 
     private void toggleSearch() {
