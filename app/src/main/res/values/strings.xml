@@ -83,6 +83,31 @@
     <string name="about">소개</string>
     <string name="logout">로그아웃</string>
     
+    <!-- Notification Settings -->
+    <string name="notification_settings_title">알림 설정</string>
+    <string name="notification_section_chat">채팅 알림</string>
+    <string name="notification_new_message_title">새 메시지 알림</string>
+    <string name="notification_new_message_description">새로운 채팅 메시지가 왔을 때 알림을 받습니다.</string>
+    <string name="notification_mention_alert_title">언급 알림</string>
+    <string name="notification_mention_alert_description">채팅방에서 나를 언급했을 때 알림을 받습니다.</string>
+    <string name="notification_section_activity">활동 알림</string>
+    <string name="notification_activity_update_title">참여 활동 업데이트</string>
+    <string name="notification_activity_update_description">참여 중인 활동 정보가 변경되거나 취소될 때 알림을 받습니다.</string>
+    <string name="notification_new_participant_title">새로운 참여자 알림</string>
+    <string name="notification_new_participant_description">내가 만든 활동에 새로운 사용자가 참여했을 때 알림을 받습니다.</string>
+    <string name="notification_activity_reminder_title">활동 시작 전 알림</string>
+    <string name="notification_activity_reminder_description">참여 예정인 활동 시작 전에 미리 알림을 받습니다.</string>
+    <string name="notification_recommended_activity_title">새로운 추천 활동 알림</string>
+    <string name="notification_recommended_activity_description">관심사에 맞는 새로운 활동이 추천될 때 알림을 받습니다.</string>
+    <string name="notification_section_social">친구 및 소셜 알림</string>
+    <string name="notification_friend_request_title">친구 요청 알림</string>
+    <string name="notification_friend_request_description">다른 사용자로부터 친구 요청이 왔을 때 알림을 받습니다.</string>
+    <string name="notification_friend_accepted_title">친구 요청 수락 알림</string>
+    <string name="notification_friend_accepted_description">내가 보낸 친구 요청이 수락되었을 때 알림을 받습니다.</string>
+    <string name="notification_section_general">기타 알림</string>
+    <string name="notification_announcement_title">공지 및 프로모션 알림</string>
+    <string name="notification_announcement_description">앱 관련 중요 공지나 프로모션 정보를 받습니다.</string>
+
     <!-- Friends -->
     <string name="my_friends">내 친구</string>
     <string name="friends">친구</string>
@@ -124,7 +149,7 @@
 
     <!-- Firebase Google Sign-In -->
     <!-- TODO: Replace with actual client_id from google-services.json after enabling Google Sign-In in Firebase Console -->
-    <string name="default_web_client_id">697385814271-n1dd8n72이제 `item_user.xml` 파일의 한글화 작업이 완료되었습니다. `strings.xml`에 "삭제", "수락" 문자열을 추가하고, 레이아웃 파일에서 해당 문자열 리소스를 참조하도록 수정했습니다.9mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com</string>
     <string name="your_name">이름</string>
     <string name="nick_name">닉네임</string>
     <string name="self_intro">자기소개가 여기에 들어갑니다.</string>

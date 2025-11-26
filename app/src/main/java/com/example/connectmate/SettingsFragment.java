@@ -69,6 +69,23 @@ public class SettingsFragment extends Fragment {
             });
         }
 
+        // Find the Notifications item
+        LinearLayout itemNotifications = view.findViewById(R.id.itemNotifications);
+
+        // Set click listener to navigate to NotificationSettingsFragment
+        if (itemNotifications != null) {
+            itemNotifications.setOnClickListener(v -> {
+                // Create NotificationSettingsFragment instance
+                NotificationSettingsFragment notificationSettingsFragment = new NotificationSettingsFragment();
+
+                // Navigate to NotificationSettingsFragment
+                FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                transaction.replace(R.id.main_container, notificationSettingsFragment);
+                transaction.addToBackStack(null);  // Add to back stack so user can go back
+                transaction.commit();
+            });
+        }
+
         // Find the About item
         LinearLayout itemAbout = view.findViewById(R.id.itemAbout);
 
