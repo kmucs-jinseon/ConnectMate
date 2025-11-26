@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
+import com.example.connectmate.models.UserReview;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,6 +37,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.kakao.sdk.user.UserApiClient;
 import com.navercorp.nid.NaverIdLoginSDK;
 import com.bumptech.glide.Glide;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -58,11 +64,9 @@ public class ProfileFragment extends Fragment {
     private TextView activitiesCount;
     private TextView connectionsCount;
     private MaterialButton editProfileButton;
-
-    // UI elements - Recent Activities
-    private TextView monthlyActivitiesCount;
-    private TextView chatParticipationCount;
-    private TextView newFriendsCount;
+    private LinearLayout reviewsListContainer;
+    private TextView reviewsEmptyText;
+    private MaterialButton seeAllReviewsButton;
 
     // UI elements - Settings
     private LinearLayout accountSettings;
@@ -73,6 +77,7 @@ public class ProfileFragment extends Fragment {
     // UI elements - Logout
     private MaterialButton logoutButton;
     private MaterialButton deleteAccountButton;
+    private String currentUserId;
 
     public ProfileFragment() {
         super(R.layout.fragment_profile);
@@ -112,15 +117,15 @@ public class ProfileFragment extends Fragment {
         activitiesCount = view.findViewById(R.id.activities_count);
         connectionsCount = view.findViewById(R.id.connections_count);
         editProfileButton = view.findViewById(R.id.edit_profile_button);
-
-        // Recent activities
-        monthlyActivitiesCount = view.findViewById(R.id.monthly_activities_count);
-        chatParticipationCount = view.findViewById(R.id.chat_participation_count);
-        newFriendsCount = view.findViewById(R.id.new_friends_count);
+        reviewsListContainer = view.findViewById(R.id.reviews_list_container);
+        reviewsEmptyText = view.findViewById(R.id.reviews_empty_text);
+        seeAllReviewsButton = view.findViewById(R.id.btn_see_all_reviews);
 
         // Logout button
         logoutButton = view.findViewById(R.id.logout_button);
         deleteAccountButton = view.findViewById(R.id.delete_account_button);
+
+        showNoReviewsState();
     }
 
     private void setupClickListeners() {
@@ -137,6 +142,10 @@ public class ProfileFragment extends Fragment {
                 Intent intent = new Intent(requireContext(), EditProfileActivity.class);
                 startActivity(intent);
             });
+        }
+
+        if (seeAllReviewsButton != null) {
+            seeAllReviewsButton.setOnClickListener(v -> openAllReviews());
         }
 
         // Settings options
@@ -178,9 +187,24 @@ public class ProfileFragment extends Fragment {
         }
     }
 
+    private void openAllReviews() {
+        String userId = currentUserId != null ? currentUserId : getUserId();
+        if (TextUtils.isEmpty(userId)) {
+            Toast.makeText(requireContext(), "사용자 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        UserReviewsFragment fragment = UserReviewsFragment.newInstance(userId);
+        requireActivity().getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.main_container, fragment)
+            .addToBackStack("UserReviews")
+            .commit();
+    }
+
     private void loadUserData() {
         // Get user ID based on login method
         String userId = getUserId();
+        currentUserId = userId;
 
         android.util.Log.d("ProfileFragment", "loadUserData - userId: " + userId);
 
@@ -234,11 +258,13 @@ public class ProfileFragment extends Fragment {
         if (mbtiChip != null) mbtiChip.setText(or(u.mbti, "ENFP"));
 
         if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 0.0)));
-        if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
+        int participation = u.participationCount;
+        if (activitiesCount != null) {
+            activitiesCount.setText(String.valueOf(participation));
+        }
         int friendCount = u.getFriends() != null ? u.getFriends().size() : 0;
         if (connectionsCount != null) connectionsCount.setText(String.valueOf(friendCount));
-        int participation = u.participationCount;
-        updateParticipationCount(participation);
+        displayRecentReviews(u);
 
 
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
@@ -263,9 +289,59 @@ public class ProfileFragment extends Fragment {
         editor.apply();
     }
 
-    private void updateParticipationCount(int count) {
-        if (monthlyActivitiesCount != null) {
-            monthlyActivitiesCount.setText(count + "회");
+    private void displayRecentReviews(User user) {
+        if (reviewsListContainer == null || reviewsEmptyText == null || seeAllReviewsButton == null) {
+            return;
+        }
+
+        reviewsListContainer.removeAllViews();
+        Map<String, UserReview> reviewMap = user.getReviews();
+        if (reviewMap == null || reviewMap.isEmpty()) {
+            reviewsEmptyText.setVisibility(View.VISIBLE);
+            seeAllReviewsButton.setEnabled(false);
+            return;
+        }
+
+        List<UserReview> reviews = new ArrayList<>(reviewMap.values());
+        Collections.sort(reviews, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+        int limit = Math.min(3, reviews.size());
+        for (int i = 0; i < limit; i++) {
+            View itemView = inflater.inflate(R.layout.item_user_review, reviewsListContainer, false);
+            TextView rating = itemView.findViewById(R.id.review_rating_text);
+            TextView comment = itemView.findViewById(R.id.review_comment_text);
+            UserReview review = reviews.get(i);
+            rating.setText(review.getRating() + "점");
+            String commentText = review.getComment();
+            if (commentText == null || commentText.trim().isEmpty()) {
+                commentText = "한줄평이 없습니다.";
+            }
+            comment.setText(commentText);
+            reviewsListContainer.addView(itemView);
+
+            if (i < limit - 1) {
+                View divider = new View(requireContext());
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                params.setMargins(0, 8, 0, 8);
+                divider.setLayoutParams(params);
+                divider.setBackgroundResource(R.color.gray_200);
+                reviewsListContainer.addView(divider);
+            }
+        }
+        reviewsEmptyText.setVisibility(View.GONE);
+        seeAllReviewsButton.setEnabled(true);
+    }
+
+    private void showNoReviewsState() {
+        if (reviewsListContainer != null) {
+            reviewsListContainer.removeAllViews();
+        }
+        if (reviewsEmptyText != null) {
+            reviewsEmptyText.setVisibility(View.VISIBLE);
+        }
+        if (seeAllReviewsButton != null) {
+            seeAllReviewsButton.setEnabled(false);
         }
     }
 
@@ -313,6 +389,12 @@ public class ProfileFragment extends Fragment {
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
         android.util.Log.d("ProfileFragment", "loadUserDataFromSharedPreferences called");
+        showNoReviewsState();
+
+        String storedUserId = prefs.getString("user_id", null);
+        if (!TextUtils.isEmpty(storedUserId)) {
+            currentUserId = storedUserId;
+        }
 
         String userName = prefs.getString("user_name", "이름");
         android.util.Log.d("ProfileFragment", "user_name from prefs: " + userName);
@@ -355,7 +437,6 @@ public class ProfileFragment extends Fragment {
         }
 
         int participationCount = prefs.getInt("participation_count", 0);
-        updateParticipationCount(participationCount);
 
         // Load profile image using Glide
         String imageUrlString = prefs.getString("profile_image_url", "");

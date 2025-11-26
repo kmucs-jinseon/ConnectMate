@@ -340,19 +340,21 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Recent Activities Section -->
+        <!-- Meeting Reviews Section -->
         <TextView
+            android:id="@+id/reviews_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="12dp"
-            android:text="최근 활동"
+            android:text="만남 후기"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/reviews_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -369,113 +371,36 @@
                 android:padding="16dp">
 
                 <LinearLayout
+                    android:id="@+id/reviews_list_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:orientation="vertical" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_activity"
-                        android:layout_marginEnd="8dp"
-                        app:tint="@color/primary_blue" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="참여한 활동 수"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/monthly_activities_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0회"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary_blue" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/gray_200"
-                    android:layout_marginBottom="12dp" />
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/reviews_empty_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:text="아직 후기가 없습니다."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_chat"
-                        android:layout_marginEnd="8dp"
-                        app:tint="@color/mint_500" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="대화 참여"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/chat_participation_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="42회"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/mint_500" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/gray_200"
-                    android:layout_marginBottom="12dp" />
-
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_see_all_reviews"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_people"
-                        android:layout_marginEnd="8dp"
-                        app:tint="@color/pink_500" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="새로 만난 친구"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/new_friends_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="12명"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/pink_500" />
-                </LinearLayout>
-
+                    android:layout_marginTop="12dp"
+                    android:text="자세히 보기"
+                    android:textColor="@color/primary_blue"
+                    app:strokeColor="@color/primary_blue"
+                    app:strokeWidth="1dp" />
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
-
 
         <!-- Logout Button -->
         <com.google.android.material.button.MaterialButton
