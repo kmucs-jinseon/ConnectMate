@@ -526,17 +526,11 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     
     @Override
     public void onViewProfile(Participant participant) {
-        if (participant.getId().equals(currentUserId)) {
-            // It's the current user, navigate to the Profile tab in MainActivity
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("NAVIGATE_TO", "PROFILE");
-            startActivity(intent);
-            finish(); // Close ChatRoomActivity
-        } else {
-            // It's another user, show a toast for now
-            Toast.makeText(this, "다른 사용자의 프로필 보기 기능은 아직 구현되지 않았습니다.", Toast.LENGTH_SHORT).show();
-        }
+        boolean isCurrentUser = participant.getId().equals(currentUserId);
+        Intent intent = new Intent(this, ProfileActivity.class);
+        intent.putExtra("USER_ID", participant.getId());
+        intent.putExtra("SHOW_BUTTONS", isCurrentUser);
+        startActivity(intent);
     }
 
 

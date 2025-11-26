@@ -1,6 +1,7 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -82,7 +83,14 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         popup.getMenuInflater().inflate(R.menu.friend_options_menu, popup.getMenu());
 
         popup.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_remove_friend) {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_view_profile) {
+                Intent intent = new Intent(context, ProfileActivity.class);
+                intent.putExtra("USER_ID", user.getUserId());
+                intent.putExtra("SHOW_BUTTONS", false);
+                context.startActivity(intent);
+                return true;
+            } else if (itemId == R.id.action_remove_friend) {
                 showRemoveFriendConfirmation(user);
                 return true;
             }

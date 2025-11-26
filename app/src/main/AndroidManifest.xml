@@ -121,6 +121,9 @@
                     android:host="connectmate.app" />
             </intent-filter>
         </activity>
+        
+        <activity android:name=".ProfileActivity"
+            android:exported="false" />
 
         <activity
             android:name=".MapActivity"

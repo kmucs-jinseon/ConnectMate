@@ -1,6 +1,7 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
@@ -95,12 +96,16 @@ public class SettingsFragment extends Fragment {
     public void navigateToProfile() {
         if (!isAdded()) return; // 프래그먼트가 Activity에 추가되지 않았으면 실행하지 않음
 
-        ProfileFragment profileFragment = new ProfileFragment();
-        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-        transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right);
-        transaction.replace(R.id.main_container, profileFragment, "TAG_PROFILE"); // 태그 추가
-        transaction.addToBackStack(null);
-        transaction.commit();
+        String userId = getUserId();
+        if (userId == null) {
+            // 사용자 ID를 가져올 수 없는 경우에 대한 예외 처리
+            return;
+        }
+
+        Intent intent = new Intent(requireContext(), ProfileActivity.class);
+        intent.putExtra("USER_ID", userId);
+        intent.putExtra("SHOW_BUTTONS", true);
+        startActivity(intent);
     }
 
     private void initializeViews(View view) {

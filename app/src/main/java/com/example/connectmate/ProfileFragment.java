@@ -47,6 +47,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 public class ProfileFragment extends Fragment {
 
+    private static final String ARG_USER_ID = "userId";
+    private static final String ARG_SHOW_BUTTONS = "showButtons";
+    private String userId;
+    private boolean showButtons;
     private FirebaseAuth mAuth;
     private DatabaseReference databaseRef;
     private DatabaseReference userRef;
@@ -83,6 +87,24 @@ public class ProfileFragment extends Fragment {
         super(R.layout.fragment_profile);
     }
 
+    public static ProfileFragment newInstance(String userId, boolean showButtons) {
+        ProfileFragment fragment = new ProfileFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_USER_ID, userId);
+        args.putBoolean(ARG_SHOW_BUTTONS, showButtons);
+        fragment.setArguments(args);
+        return fragment;
+    }
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            userId = getArguments().getString(ARG_USER_ID);
+            showButtons = getArguments().getBoolean(ARG_SHOW_BUTTONS, false);
+        }
+    }
+
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -96,6 +118,16 @@ public class ProfileFragment extends Fragment {
 
         // Set up click listeners
         setupClickListeners();
+
+        if (showButtons) {
+            editProfileButton.setVisibility(View.VISIBLE);
+            logoutButton.setVisibility(View.VISIBLE);
+            deleteAccountButton.setVisibility(View.VISIBLE);
+        } else {
+            editProfileButton.setVisibility(View.GONE);
+            logoutButton.setVisibility(View.GONE);
+            deleteAccountButton.setVisibility(View.GONE);
+        }
 
         // Load user data
         loadUserData();
@@ -132,7 +164,7 @@ public class ProfileFragment extends Fragment {
         // Back button
         if (backButton != null) {
             backButton.setOnClickListener(v -> {
-                requireActivity().getSupportFragmentManager().popBackStack();
+                requireActivity().finish();
             });
         }
 
@@ -195,20 +227,20 @@ public class ProfileFragment extends Fragment {
         }
         UserReviewsFragment fragment = UserReviewsFragment.newInstance(userId);
         requireActivity().getSupportFragmentManager()
-            .beginTransaction()
-            .replace(R.id.main_container, fragment)
-            .addToBackStack("UserReviews")
-            .commit();
+                .beginTransaction()
+                .replace(R.id.main_container, fragment)
+                .addToBackStack("UserReviews")
+                .commit();
     }
 
     private void loadUserData() {
         // Get user ID based on login method
-        String userId = getUserId();
-        currentUserId = userId;
+        String userIdToLoad = (userId != null) ? userId : getUserId();
+        currentUserId = userIdToLoad;
 
-        android.util.Log.d("ProfileFragment", "loadUserData - userId: " + userId);
+        android.util.Log.d("ProfileFragment", "loadUserData - userId: " + userIdToLoad);
 
-        if (userId == null) {
+        if (userIdToLoad == null) {
             clearUserListener();
             // Fallback to SharedPreferences if no user ID found
             android.util.Log.d("ProfileFragment", "No userId found, loading from SharedPreferences");
@@ -217,9 +249,9 @@ public class ProfileFragment extends Fragment {
         }
 
         // Load user data from Realtime Database
-        android.util.Log.d("ProfileFragment", "Loading user data from Firebase for userId: " + userId);
+        android.util.Log.d("ProfileFragment", "Loading user data from Firebase for userId: " + userIdToLoad);
         clearUserListener();
-        userRef = databaseRef.child("users").child(userId);
+        userRef = databaseRef.child("users").child(userIdToLoad);
         userListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -250,6 +282,7 @@ public class ProfileFragment extends Fragment {
         userRef.addValueEventListener(userListener);
     }
 
+
     private void bindUserToUi(User u){
         setText(profileName, or(u.displayName, "이름"));
         setText(profileUsername, "@" + or(u.username, or(safeId(u.displayName), "user")));
@@ -276,10 +309,10 @@ public class ProfileFragment extends Fragment {
             String url = u.profileImageUrl;
             if (!TextUtils.isEmpty(url)) {
                 Glide.with(this)
-                    .load(url)
-                    .placeholder(R.drawable.circle_logo)
-                    .error(R.drawable.circle_logo)
-                    .into(profileAvatar);
+                        .load(url)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(profileAvatar);
                 editor.putString("profile_image_url", url);
             } else {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
@@ -322,7 +355,7 @@ public class ProfileFragment extends Fragment {
             if (i < limit - 1) {
                 View divider = new View(requireContext());
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1);
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
                 params.setMargins(0, 8, 0, 8);
                 divider.setLayoutParams(params);
                 divider.setBackgroundResource(R.color.gray_200);
@@ -443,10 +476,10 @@ public class ProfileFragment extends Fragment {
         if (!imageUrlString.isEmpty() && profileAvatar != null) {
             try {
                 Glide.with(this)
-                    .load(imageUrlString)
-                    .placeholder(R.drawable.circle_logo)
-                    .error(R.drawable.circle_logo)
-                    .into(profileAvatar);
+                        .load(imageUrlString)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .into(profileAvatar);
             } catch (Exception e) {
                 profileAvatar.setImageResource(R.drawable.circle_logo);
             }
@@ -614,10 +647,10 @@ public class ProfileFragment extends Fragment {
 
                         // Clear additional Naver preferences that might exist
                         String[] possibleNaverPrefs = {
-                            "NaverOAuth",
-                            "naver_oauth",
-                            "com.naver.nid.oauth",
-                            "com.navercorp.nid.oauth"
+                                "NaverOAuth",
+                                "naver_oauth",
+                                "com.naver.nid.oauth",
+                                "com.navercorp.nid.oauth"
                         };
 
                         for (String prefName : possibleNaverPrefs) {

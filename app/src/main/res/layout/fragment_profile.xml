@@ -334,7 +334,8 @@
                     android:textAllCaps="false"
                     app:cornerRadius="8dp"
                     app:backgroundTint="@color/primary_blue"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/white"
+                    android:visibility="gone" />
 
             </LinearLayout>
 
@@ -416,7 +417,8 @@
             android:textAllCaps="false"
             app:cornerRadius="8dp"
             app:backgroundTint="@color/gray_400"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:visibility="gone" />
 
         <!-- Delete Account Button -->
         <com.google.android.material.button.MaterialButton
@@ -431,7 +433,8 @@
             android:textAllCaps="false"
             app:cornerRadius="8dp"
             app:backgroundTint="@color/red_500"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:visibility="gone" />
 
     </LinearLayout>
 </ScrollView>
