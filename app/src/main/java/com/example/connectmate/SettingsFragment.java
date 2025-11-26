@@ -63,6 +63,7 @@ public class SettingsFragment extends Fragment {
 
                 // Navigate to ProfileFragment
                 FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right);
                 transaction.replace(R.id.main_container, profileFragment);
                 transaction.addToBackStack(null);  // Add to back stack so user can go back
                 transaction.commit();
@@ -80,6 +81,7 @@ public class SettingsFragment extends Fragment {
 
                 // Navigate to NotificationSettingsFragment
                 FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                transaction.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right);
                 transaction.replace(R.id.main_container, notificationSettingsFragment);
                 transaction.addToBackStack(null);  // Add to back stack so user can go back
                 transaction.commit();

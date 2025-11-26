@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -45,7 +47,7 @@ public class ProfileFragment extends Fragment {
     private ValueEventListener userListener;
 
     // UI elements - Profile Card
-    private ImageButton moreButton;
+    private ImageButton backButton;
     private CircleImageView profileAvatar;
     private TextView profileName;
     private TextView profileUsername;
@@ -96,6 +98,9 @@ public class ProfileFragment extends Fragment {
 
     private void initializeViews(View view) {
 
+        // Header
+        backButton = view.findViewById(R.id.back_button);
+
         // Profile card
         profileAvatar = view.findViewById(R.id.profile_avatar);
         profileName = view.findViewById(R.id.profile_name);
@@ -119,11 +124,10 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // More button
-        if (moreButton != null) {
-            moreButton.setOnClickListener(v -> {
-                Toast.makeText(requireContext(), "더보기", Toast.LENGTH_SHORT).show();
-                // TODO: Implement more options menu
+        // Back button
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> {
+                requireActivity().getSupportFragmentManager().popBackStack();
             });
         }
 
