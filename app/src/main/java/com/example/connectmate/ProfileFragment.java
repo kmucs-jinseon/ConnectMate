@@ -235,7 +235,8 @@ public class ProfileFragment extends Fragment {
 
         if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 0.0)));
         if (activitiesCount != null) activitiesCount.setText(String.valueOf(or(u.activitiesCount, 0L)));
-        if (connectionsCount != null) connectionsCount.setText(String.valueOf(or(u.connectionsCount, 0L)));
+        int friendCount = u.getFriends() != null ? u.getFriends().size() : 0;
+        if (connectionsCount != null) connectionsCount.setText(String.valueOf(friendCount));
         int participation = u.participationCount;
         updateParticipationCount(participation);
 
