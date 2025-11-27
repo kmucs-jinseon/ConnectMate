@@ -225,12 +225,29 @@ public class ProfileFragment extends Fragment {
             Toast.makeText(requireContext(), "사용자 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
             return;
         }
+        int containerId = getFragmentContainerId();
+        if (containerId == View.NO_ID) {
+            Toast.makeText(requireContext(), "리뷰 화면을 열 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         UserReviewsFragment fragment = UserReviewsFragment.newInstance(userId);
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.main_container, fragment)
+                .replace(containerId, fragment)
                 .addToBackStack("UserReviews")
                 .commit();
+    }
+
+    private int getFragmentContainerId() {
+        View mainContainer = requireActivity().findViewById(R.id.main_container);
+        if (mainContainer != null) {
+            return R.id.main_container;
+        }
+        View profileContainer = requireActivity().findViewById(R.id.profile_fragment_container);
+        if (profileContainer != null) {
+            return R.id.profile_fragment_container;
+        }
+        return View.NO_ID;
     }
 
     private void loadUserData() {
