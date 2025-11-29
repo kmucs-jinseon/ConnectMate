@@ -77,8 +77,8 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
             profileImageView.setImageResource(R.drawable.circle_logo);
         }
 
-        boolean isFriend = friendIds.contains(participantId);
-        boolean isCurrentUser = participantId.equals(currentUserId);
+        boolean isFriend = friendIds != null && friendIds.contains(participantId);
+        boolean isCurrentUser = participantId != null && participantId.equals(currentUserId);
 
         // Set participant name
         participantNameTextView.setText(participantName);

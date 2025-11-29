@@ -33,10 +33,12 @@ public class FirebaseChatManager {
     private static final String PATH_CHAT_ROOMS = "chatRooms";
     private static final String PATH_MESSAGES = "messages";
     private static final String PATH_USERS = "users";
+    private static final String PATH_USER_CHAT_ROOMS = "userChatRooms";
 
     private final DatabaseReference chatRoomsRef;
     private final DatabaseReference messagesRef;
     private final DatabaseReference usersRef;
+    private final DatabaseReference userChatRoomsRef;
     private final FirebaseAuth auth;
 
     private static FirebaseChatManager instance;
@@ -58,6 +60,7 @@ public class FirebaseChatManager {
         chatRoomsRef = database.getReference(PATH_CHAT_ROOMS);
         messagesRef = database.getReference(PATH_MESSAGES);
         usersRef = database.getReference(PATH_USERS);
+        userChatRoomsRef = database.getReference(PATH_USER_CHAT_ROOMS);
         auth = FirebaseAuth.getInstance();
 
         // Keep chat data synced locally
@@ -287,7 +290,9 @@ public class FirebaseChatManager {
     }
 
     /**
-     * Get all chat rooms that a user has joined.
+     * Get all chat rooms that a user has joined with real-time updates.
+     * Fetches all chat rooms and filters to only those where user is a member.
+     * Provides real-time updates for last message, unread counts, etc.
      */
     public void getJoinedChatRooms(String userId, ChatRoomListListener listener) {
         chatRoomsRef.orderByChild("lastMessageTime")
@@ -297,6 +302,7 @@ public class FirebaseChatManager {
                     List<ChatRoom> chatRooms = new ArrayList<>();
                     for (DataSnapshot child : snapshot.getChildren()) {
                         ChatRoom chatRoom = child.getValue(ChatRoom.class);
+                        // Only include chat rooms where the user is actually a member
                         if (chatRoom != null && chatRoom.getMembers() != null && chatRoom.getMembers().containsKey(userId)) {
                             chatRooms.add(0, chatRoom); // Add to beginning (newest first)
                         }
@@ -417,10 +423,21 @@ public class FirebaseChatManager {
 
         chatRoomsRef.child(chatRoomId).updateChildren(updates)
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Member added to chat room: " + chatRoomId);
-                if (listener != null) {
-                    listener.onSuccess(null);
-                }
+                // Also add chat room to user's chat room list for efficient querying
+                userChatRoomsRef.child(memberId).child(chatRoomId).setValue(true)
+                    .addOnSuccessListener(aVoid2 -> {
+                        Log.d(TAG, "Member added to chat room: " + chatRoomId + ", user index updated");
+                        if (listener != null) {
+                            listener.onSuccess(null);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error updating user chat room index", e);
+                        // Still consider this a success since the member was added to the chat room
+                        if (listener != null) {
+                            listener.onSuccess(null);
+                        }
+                    });
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error adding member to chat room", e);
@@ -438,10 +455,21 @@ public class FirebaseChatManager {
         chatRoomsRef.child(chatRoomId).child("members").child(memberId)
             .removeValue()
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Member removed from chat room: " + chatRoomId);
-                if (listener != null) {
-                    listener.onSuccess(null);
-                }
+                // Also remove chat room from user's chat room list
+                userChatRoomsRef.child(memberId).child(chatRoomId).removeValue()
+                    .addOnSuccessListener(aVoid2 -> {
+                        Log.d(TAG, "Member removed from chat room: " + chatRoomId + ", user index updated");
+                        if (listener != null) {
+                            listener.onSuccess(null);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error updating user chat room index", e);
+                        // Still consider this a success since the member was removed from the chat room
+                        if (listener != null) {
+                            listener.onSuccess(null);
+                        }
+                    });
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error removing member from chat room", e);

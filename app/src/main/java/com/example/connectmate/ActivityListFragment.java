@@ -577,14 +577,25 @@ public class ActivityListFragment extends Fragment {
         activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
             @Override
             public void onActivityAdded(Activity activity) {
-                // Add new activity to the beginning of the list
-                if (!allActivities.contains(activity)) {
+                // Check if activity already exists by ID
+                boolean exists = false;
+                for (Activity a : allActivities) {
+                    if (a.getId() != null && a.getId().equals(activity.getId())) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                // Add new activity to the beginning of the list if it doesn't exist
+                if (!exists) {
                     allActivities.add(0, activity);
 
                     // Re-apply filters and search to update the filtered list
                     applyFiltersAndSearch();
 
                     Log.d(TAG, "Activity added: " + activity.getTitle());
+                } else {
+                    Log.d(TAG, "Activity already exists: " + activity.getTitle());
                 }
             }
 
