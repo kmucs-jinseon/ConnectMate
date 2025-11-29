@@ -351,6 +351,7 @@ public class ProfileFragment extends Fragment {
         Map<String, UserReview> reviewMap = user.getReviews();
         if (reviewMap == null || reviewMap.isEmpty()) {
             reviewsEmptyText.setVisibility(View.VISIBLE);
+            seeAllReviewsButton.setVisibility(View.GONE);
             seeAllReviewsButton.setEnabled(false);
             return;
         }
@@ -358,6 +359,8 @@ public class ProfileFragment extends Fragment {
         List<UserReview> reviews = new ArrayList<>(reviewMap.values());
         Collections.sort(reviews, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
         LayoutInflater inflater = LayoutInflater.from(requireContext());
+
+        // Show max 3 reviews in profile
         int limit = Math.min(3, reviews.size());
         for (int i = 0; i < limit; i++) {
             View itemView = inflater.inflate(R.layout.item_user_review, reviewsListContainer, false);
@@ -406,7 +409,15 @@ public class ProfileFragment extends Fragment {
             }
         }
         reviewsEmptyText.setVisibility(View.GONE);
-        seeAllReviewsButton.setEnabled(true);
+
+        // Only show "See All Reviews" button if there are more than 3 reviews
+        if (reviews.size() > 3) {
+            seeAllReviewsButton.setVisibility(View.VISIBLE);
+            seeAllReviewsButton.setEnabled(true);
+        } else {
+            seeAllReviewsButton.setVisibility(View.GONE);
+            seeAllReviewsButton.setEnabled(false);
+        }
     }
 
     private void showNoReviewsState() {
@@ -417,6 +428,7 @@ public class ProfileFragment extends Fragment {
             reviewsEmptyText.setVisibility(View.VISIBLE);
         }
         if (seeAllReviewsButton != null) {
+            seeAllReviewsButton.setVisibility(View.GONE);
             seeAllReviewsButton.setEnabled(false);
         }
     }
