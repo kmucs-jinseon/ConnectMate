@@ -61,6 +61,7 @@ public class PendingReviewsFragment extends Fragment {
         setupToolbarNavigation();
         setupRecycler();
         observePendingReviews();
+        hideFab();
     }
 
     private void initializeViews(View view) {
@@ -189,6 +190,26 @@ public class PendingReviewsFragment extends Fragment {
         String userId = getCurrentUserId();
         if (pendingListener != null && !TextUtils.isEmpty(userId)) {
             pendingReviewsRef.child(userId).removeEventListener(pendingListener);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        hideFab();
+    }
+
+    private void hideFab() {
+        View fab = requireActivity().findViewById(R.id.fabCreateActivity);
+        if (fab != null) {
+            fab.setVisibility(View.GONE);
+        }
+    }
+
+    private void showFab() {
+        View fab = requireActivity().findViewById(R.id.fabCreateActivity);
+        if (fab != null) {
+            fab.setVisibility(View.VISIBLE);
         }
     }
 
