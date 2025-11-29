@@ -440,12 +440,24 @@ public class ActivityDetailActivity extends AppCompatActivity {
                                 // Send join notification message
                                 String joinMessage = finalUserName + "님이 입장하셨습니다";
                                 ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
-                                chatManager.sendMessage(systemMessage, null);
+
+                                // Send message and wait for it to be saved before navigating
+                                chatManager.sendMessage(systemMessage, new FirebaseChatManager.OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void result) {
+                                        Log.d(TAG, "System message sent successfully");
+                                        navigateToChatRoom(chatRoom);
+                                    }
+
+                                    @Override
+                                    public void onError(Exception e) {
+                                        Log.e(TAG, "Failed to send system message", e);
+                                        // Navigate anyway even if message fails
+                                        navigateToChatRoom(chatRoom);
+                                    }
+                                });
 
                                 Log.d(TAG, "User joined activity and chat: " + finalUserName);
-
-                                // Navigate to chat room
-                                navigateToChatRoom(chatRoom);
                             }
 
                             @Override

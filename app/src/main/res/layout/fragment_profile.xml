@@ -15,7 +15,7 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="@color/white"
+            android:background="@color/primary_blue"
             android:elevation="2dp"
             android:paddingLeft="16dp"
             android:paddingRight="16dp">
@@ -28,7 +28,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:layout_centerVertical="true"
                 android:layout_alignParentStart="true"
-                app:tint="@color/primary_blue" />
+                app:tint="@color/white" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -39,7 +39,7 @@
                 android:text="프로필"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary" />
+                android:textColor="@color/white" />
 
         </RelativeLayout>
 
@@ -398,7 +398,8 @@
                     android:text="자세히 보기"
                     android:textColor="@color/primary_blue"
                     app:strokeColor="@color/primary_blue"
-                    app:strokeWidth="1dp" />
+                    app:strokeWidth="1dp"
+                    android:backgroundTint="@color/blue_50"/>
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>

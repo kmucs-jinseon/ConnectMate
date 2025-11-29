@@ -69,7 +69,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     private Toolbar toolbar;
     private TextView toolbarTitle;
     private TextView toolbarParticipantCount;
-    private MaterialButton btnEndActivity;
     private RecyclerView messagesRecyclerView;
     private LinearLayout emptyState;
     private TextInputEditText messageInput;
@@ -161,6 +160,11 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
             deleteItem.setVisible(isCurrentUserHost());
         }
 
+        MenuItem endActivityItem = menu.findItem(R.id.action_end_activity);
+        if (endActivityItem != null) {
+            endActivityItem.setVisible(isCurrentUserHost());
+        }
+
         return true;
     }
 
@@ -176,6 +180,9 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
             return true;
         } else if (itemId == R.id.action_view_participants) {
             showParticipantsDialog();
+            return true;
+        } else if (itemId == R.id.action_end_activity) {
+            showEndActivityDialog();
             return true;
         } else if (itemId == R.id.action_delete_room) {
             showDeleteChatRoomDialog();
@@ -278,16 +285,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
             && chatRoom.getHostId().equals(currentUserId);
     }
 
-    private void updateHostControls() {
-        if (btnEndActivity == null) {
-            return;
-        }
-        if (isCurrentUserHost() && chatRoom != null && !TextUtils.isEmpty(chatRoom.getActivityId())) {
-            btnEndActivity.setVisibility(View.VISIBLE);
-        } else {
-            btnEndActivity.setVisibility(View.GONE);
-        }
-    }
 
     private void showDeleteChatRoomDialog() {
         if (!isCurrentUserHost()) {
@@ -658,10 +655,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
         toolbar = findViewById(R.id.toolbar);
         toolbarTitle = findViewById(R.id.toolbar_chat_room_title);
         toolbarParticipantCount = findViewById(R.id.toolbar_participant_count);
-        btnEndActivity = findViewById(R.id.btn_end_activity);
-        if (btnEndActivity != null) {
-            btnEndActivity.setOnClickListener(v -> showEndActivityDialog());
-        }
         messagesRecyclerView = findViewById(R.id.messages_recycler_view);
         emptyState = findViewById(R.id.empty_state);
         messageInput = findViewById(R.id.message_input);
@@ -698,7 +691,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
 
         if (toolbarParticipantCount != null) {
             int memberCount = chatRoom.getMemberCount();
-            toolbarParticipantCount.setText(String.format("%d명 참여중", memberCount));
+            toolbarParticipantCount.setText(String.format("%d명", memberCount));
         }
 
         // Set navigation icon tint to white using DrawableCompat for compatibility
@@ -720,7 +713,6 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
         toolbar.setNavigationOnClickListener(v -> finish());
 
         invalidateOptionsMenu();
-        updateHostControls();
     }
 
     private void setupRecyclerView() {
@@ -998,11 +990,10 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 runOnUiThread(() -> {
                     if (toolbarParticipantCount != null) {
                         int memberCount = chatRoom.getMemberCount();
-                        toolbarParticipantCount.setText(String.format("%d명 참여중", memberCount));
+                        toolbarParticipantCount.setText(String.format("%d명", memberCount));
                         Log.d(TAG, "Chat room member count updated: " + memberCount);
                     }
                     invalidateOptionsMenu();
-                    updateHostControls();
                 });
             }
 

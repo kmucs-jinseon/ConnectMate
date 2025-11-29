@@ -3,8 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingTop="15dp"
+    android:paddingBottom="15dp"
+    android:layout_marginStart="20dp"
+    android:layout_marginEnd="20dp"
+    android:background="@drawable/bottom_border">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,11 +15,12 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_star_filled"
-            android:tint="@color/primary_blue" />
+        <LinearLayout
+            android:id="@+id/review_stars_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
 
         <TextView
             android:id="@+id/review_rating_text"
@@ -35,7 +39,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="한줄평 내용"
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+        android:textColor="@color/text_primary"
+        android:textSize="15sp" />
 
 </LinearLayout>

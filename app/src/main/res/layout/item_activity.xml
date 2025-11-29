@@ -142,7 +142,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/gray_600"
-            android:textSize="14sp"
+            android:textSize="15sp"
             tools:text="Join us for a friendly soccer match! All skill levels welcome. Bring your own water bottle." />
 
         <!-- Divider -->

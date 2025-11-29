@@ -6,6 +6,11 @@
         android:title="참여자 보기"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_end_activity"
+        android:title="활동 종료"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_delete_room"
         android:title="채팅방 삭제"
         android:visible="false"

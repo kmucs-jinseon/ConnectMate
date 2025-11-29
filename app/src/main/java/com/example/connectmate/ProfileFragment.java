@@ -363,8 +363,31 @@ public class ProfileFragment extends Fragment {
             View itemView = inflater.inflate(R.layout.item_user_review, reviewsListContainer, false);
             TextView rating = itemView.findViewById(R.id.review_rating_text);
             TextView comment = itemView.findViewById(R.id.review_comment_text);
+            LinearLayout starsContainer = itemView.findViewById(R.id.review_stars_container);
             UserReview review = reviews.get(i);
             rating.setText(review.getRating() + "점");
+
+            // Display stars based on rating
+            starsContainer.removeAllViews();
+            int ratingValue = review.getRating();
+            int starCount = ratingValue > 0 ? ratingValue : 1;
+            for (int j = 0; j < starCount; j++) {
+                ImageView star = new ImageView(requireContext());
+                LinearLayout.LayoutParams starParams = new LinearLayout.LayoutParams(
+                    (int) (20 * getResources().getDisplayMetrics().density),
+                    (int) (20 * getResources().getDisplayMetrics().density)
+                );
+                if (j > 0) {
+                    starParams.setMarginStart((int) (2 * getResources().getDisplayMetrics().density));
+                }
+                star.setLayoutParams(starParams);
+                star.setImageResource(R.drawable.ic_star_filled);
+                star.setColorFilter(getResources().getColor(
+                    ratingValue > 0 ? R.color.yellow_500 : R.color.gray_100, null
+                ));
+                starsContainer.addView(star);
+            }
+
             String commentText = review.getComment();
             if (commentText == null || commentText.trim().isEmpty()) {
                 commentText = "한줄평이 없습니다.";

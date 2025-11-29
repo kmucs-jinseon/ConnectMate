@@ -3,6 +3,8 @@ package com.example.connectmate;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -41,15 +43,41 @@ public class UserReviewsAdapter extends RecyclerView.Adapter<UserReviewsAdapter.
     static class ReviewViewHolder extends RecyclerView.ViewHolder {
         private final TextView ratingText;
         private final TextView commentText;
+        private final LinearLayout starsContainer;
 
         ReviewViewHolder(@NonNull View itemView) {
             super(itemView);
             ratingText = itemView.findViewById(R.id.review_rating_text);
             commentText = itemView.findViewById(R.id.review_comment_text);
+            starsContainer = itemView.findViewById(R.id.review_stars_container);
         }
 
         void bind(UserReview review) {
             ratingText.setText(review.getRating() + "점");
+
+            // Display stars based on rating
+            starsContainer.removeAllViews();
+            int ratingValue = review.getRating();
+            int starCount = ratingValue > 0 ? ratingValue : 1;
+            float density = itemView.getContext().getResources().getDisplayMetrics().density;
+
+            for (int j = 0; j < starCount; j++) {
+                ImageView star = new ImageView(itemView.getContext());
+                LinearLayout.LayoutParams starParams = new LinearLayout.LayoutParams(
+                    (int) (20 * density),
+                    (int) (20 * density)
+                );
+                if (j > 0) {
+                    starParams.setMarginStart((int) (2 * density));
+                }
+                star.setLayoutParams(starParams);
+                star.setImageResource(R.drawable.ic_star_filled);
+                star.setColorFilter(itemView.getContext().getResources().getColor(
+                    ratingValue > 0 ? R.color.yellow_500 : R.color.gray_100, null
+                ));
+                starsContainer.addView(star);
+            }
+
             String comment = review.getComment();
             if (comment == null || comment.trim().isEmpty()) {
                 comment = "한 줄 평이 없습니다.";

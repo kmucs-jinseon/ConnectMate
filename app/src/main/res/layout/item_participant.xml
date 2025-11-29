@@ -76,7 +76,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="More options"
             android:src="@drawable/ic_more_vertical"
-            app:tint="@color/gray_500" />
+            app:tint="@color/primary_blue" />
     </LinearLayout>
 
 </LinearLayout>

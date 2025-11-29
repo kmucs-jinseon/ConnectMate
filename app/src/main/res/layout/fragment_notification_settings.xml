@@ -21,7 +21,8 @@
             app:navigationIconTint="@color/white"
             app:title="@string/notification_settings_title"
             app:titleTextColor="@color/white"
-            android:background="@color/primary_blue"/>
+            android:background="@color/primary_blue"
+            app:titleTextAppearance="@style/ToolbarTitleBold"/>
 
     </com.google.android.material.appbar.AppBarLayout>
 

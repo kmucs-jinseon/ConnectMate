@@ -110,13 +110,13 @@ public class FirebaseActivityManager {
             activity.setCreatedTimestamp(System.currentTimeMillis());
         }
 
-        // Step 1: Save the main activity data
+        // Save the main activity data (do NOT auto-join creator)
         activitiesRef.child(activity.getId()).setValue(activity)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Activity data saved successfully: " + activity.getTitle());
-
-                    // Step 2: Automatically join the creator to the activity and create chat room
-                    joinActivityAndCreateChat(activity, listener);
+                    if (listener != null) {
+                        listener.onSuccess(activity);
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error saving activity data", e);
@@ -731,24 +731,44 @@ public class FirebaseActivityManager {
      */
     public void addParticipant(String activityId, String userId, String userName,
                               OnCompleteListener<Void> listener) {
+        // First check if user is already a participant to avoid duplicate counting
         activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
-            .setValue(userName)
-            .addOnSuccessListener(aVoid -> {
-                // Update participant count
-                incrementParticipantCount(activityId, 1);
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean alreadyExists = snapshot.exists();
 
-                // Add to user's activities
-                userActivitiesRef.child(userId).child(activityId).setValue(true);
+                    // Add the participant
+                    activitiesRef.child(activityId).child(PATH_PARTICIPANTS).child(userId)
+                        .setValue(userName)
+                        .addOnSuccessListener(aVoid -> {
+                            // Only increment count if user wasn't already a participant
+                            if (!alreadyExists) {
+                                incrementParticipantCount(activityId, 1);
+                            }
 
-                Log.d(TAG, "Participant added to activity: " + activityId);
-                if (listener != null) {
-                    listener.onSuccess(null);
+                            // Add to user's activities
+                            userActivitiesRef.child(userId).child(activityId).setValue(true);
+
+                            Log.d(TAG, "Participant added to activity: " + activityId + " (new: " + !alreadyExists + ")");
+                            if (listener != null) {
+                                listener.onSuccess(null);
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Error adding participant", e);
+                            if (listener != null) {
+                                listener.onError(e);
+                            }
+                        });
                 }
-            })
-            .addOnFailureListener(e -> {
-                Log.e(TAG, "Error adding participant", e);
-                if (listener != null) {
-                    listener.onError(e);
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e(TAG, "Error checking participant status", error.toException());
+                    if (listener != null) {
+                        listener.onError(error.toException());
+                    }
                 }
             });
     }
@@ -954,22 +974,29 @@ public class FirebaseActivityManager {
 
 
     /**
-     * Increment/decrement participant count
+     * Increment/decrement participant count using atomic transaction
      */
     private void incrementParticipantCount(String activityId, int delta) {
         activitiesRef.child(activityId).child("currentParticipants")
-            .addListenerForSingleValueEvent(new ValueEventListener() {
+            .runTransaction(new Transaction.Handler() {
+                @NonNull
                 @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    Integer current = snapshot.getValue(Integer.class);
-                    if (current == null) current = 0;
-                    activitiesRef.child(activityId).child("currentParticipants")
-                        .setValue(Math.max(0, current + delta));
+                public Transaction.Result doTransaction(@NonNull MutableData currentData) {
+                    Integer current = currentData.getValue(Integer.class);
+                    if (current == null) {
+                        current = 0;
+                    }
+                    currentData.setValue(Math.max(0, current + delta));
+                    return Transaction.success(currentData);
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Log.e(TAG, "Error updating participant count", error.toException());
+                public void onComplete(@Nullable DatabaseError error, boolean committed, @Nullable DataSnapshot currentData) {
+                    if (error != null) {
+                        Log.e(TAG, "Error updating participant count", error.toException());
+                    } else if (committed) {
+                        Log.d(TAG, "Participant count updated for activity: " + activityId + " (delta: " + delta + ")");
+                    }
                 }
             });
     }

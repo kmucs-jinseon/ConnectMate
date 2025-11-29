@@ -24,31 +24,13 @@
         android:id="@+id/toolbar_participant_count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="5명 참여중"
+        android:text="5명"
         android:textSize="12sp"
         android:textColor="@color/primary_blue"
         android:background="@drawable/bg_participant_count"
         android:paddingStart="10dp"
         android:paddingEnd="10dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_end_activity"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="활동 종료"
-        android:textSize="12sp"
-        android:textAllCaps="false"
-        android:visibility="gone"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        app:backgroundTint="@color/primary_blue"
-        app:cornerRadius="20dp"
-        app:iconTint="@android:color/white"
-        app:rippleColor="@color/primary_blue_dark"
-        android:textColor="@android:color/white"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp" />
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp" />
 
 </LinearLayout>
