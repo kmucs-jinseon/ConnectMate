@@ -67,6 +67,7 @@ public class ProfileFragment extends Fragment {
     private TextView ratingText;
     private TextView activitiesCount;
     private TextView connectionsCount;
+    private TextView friendsCount;
     private MaterialButton editProfileButton;
     private LinearLayout reviewsListContainer;
     private TextView reviewsEmptyText;
@@ -148,6 +149,7 @@ public class ProfileFragment extends Fragment {
         ratingText = view.findViewById(R.id.rating_text);
         activitiesCount = view.findViewById(R.id.activities_count);
         connectionsCount = view.findViewById(R.id.connections_count);
+        friendsCount = view.findViewById(R.id.friends_count);
         editProfileButton = view.findViewById(R.id.edit_profile_button);
         reviewsListContainer = view.findViewById(R.id.reviews_list_container);
         reviewsEmptyText = view.findViewById(R.id.reviews_empty_text);
@@ -312,8 +314,9 @@ public class ProfileFragment extends Fragment {
         if (activitiesCount != null) {
             activitiesCount.setText(String.valueOf(participation));
         }
+        if (connectionsCount != null) connectionsCount.setText(String.valueOf(u.connectionsCount));
         int friendCount = u.getFriends() != null ? u.getFriends().size() : 0;
-        if (connectionsCount != null) connectionsCount.setText(String.valueOf(friendCount));
+        if (friendsCount != null) friendsCount.setText(String.valueOf(friendCount));
         displayRecentReviews(u);
 
 

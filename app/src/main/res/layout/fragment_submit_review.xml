@@ -38,14 +38,17 @@
                     android:id="@+id/review_target_avatar"
                     android:layout_width="80dp"
                     android:layout_height="80dp"
-                    android:src="@drawable/ic_profile"
-                    android:contentDescription="@string/profile_image" />
+                    android:src="@drawable/circle_logo"
+                    android:contentDescription="@string/profile_image"
+                    app:civ_border_width="2dp"
+                    app:civ_border_color="@color/primary_blue" />
 
                 <TextView
                     android:id="@+id/review_target_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8dp"
                     android:text="이름"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
@@ -64,9 +67,12 @@
                 android:id="@+id/review_rating_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="별점을 선택해 주세요 (필수)"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="5dp"
+                android:layout_marginBottom="5dp"
+                android:text="별점 평가를 남겨 주세요 *"
                 android:textColor="@color/text_primary"
-                android:textSize="15sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <RatingBar
@@ -74,10 +80,14 @@
                 style="@style/Widget.AppCompat.RatingBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:isIndicator="false"
                 android:numStars="5"
                 android:rating="0"
                 android:stepSize="1"
+                android:progressTint="#FFC107"
+                android:progressBackgroundTint="#E0E0E0"
+                android:secondaryProgressTint="#FFC107"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp" />
 
@@ -86,14 +96,19 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="한줄평을 남겨주세요 (선택)">
+                android:hint="함께한 시간에 대한 짧은 후기를 작성해주세요 (선택)"
+                app:boxCornerRadiusBottomEnd="8dp"
+                app:boxCornerRadiusBottomStart="8dp"
+                app:boxCornerRadiusTopStart="8dp"
+                app:boxCornerRadiusTopEnd="8dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/review_comment_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textCapSentences"
-                    android:maxLines="3" />
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:lines="3"
+                    android:gravity="top" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -102,6 +117,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="제출하기"
+                app:cornerRadius="8dp"
                 app:backgroundTint="@color/primary_blue"
                 android:textColor="@color/white" />
 
@@ -110,8 +126,9 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="8dp"
                 android:text="취소"
+                app:cornerRadius="8dp"
                 android:textColor="@color/primary_blue"
                 app:strokeColor="@color/primary_blue"
                 app:strokeWidth="1dp" />

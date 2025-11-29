@@ -304,10 +304,10 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/badges_count"
+                            android:id="@+id/friends_count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="8"
+                            android:text="0"
                             android:textSize="24sp"
                             android:textStyle="bold"
                             android:textColor="@color/primary_blue" />
@@ -316,7 +316,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="획득 뱃지"
+                            android:text="친구 수"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary" />
                     </LinearLayout>
