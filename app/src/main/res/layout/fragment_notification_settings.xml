@@ -35,7 +35,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="16dp"
             android:paddingBottom="72dp"> <!-- 여기에 paddingBottom을 72dp로 추가했습니다. -->
 
             <!-- 채팅 알림 섹션 -->
@@ -43,12 +42,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/notification_section_chat"
-                android:textSize="16sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:paddingBottom="8dp"/>
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="@color/blue_100"
+                android:layout_gravity="center_vertical"/>
 
             <!-- 새 메시지 알림 -->
             <LinearLayout
@@ -62,26 +64,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:layout_marginEnd="15dp"
                     android:orientation="vertical">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_new_message_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_new_message_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_new_message_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -100,26 +105,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_mention_alert_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_mention_alert_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_mention_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -131,13 +139,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/notification_section_activity"
-                android:textSize="16sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:paddingTop="24dp"
-                android:paddingBottom="8dp"/>
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="@color/blue_100"
+                android:layout_gravity="center_vertical"/>
 
             <!-- 참여 활동 업데이트 -->
             <LinearLayout
@@ -151,26 +161,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_activity_update_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_activity_update_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_activity_update_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -189,26 +202,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_new_participant_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_new_participant_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_new_participant_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -227,26 +243,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_activity_reminder_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_activity_reminder_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_activity_reminder_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -265,26 +284,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_recommended_activity_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_recommended_activity_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_recommended_activity_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -296,13 +318,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/notification_section_social"
-                android:textSize="16sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:paddingTop="24dp"
-                android:paddingBottom="8dp"/>
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="@color/blue_100"
+                android:layout_gravity="center_vertical"/>
 
             <!-- 친구 요청 알림 -->
             <LinearLayout
@@ -316,26 +340,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_friend_request_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_friend_request_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_friend_request_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -354,26 +381,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginEnd="15dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_friend_accepted_title"
-                        android:textSize="15sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/notification_friend_accepted_description"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/switch_friend_accepted_notifications"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/gray_400" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"

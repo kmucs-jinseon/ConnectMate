@@ -52,7 +52,7 @@ public class UserReviewsAdapter extends RecyclerView.Adapter<UserReviewsAdapter.
             ratingText.setText(review.getRating() + "점");
             String comment = review.getComment();
             if (comment == null || comment.trim().isEmpty()) {
-                comment = "한줄평이 없습니다.";
+                comment = "한 줄 평이 없습니다.";
             }
             commentText.setText(comment);
         }

@@ -27,10 +27,13 @@
             android:id="@+id/pending_reviews_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="함께한 멤버들을 평가하면 더 나은 커뮤니티가 만들어져요."
+            android:text="함께한 멤버들에게 별점을 남겨 더 좋은 커뮤니티를 만들어요!"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
-            android:paddingBottom="8dp" />
+            android:paddingBottom="8dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_gravity="center_horizontal"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/pending_reviews_recycler"
@@ -38,7 +41,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:clipToPadding="false"
-            android:paddingBottom="16dp"
+            android:paddingBottom="14dp"
             android:overScrollMode="always" />
 
         <TextView

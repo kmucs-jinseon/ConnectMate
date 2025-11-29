@@ -12,8 +12,8 @@
 
     <ImageView
         android:id="@+id/participant_profile_image"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
         android:layout_marginEnd="12dp"
         android:background="@drawable/circle_background"
         android:clipToOutline="true"
@@ -34,9 +34,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             android:text="@string/participant_name"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textStyle="normal"
+            android:textSize="14dp"/>
 
         <ImageView
             android:id="@+id/host_badge"
@@ -74,7 +76,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="More options"
             android:src="@drawable/ic_more_vertical"
-            app:tint="@color/gray_600" />
+            app:tint="@color/gray_500" />
     </LinearLayout>
 
 </LinearLayout>

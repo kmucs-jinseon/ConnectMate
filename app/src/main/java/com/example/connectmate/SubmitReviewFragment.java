@@ -106,6 +106,7 @@ public class SubmitReviewFragment extends Fragment {
         setupButtons();
         loadReviewerName();
         ensureTargetInfo();
+        hideFab();
     }
 
     private void initializeViews(View view) {
@@ -192,7 +193,7 @@ public class SubmitReviewFragment extends Fragment {
     private void handleSubmit() {
         int rating = (int) ratingBar.getRating();
         if (rating <= 0) {
-            Toast.makeText(requireContext(), "별점을 선택해 주세요.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "별점을 평가해 주세요.", Toast.LENGTH_SHORT).show();
             return;
         }
         if (TextUtils.isEmpty(targetUserId)) {
@@ -297,5 +298,25 @@ public class SubmitReviewFragment extends Fragment {
         SharedPreferences prefs = requireContext()
             .getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
         return prefs.getString("user_id", "");
+    }
+
+    private void hideFab() {
+        View fab = requireActivity().findViewById(R.id.fabCreateActivity);
+        if (fab != null) {
+            fab.setVisibility(View.GONE);
+        }
+    }
+
+    private void showFab() {
+        View fab = requireActivity().findViewById(R.id.fabCreateActivity);
+        if (fab != null) {
+            fab.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        showFab();
     }
 }
