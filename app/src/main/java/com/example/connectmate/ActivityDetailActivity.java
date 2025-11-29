@@ -442,9 +442,9 @@ public class ActivityDetailActivity extends AppCompatActivity {
                                 ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), joinMessage);
 
                                 // Send message and wait for it to be saved before navigating
-                                chatManager.sendMessage(systemMessage, new FirebaseChatManager.OnCompleteListener<Void>() {
+                                chatManager.sendMessage(systemMessage, new FirebaseChatManager.OnCompleteListener<ChatMessage>() {
                                     @Override
-                                    public void onSuccess(Void result) {
+                                    public void onSuccess(ChatMessage result) {
                                         Log.d(TAG, "System message sent successfully");
                                         navigateToChatRoom(chatRoom);
                                     }
