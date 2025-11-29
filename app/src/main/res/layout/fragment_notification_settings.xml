@@ -85,8 +85,8 @@
                     android:id="@+id/switch_new_message_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -126,8 +126,8 @@
                     android:id="@+id/switch_mention_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -182,8 +182,8 @@
                     android:id="@+id/switch_activity_update_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -223,8 +223,8 @@
                     android:id="@+id/switch_new_participant_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -264,8 +264,8 @@
                     android:id="@+id/switch_activity_reminder_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -305,8 +305,8 @@
                     android:id="@+id/switch_recommended_activity_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -361,8 +361,8 @@
                     android:id="@+id/switch_friend_request_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
@@ -402,8 +402,8 @@
                     android:id="@+id/switch_friend_accepted_notifications"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:thumbTint="@color/white"
-                    app:trackTint="@color/gray_400" />
+                    app:thumbTint="@color/switch_thumb_color"
+                    app:trackTint="@color/switch_track_color" />
             </LinearLayout>
             <View
                 android:layout_width="match_parent"
