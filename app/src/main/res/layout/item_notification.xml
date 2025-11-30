@@ -3,7 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="0dp"
     android:background="@color/blue_50">
 
     <TextView
@@ -32,5 +35,12 @@
         android:text="2024.01.01 12:00"
         android:textColor="@color/gray_500"
         android:textSize="12sp" />
+
+    <!-- Bottom Border -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:background="@color/gray_400" />
 
 </LinearLayout>

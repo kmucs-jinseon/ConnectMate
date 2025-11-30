@@ -326,18 +326,18 @@ public class SettingsFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        // Reload user data when returning (e.g., after profile edit)
-        loadUserData();
-    }
-
     /**
      * Public method to refresh user data
      * Can be called by MainActivity to force refresh
      */
     public void refreshUserData() {
+        loadUserData();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Reload user data when returning (e.g., after profile edit)
         loadUserData();
     }
 

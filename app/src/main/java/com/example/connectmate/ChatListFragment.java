@@ -54,6 +54,7 @@ public class ChatListFragment extends Fragment {
     private TextInputEditText searchInput;
     private View filterScrollView;
     private ChipGroup filterChips;
+    private View notificationBadge;
 
     private RecyclerView chatRecyclerView;
     private LinearLayout emptyState;
@@ -65,6 +66,10 @@ public class ChatListFragment extends Fragment {
     // Data
     private List<ChatRoom> allChatRooms;
     private List<ChatRoom> filteredChatRooms;
+
+    // Firebase
+    private DatabaseReference dbRef;
+    private ValueEventListener notificationListener;
 
     public ChatListFragment() {
         super(R.layout.fragment_chat);
@@ -81,10 +86,12 @@ public class ChatListFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        dbRef = FirebaseDatabase.getInstance().getReference();
         initializeViews(view);
         setupRecyclerViews();
         setupClickListeners();
         loadChatRoomsFromFirebase();
+        loadUnreadNotificationCount();
         updateUI();
     }
 
@@ -94,6 +101,7 @@ public class ChatListFragment extends Fragment {
         btnNotifications = view.findViewById(R.id.btn_notifications);
         btnSearch = view.findViewById(R.id.btn_search);
         btnFilter = view.findViewById(R.id.btn_filter);
+        notificationBadge = view.findViewById(R.id.notification_badge);
 
         // Search
         searchLayout = view.findViewById(R.id.search_layout);
@@ -189,13 +197,20 @@ public class ChatListFragment extends Fragment {
             .setPositiveButton("닫기", null)
             .create();
 
-        NotificationAdapter adapter = new NotificationAdapter(notifications, item -> {
+        // Use array to make adapter effectively final for lambda
+        final NotificationAdapter[] adapterHolder = new NotificationAdapter[1];
+
+        adapterHolder[0] = new NotificationAdapter(notifications, item -> {
+            // Handle notification click
             if ("참여자 평가 요청".equals(item.getTitle())) {
                 dialog.dismiss();
                 openPendingReviewsFragment();
             }
+
+            // Delete notification from Firebase and remove from list
+            deleteNotification(currentUser.getUid(), item, notifications, adapterHolder[0], emptyText);
         });
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(adapterHolder[0]);
 
         dialog.show();
 
@@ -214,7 +229,7 @@ public class ChatListFragment extends Fragment {
                     }
                 }
                 Collections.sort(notifications, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
-                adapter.notifyDataSetChanged();
+                adapterHolder[0].notifyDataSetChanged();
                 emptyText.setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
             }
 
@@ -225,6 +240,43 @@ public class ChatListFragment extends Fragment {
                 emptyText.setVisibility(View.VISIBLE);
             }
         });
+    }
+
+    /**
+     * Delete notification from Firebase and remove from list
+     */
+    private void deleteNotification(String userId, NotificationItem item,
+                                    List<NotificationItem> notifications,
+                                    NotificationAdapter adapter,
+                                    TextView emptyText) {
+        if (item.getId() == null || item.getId().isEmpty()) {
+            Log.w(TAG, "Cannot delete notification: ID is null or empty");
+            return;
+        }
+
+        DatabaseReference notificationRef = FirebaseDatabase.getInstance()
+            .getReference("userNotifications")
+            .child(userId)
+            .child(item.getId());
+
+        notificationRef.removeValue()
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Notification deleted successfully: " + item.getId());
+                // Remove from local list
+                int position = notifications.indexOf(item);
+                if (position != -1) {
+                    notifications.remove(position);
+                    adapter.notifyItemRemoved(position);
+                }
+                // Update empty state
+                if (emptyText != null) {
+                    emptyText.setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Failed to delete notification: " + item.getId(), e);
+                Toast.makeText(requireContext(), "알림 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show();
+            });
     }
 
     private void openPendingReviewsFragment() {
@@ -466,6 +518,62 @@ public class ChatListFragment extends Fragment {
         startActivity(intent);
     }
 
+    /**
+     * Load unread notification count and show/hide badge
+     */
+    private void loadUnreadNotificationCount() {
+        String userId = getCurrentUserId();
+        if (userId == null) {
+            if (notificationBadge != null) {
+                notificationBadge.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        // Clear previous listener if exists
+        if (notificationListener != null) {
+            dbRef.child("userNotifications").child(userId).removeEventListener(notificationListener);
+        }
+
+        DatabaseReference notificationsRef = dbRef.child("userNotifications").child(userId);
+        notificationListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                int unreadCount = 0;
+
+                // Count unread notifications
+                for (DataSnapshot notificationSnapshot : dataSnapshot.getChildren()) {
+                    NotificationItem notification =
+                        notificationSnapshot.getValue(NotificationItem.class);
+                    if (notification != null && !notification.isRead()) {
+                        unreadCount++;
+                    }
+                }
+
+                // Show/hide badge based on unread count
+                if (notificationBadge != null) {
+                    if (unreadCount > 0) {
+                        notificationBadge.setVisibility(View.VISIBLE);
+                    } else {
+                        notificationBadge.setVisibility(View.GONE);
+                    }
+                }
+
+                Log.d(TAG, "Unread notifications: " + unreadCount);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to load notifications: " + error.getMessage());
+                if (notificationBadge != null) {
+                    notificationBadge.setVisibility(View.GONE);
+                }
+            }
+        };
+
+        notificationsRef.addValueEventListener(notificationListener);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -473,6 +581,8 @@ public class ChatListFragment extends Fragment {
         for (ChatRoom chatRoom : allChatRooms) {
             loadUnreadCountForChatRoom(chatRoom);
         }
+        // Refresh notification badge
+        loadUnreadNotificationCount();
     }
 
     @Override
@@ -480,5 +590,14 @@ public class ChatListFragment extends Fragment {
         super.onDestroyView();
         // Clean up Firebase listeners
         FirebaseChatManager.getInstance().removeAllListeners();
+
+        // Clean up notification listener
+        if (notificationListener != null) {
+            String userId = getCurrentUserId();
+            if (userId != null) {
+                dbRef.child("userNotifications").child(userId).removeEventListener(notificationListener);
+            }
+            notificationListener = null;
+        }
     }
 }
