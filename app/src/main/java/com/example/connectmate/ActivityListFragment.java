@@ -617,11 +617,27 @@ public class ActivityListFragment extends Fragment {
 
             @Override
             public void onActivityRemoved(Activity activity) {
-                // Remove activity from lists
+                // Remove from allActivities
                 allActivities.removeIf(a -> a.getId().equals(activity.getId()));
-                filteredActivities.removeIf(a -> a.getId().equals(activity.getId()));
 
-                activityAdapter.notifyDataSetChanged();
+                // Find position in filtered list and remove
+                int position = -1;
+                for (int i = 0; i < filteredActivities.size(); i++) {
+                    if (filteredActivities.get(i).getId().equals(activity.getId())) {
+                        position = i;
+                        break;
+                    }
+                }
+
+                // Remove from filtered list and notify adapter of specific item removal
+                if (position != -1) {
+                    filteredActivities.remove(position);
+                    activityAdapter.notifyItemRemoved(position);
+                } else {
+                    // Fallback if item not found in filtered list
+                    activityAdapter.notifyDataSetChanged();
+                }
+
                 updateUI();
                 Log.d(TAG, "Activity removed: " + activity.getTitle());
             }
