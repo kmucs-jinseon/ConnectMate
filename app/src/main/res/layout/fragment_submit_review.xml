@@ -14,7 +14,8 @@
         app:navigationIcon="@drawable/ic_arrow_left"
         app:title="평가 작성"
         app:titleCentered="false"
-        app:titleTextColor="@color/white" />
+        app:titleTextColor="@color/white"
+        app:titleTextAppearance="@style/ToolbarTitleBold"/>
 
     <ScrollView
         android:layout_width="match_parent"
