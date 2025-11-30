@@ -189,43 +189,13 @@
                         </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/rating_stars_container"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:orientation="horizontal"
-                        android:gravity="end">
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_star_filled"
-                            android:layout_marginEnd="2dp" />
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_star_filled"
-                            android:layout_marginEnd="2dp" />
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_star_filled"
-                            android:layout_marginEnd="2dp" />
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_star_filled"
-                            android:layout_marginEnd="2dp" />
-
-                        <ImageView
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/ic_star_filled" />
-
-                    </LinearLayout>
+                        android:gravity="end" />
 
                 </LinearLayout>
 

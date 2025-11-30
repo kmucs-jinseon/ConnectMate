@@ -41,18 +41,30 @@ public class UserReviewsAdapter extends RecyclerView.Adapter<UserReviewsAdapter.
     }
 
     static class ReviewViewHolder extends RecyclerView.ViewHolder {
+        private final TextView activityTitleText;
         private final TextView ratingText;
         private final TextView commentText;
         private final LinearLayout starsContainer;
 
         ReviewViewHolder(@NonNull View itemView) {
             super(itemView);
+            activityTitleText = itemView.findViewById(R.id.review_activity_title);
             ratingText = itemView.findViewById(R.id.review_rating_text);
             commentText = itemView.findViewById(R.id.review_comment_text);
             starsContainer = itemView.findViewById(R.id.review_stars_container);
         }
 
         void bind(UserReview review) {
+            // Display activity title
+            String activityTitle = review.getActivityTitle();
+            if (activityTitle != null && !activityTitle.trim().isEmpty()) {
+                activityTitleText.setText(activityTitle);
+                activityTitleText.setVisibility(View.VISIBLE);
+            } else {
+                activityTitleText.setText("활동 정보 없음");
+                activityTitleText.setVisibility(View.VISIBLE);
+            }
+
             ratingText.setText(review.getRating() + "점");
 
             // Display stars based on rating

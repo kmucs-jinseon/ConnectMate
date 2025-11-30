@@ -408,7 +408,7 @@ public class FirebaseActivityManager {
                     if (incrementParticipationCount && !participantIds.isEmpty()) {
                         incrementParticipationCounts(participantIds);
                         if (mode == ActivityDeletionMode.WITH_NOTIFICATIONS) {
-                            addNotificationsForParticipants(resolvedTitle, participantIds);
+                            addNotificationsForParticipants(activityId, resolvedTitle, participantIds);
                         }
                         createPendingReviewRequests(activityId, resolvedTitle, participantIds);
                     }
@@ -484,7 +484,7 @@ public class FirebaseActivityManager {
         }
     }
 
-    private void addNotificationsForParticipants(@Nullable String activityTitle, List<String> participantIds) {
+    private void addNotificationsForParticipants(@Nullable String activityId, @Nullable String activityTitle, List<String> participantIds) {
         String title = !TextUtils.isEmpty(activityTitle) ? activityTitle : "활동";
         String endMessage = title + " 활동이 종료되었습니다.";
         String reviewMessage = "함께한 멤버를 평가해주세요.";
@@ -501,6 +501,7 @@ public class FirebaseActivityManager {
                 endNotif.put("title", "활동 종료");
                 endNotif.put("message", endMessage);
                 endNotif.put("timestamp", timestamp);
+                endNotif.put("activityId", activityId);
                 userRef.child(endId).setValue(endNotif);
             }
 
@@ -511,6 +512,7 @@ public class FirebaseActivityManager {
                 reviewNotif.put("title", "참여자 평가 요청");
                 reviewNotif.put("message", reviewMessage);
                 reviewNotif.put("timestamp", timestamp + 1);
+                reviewNotif.put("activityId", activityId);
                 userRef.child(reviewId).setValue(reviewNotif);
             }
         }

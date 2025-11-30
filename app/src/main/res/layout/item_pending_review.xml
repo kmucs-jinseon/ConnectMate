@@ -6,6 +6,22 @@
     android:orientation="vertical"
     android:background="@color/white">
 
+    <!-- Activity Section Header -->
+    <TextView
+        android:id="@+id/review_activity_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:text="활동 정보"
+        android:textColor="@color/primary_blue"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:background="@color/blue_50"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -40,19 +56,10 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/review_activity_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="활동 정보"
-                android:textColor="@color/gray_700"
-                android:textSize="14sp"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
                 android:id="@+id/review_timestamp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:text="요청 시각"
                 android:textColor="@color/gray_500"
                 android:textSize="12sp" />

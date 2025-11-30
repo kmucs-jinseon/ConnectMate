@@ -180,8 +180,9 @@ public class ChatListFragment extends Fragment {
     }
 
     private void showNotificationsDialog() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        // Get user ID (works for both Firebase Auth and social logins)
+        String userId = getCurrentUserId();
+        if (userId == null || userId.isEmpty()) {
             Toast.makeText(requireContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -204,11 +205,12 @@ public class ChatListFragment extends Fragment {
             // Handle notification click
             if ("참여자 평가 요청".equals(item.getTitle())) {
                 dialog.dismiss();
-                openPendingReviewsFragment();
+                // Pass activityId to filter reviews for specific activity
+                openPendingReviewsFragment(item.getActivityId());
             }
 
             // Delete notification from Firebase and remove from list
-            deleteNotification(currentUser.getUid(), item, notifications, adapterHolder[0], emptyText);
+            deleteNotification(userId, item, notifications, adapterHolder[0], emptyText);
         });
         recyclerView.setAdapter(adapterHolder[0]);
 
@@ -216,7 +218,7 @@ public class ChatListFragment extends Fragment {
 
         DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
             .getReference("userNotifications")
-            .child(currentUser.getUid());
+            .child(userId);
 
         notificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -279,10 +281,11 @@ public class ChatListFragment extends Fragment {
             });
     }
 
-    private void openPendingReviewsFragment() {
+    private void openPendingReviewsFragment(String activityId) {
+        PendingReviewsFragment fragment = PendingReviewsFragment.newInstance(activityId);
         requireActivity().getSupportFragmentManager()
             .beginTransaction()
-            .replace(R.id.main_container, new PendingReviewsFragment())
+            .replace(R.id.main_container, fragment)
             .addToBackStack("PendingReviews")
             .commit();
     }

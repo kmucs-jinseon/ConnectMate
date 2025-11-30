@@ -76,10 +76,35 @@ public class PendingReviewsAdapter extends RecyclerView.Adapter<PendingReviewsAd
                 ? item.getTargetDisplayName() : "알 수 없는 사용자";
             name.setText(displayName);
 
-            if (!TextUtils.isEmpty(item.getActivityTitle())) {
-                activityTitle.setText(item.getActivityTitle());
+            // Get position to check if we need to show activity title as header
+            int position = getAdapterPosition();
+            boolean showActivityTitle = false;
+
+            if (position >= 0 && position < pendingReviews.size()) {
+                // Show activity title if it's the first item or different from previous item
+                if (position == 0) {
+                    showActivityTitle = true;
+                } else {
+                    PendingReviewItem prevItem = pendingReviews.get(position - 1);
+                    String currentActivity = item.getActivityTitle();
+                    String prevActivity = prevItem.getActivityTitle();
+
+                    // Check if activity changed
+                    if (!TextUtils.equals(currentActivity, prevActivity)) {
+                        showActivityTitle = true;
+                    }
+                }
+            }
+
+            if (showActivityTitle) {
+                activityTitle.setVisibility(View.VISIBLE);
+                if (!TextUtils.isEmpty(item.getActivityTitle())) {
+                    activityTitle.setText("📍 " + item.getActivityTitle());
+                } else {
+                    activityTitle.setText("📍 활동 정보 없음");
+                }
             } else {
-                activityTitle.setText("활동 정보 없음");
+                activityTitle.setVisibility(View.GONE);
             }
 
             timestamp.setText(formatTimestamp(item.getTimestamp()));

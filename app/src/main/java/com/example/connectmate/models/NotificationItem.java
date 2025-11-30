@@ -6,6 +6,7 @@ public class NotificationItem {
     private String message;
     private long timestamp;
     private boolean isRead;
+    private String activityId;
 
     public NotificationItem() {
         // Required for Firebase
@@ -26,6 +27,15 @@ public class NotificationItem {
         this.message = message;
         this.timestamp = timestamp;
         this.isRead = isRead;
+    }
+
+    public NotificationItem(String id, String title, String message, long timestamp, boolean isRead, String activityId) {
+        this.id = id;
+        this.title = title;
+        this.message = message;
+        this.timestamp = timestamp;
+        this.isRead = isRead;
+        this.activityId = activityId;
     }
 
     public String getId() {
@@ -66,5 +76,13 @@ public class NotificationItem {
 
     public void setRead(boolean read) {
         isRead = read;
+    }
+
+    public String getActivityId() {
+        return activityId;
+    }
+
+    public void setActivityId(String activityId) {
+        this.activityId = activityId;
     }
 }

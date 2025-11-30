@@ -1258,9 +1258,10 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Open PendingReviewsFragment
+     * Opens with no activity filter (shows all pending reviews)
      */
     private void openPendingReviews() {
-        PendingReviewsFragment fragment = new PendingReviewsFragment();
+        PendingReviewsFragment fragment = PendingReviewsFragment.newInstance(null);
         getSupportFragmentManager()
             .beginTransaction()
             .replace(R.id.main_container, fragment)

@@ -19,6 +19,11 @@
         android:id="@+id/notifications_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="300dp"
+        android:scrollbars="vertical"
+        android:scrollbarStyle="outsideInset"
+        android:fadeScrollbars="false"
+        android:scrollbarThumbVertical="@android:color/darker_gray"
+        android:scrollbarSize="4dp"
         android:overScrollMode="ifContentScrolls" />
 
 </LinearLayout>

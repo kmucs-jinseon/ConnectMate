@@ -65,6 +65,7 @@ public class ProfileFragment extends Fragment {
     private Chip mbtiChip;
     private TextView profileBio;
     private TextView ratingText;
+    private LinearLayout ratingStarsContainer;
     private TextView activitiesCount;
     private TextView connectionsCount;
     private TextView friendsCount;
@@ -147,6 +148,7 @@ public class ProfileFragment extends Fragment {
         mbtiChip = view.findViewById(R.id.mbti_chip);
         profileBio = view.findViewById(R.id.profile_bio);
         ratingText = view.findViewById(R.id.rating_text);
+        ratingStarsContainer = view.findViewById(R.id.rating_stars_container);
         activitiesCount = view.findViewById(R.id.activities_count);
         connectionsCount = view.findViewById(R.id.connections_count);
         friendsCount = view.findViewById(R.id.friends_count);
@@ -309,12 +311,17 @@ public class ProfileFragment extends Fragment {
         setText(profileBio, or(u.bio, "안녕하세요! 새로운 사람들과 함께 활동하는 것을 좋아합니다 ✨"));
         if (mbtiChip != null) mbtiChip.setText(or(u.mbti, "ENFP"));
 
-        if (ratingText != null) ratingText.setText(String.format("%.1f", or(u.rating, 0.0)));
+        double rating = or(u.rating, 0.0);
+        if (ratingText != null) ratingText.setText(String.format("%.1f", rating));
+        updateRatingStars(rating);
         int participation = u.participationCount;
         if (activitiesCount != null) {
             activitiesCount.setText(String.valueOf(participation));
         }
-        if (connectionsCount != null) connectionsCount.setText(String.valueOf(u.connectionsCount));
+
+        // Calculate actual unique connections (users met through activities)
+        calculateUniqueConnections(currentUserId);
+
         int friendCount = u.getFriends() != null ? u.getFriends().size() : 0;
         if (friendsCount != null) friendsCount.setText(String.valueOf(friendCount));
         displayRecentReviews(u);
@@ -364,10 +371,24 @@ public class ProfileFragment extends Fragment {
         int limit = Math.min(3, reviews.size());
         for (int i = 0; i < limit; i++) {
             View itemView = inflater.inflate(R.layout.item_user_review, reviewsListContainer, false);
+            TextView activityTitle = itemView.findViewById(R.id.review_activity_title);
             TextView rating = itemView.findViewById(R.id.review_rating_text);
             TextView comment = itemView.findViewById(R.id.review_comment_text);
             LinearLayout starsContainer = itemView.findViewById(R.id.review_stars_container);
             UserReview review = reviews.get(i);
+
+            // Set activity title
+            String titleText = review.getActivityTitle();
+            if (activityTitle != null) {
+                if (titleText != null && !titleText.trim().isEmpty()) {
+                    activityTitle.setText(titleText);
+                    activityTitle.setVisibility(View.VISIBLE);
+                } else {
+                    activityTitle.setText("활동 정보 없음");
+                    activityTitle.setVisibility(View.VISIBLE);
+                }
+            }
+
             rating.setText(review.getRating() + "점");
 
             // Display stars based on rating
@@ -434,6 +455,110 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setText(TextView tv, String text) { if (tv != null) tv.setText(text); }
+
+    /**
+     * Update rating stars dynamically based on rating value
+     * @param rating The rating value (0.0 to 5.0)
+     */
+    private void updateRatingStars(double rating) {
+        if (ratingStarsContainer == null) return;
+
+        ratingStarsContainer.removeAllViews();
+
+        int fullStars = (int) rating;
+        double decimal = rating - fullStars;
+        int emptyStars = 5 - fullStars - (decimal >= 0.25 ? 1 : 0);
+
+        float density = getResources().getDisplayMetrics().density;
+        int starSize = (int) (22 * density);
+        int marginEnd = (int) (2 * density);
+
+        // Add full stars
+        for (int i = 0; i < fullStars; i++) {
+            ImageView star = createStarView(starSize, marginEnd, R.drawable.ic_star_filled, R.color.yellow_500);
+            ratingStarsContainer.addView(star);
+        }
+
+        // Add half star if needed
+        if (decimal >= 0.25 && decimal < 0.75) {
+            ImageView halfStar = createStarView(starSize, marginEnd, R.drawable.ic_star_half, R.color.yellow_500);
+            ratingStarsContainer.addView(halfStar);
+        } else if (decimal >= 0.75) {
+            ImageView star = createStarView(starSize, marginEnd, R.drawable.ic_star_filled, R.color.yellow_500);
+            ratingStarsContainer.addView(star);
+            emptyStars--;
+        }
+
+        // Add empty stars
+        for (int i = 0; i < emptyStars; i++) {
+            ImageView star = createStarView(starSize, i == emptyStars - 1 ? 0 : marginEnd, R.drawable.ic_star_outline, R.color.gray_300);
+            ratingStarsContainer.addView(star);
+        }
+    }
+
+    /**
+     * Helper method to create a star ImageView
+     */
+    private ImageView createStarView(int size, int marginEnd, int drawableRes, int colorRes) {
+        ImageView star = new ImageView(requireContext());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
+        params.setMarginEnd(marginEnd);
+        star.setLayoutParams(params);
+        star.setImageResource(drawableRes);
+        star.setColorFilter(getResources().getColor(colorRes, null));
+        return star;
+    }
+
+    /**
+     * Calculate unique connections (unique users met through activities)
+     */
+    private void calculateUniqueConnections(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            if (connectionsCount != null) connectionsCount.setText("0");
+            return;
+        }
+
+        DatabaseReference activitiesRef = FirebaseDatabase.getInstance().getReference("activities");
+
+        // Use a Set to track unique user IDs
+        java.util.Set<String> uniqueConnections = new java.util.HashSet<>();
+
+        activitiesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // Go through all activities
+                for (DataSnapshot activitySnapshot : dataSnapshot.getChildren()) {
+                    DataSnapshot participantsSnapshot = activitySnapshot.child("participants");
+
+                    // Check if this user is a participant
+                    if (participantsSnapshot.hasChild(userId)) {
+                        // Add all other participants to the set
+                        for (DataSnapshot participantSnapshot : participantsSnapshot.getChildren()) {
+                            String participantId = participantSnapshot.getKey();
+                            if (participantId != null && !participantId.equals(userId)) {
+                                uniqueConnections.add(participantId);
+                            }
+                        }
+                    }
+                }
+
+                // Update UI with unique connections count
+                int count = uniqueConnections.size();
+                if (connectionsCount != null) {
+                    connectionsCount.setText(String.valueOf(count));
+                }
+
+                android.util.Log.d("ProfileFragment", "Unique connections for " + userId + ": " + count);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                android.util.Log.e("ProfileFragment", "Failed to calculate connections: " + error.getMessage());
+                if (connectionsCount != null) connectionsCount.setText("0");
+            }
+        });
+    }
+
     private String or(String v, String d) { return v == null || v.isEmpty() ? d : v; }
     private Double or(Double v, Double d) { return v == null ? d : v; }
     private Long or(Long v, Long d) { return v == null ? d : v; }

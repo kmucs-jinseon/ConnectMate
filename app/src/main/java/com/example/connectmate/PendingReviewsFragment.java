@@ -32,6 +32,8 @@ import java.util.Map;
 
 public class PendingReviewsFragment extends Fragment {
 
+    private static final String ARG_ACTIVITY_ID = "activity_id";
+
     private MaterialToolbar toolbar;
     private RecyclerView recyclerView;
     private View emptyState;
@@ -46,8 +48,22 @@ public class PendingReviewsFragment extends Fragment {
     private ValueEventListener pendingListener;
     private FirebaseAuth auth;
 
+    private String filterActivityId = null;
+
     public PendingReviewsFragment() {
         super(R.layout.fragment_pending_reviews);
+    }
+
+    /**
+     * Create instance with activity filter
+     * @param activityId Activity ID to filter reviews, or null to show all
+     */
+    public static PendingReviewsFragment newInstance(String activityId) {
+        PendingReviewsFragment fragment = new PendingReviewsFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ACTIVITY_ID, activityId);
+        fragment.setArguments(args);
+        return fragment;
     }
 
     @Override
@@ -56,6 +72,11 @@ public class PendingReviewsFragment extends Fragment {
         auth = FirebaseAuth.getInstance();
         pendingReviewsRef = FirebaseDatabase.getInstance().getReference("pendingReviews");
         usersRef = FirebaseDatabase.getInstance().getReference("users");
+
+        // Get activity filter from arguments
+        if (getArguments() != null) {
+            filterActivityId = getArguments().getString(ARG_ACTIVITY_ID);
+        }
 
         initializeViews(view);
         setupToolbarNavigation();
@@ -104,11 +125,33 @@ public class PendingReviewsFragment extends Fragment {
                     PendingReviewItem item = child.getValue(PendingReviewItem.class);
                     if (item != null) {
                         item.setId(child.getKey());
-                        pendingItems.add(item);
-                        fetchTargetUser(item.getTargetUserId());
+
+                        // Filter by activityId if specified
+                        if (filterActivityId != null && !filterActivityId.isEmpty()) {
+                            // Only add items that match the filter activity
+                            if (filterActivityId.equals(item.getActivityId())) {
+                                pendingItems.add(item);
+                                fetchTargetUser(item.getTargetUserId());
+                            }
+                        } else {
+                            // No filter, add all items
+                            pendingItems.add(item);
+                            fetchTargetUser(item.getTargetUserId());
+                        }
                     }
                 }
-                Collections.sort(pendingItems, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+
+                // Group by activity and sort by timestamp within each activity
+                Collections.sort(pendingItems, (a, b) -> {
+                    // First sort by activity title
+                    int activityCompare = compareActivityTitles(a.getActivityTitle(), b.getActivityTitle());
+                    if (activityCompare != 0) {
+                        return activityCompare;
+                    }
+                    // Then sort by timestamp (newest first) within same activity
+                    return Long.compare(b.getTimestamp(), a.getTimestamp());
+                });
+
                 adapter.notifyDataSetChanged();
                 showLoading(false);
                 updateEmptyState();
@@ -123,6 +166,13 @@ public class PendingReviewsFragment extends Fragment {
         };
 
         pendingReviewsRef.child(userId).addValueEventListener(pendingListener);
+    }
+
+    private int compareActivityTitles(String a, String b) {
+        if (TextUtils.isEmpty(a) && TextUtils.isEmpty(b)) return 0;
+        if (TextUtils.isEmpty(a)) return 1;
+        if (TextUtils.isEmpty(b)) return -1;
+        return a.compareTo(b);
     }
 
     private void fetchTargetUser(String userId) {
