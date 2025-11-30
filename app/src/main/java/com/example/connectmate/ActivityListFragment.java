@@ -668,9 +668,31 @@ public class ActivityListFragment extends Fragment {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        // Don't remove listeners - we want to keep receiving updates
+        Log.d(TAG, "Fragment paused, keeping Firebase listeners active");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh the list when resuming (in case new activities were created)
+        Log.d(TAG, "Fragment resumed");
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Clean up Firebase listeners when fragment is destroyed
+        // Don't remove listeners here - the fragment may come back
+        Log.d(TAG, "Fragment view destroyed, keeping listeners active");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Only remove listeners when fragment is completely destroyed
         FirebaseActivityManager.getInstance().removeAllListeners();
+        Log.d(TAG, "Fragment destroyed, removed Firebase listeners");
     }
 }

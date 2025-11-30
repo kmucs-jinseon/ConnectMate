@@ -19,8 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_left"
-            android:fontFamily="@font/pretendard_bold"
-            app:fontFamily="@font/pretendard_bold"
+            app:titleTextAppearance="@style/ToolbarTitleBold"
             app:title="활동 상세 내용"
             app:titleTextColor="@color/white"
             android:background="@color/primary_blue"/>

@@ -344,12 +344,19 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
 
     private void deleteActivityAndChat(String activityId, @Nullable String successMessage, boolean incrementParticipation) {
         final String message = successMessage != null ? successMessage : "채팅방이 삭제되었습니다.";
+        final boolean isActivityEnded = "활동이 종료되었습니다.".equals(successMessage);
         String activityTitle = chatRoom != null ? chatRoom.getName() : null;
         FirebaseActivityManager.getInstance().deleteActivity(activityId, incrementParticipation, activityTitle, new FirebaseActivityManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(Void result) {
                 Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
-                finish();
+
+                // Show review dialog if activity was ended (not just deleted)
+                if (isActivityEnded) {
+                    showReviewPromptDialog();
+                } else {
+                    finish();
+                }
             }
 
             @Override
@@ -358,6 +365,26 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 Toast.makeText(ChatRoomActivity.this, "채팅방 삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showReviewPromptDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("활동 종료")
+            .setMessage("활동이 성공적으로 종료되었습니다.\n참여자들을 평가하시겠습니까?")
+            .setPositiveButton("평가하기", (dialog, which) -> {
+                // Navigate to MainActivity and open pending reviews
+                Intent intent = new Intent(ChatRoomActivity.this, MainActivity.class);
+                intent.putExtra("open_pending_reviews", true);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            })
+            .setNegativeButton("나중에", (dialog, which) -> {
+                // Just close the activity
+                finish();
+            })
+            .setCancelable(false)
+            .show();
     }
 
     private void deleteChatRoomDirectly(@Nullable String successMessage) {
