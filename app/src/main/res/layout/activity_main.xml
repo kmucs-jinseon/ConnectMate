@@ -523,7 +523,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             android:contentDescription="@string/current_location"
-            android:src="@drawable/ic_map_pin"
+            android:src="@drawable/ic_my_location"
             app:backgroundTint="@color/white"
             app:elevation="4dp"
             app:fabSize="normal"
