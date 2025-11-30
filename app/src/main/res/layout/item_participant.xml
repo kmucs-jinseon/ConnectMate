@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
@@ -38,7 +39,7 @@
             android:text="@string/participant_name"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textStyle="normal"
-            android:textSize="14dp"/>
+            android:textSize="14sp"/>
 
         <ImageView
             android:id="@+id/host_badge"
@@ -50,7 +51,7 @@
             android:elevation="2dp"
             android:padding="5dp"
             android:src="@drawable/ic_star_filled"
-            android:tint="@android:color/white"
+            app:tint="@color/white"
             android:visibility="gone" />
 
     </LinearLayout>
@@ -76,7 +77,8 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="More options"
             android:src="@drawable/ic_more_vertical"
-            app:tint="@color/primary_blue" />
+            app:tint="@color/primary_blue"
+            tools:ignore="HardcodedText" />
     </LinearLayout>
 
 </LinearLayout>

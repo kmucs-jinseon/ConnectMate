@@ -21,8 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/pending_reviews_description"
@@ -31,10 +30,12 @@
             android:text="함께한 멤버들에게 별점을 남겨 더 좋은 커뮤니티를 만들어요!"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
-            android:paddingBottom="8dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_gravity="center_horizontal"/>
+            android:paddingBottom="16dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@color/blue_100"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/pending_reviews_recycler"
@@ -42,7 +43,8 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:clipToPadding="false"
-            android:paddingBottom="14dp"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp"
             android:overScrollMode="always" />
 
         <TextView

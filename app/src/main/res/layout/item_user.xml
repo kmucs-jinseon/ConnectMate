@@ -6,34 +6,40 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
     android:backgroundTint="@color/white"
-    app:cardCornerRadius="8dp"
-    app:strokeColor="@color/blue_500"
-    app:strokeWidth="2dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="16dp"
         android:gravity="center_vertical">
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/user_profile_image"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/circle_logo" />
+            android:src="@drawable/circle_logo"
+            app:civ_border_width="2dp"
+            app:civ_border_color="#E0E0E0" />
 
         <TextView
             android:id="@+id/user_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
+            android:maxLines="2"
+            android:ellipsize="end"
             android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
             android:textStyle="bold"
+            android:textColor="#212121"
             tools:text="User Name" />
 
         <LinearLayout
@@ -50,7 +56,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_check"
-                android:tint="@color/primary_blue"
+                app:tint="@color/green_500"
                 android:contentDescription="@string/accept_friend_request"
                 android:visibility="gone"
                 tools:visibility="visible"/>
@@ -62,10 +68,11 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_close"
-                android:tint="#FF5252"
+                app:tint="#FF5252"
                 android:contentDescription="거절"
                 android:visibility="gone"
-                tools:visibility="visible"/>
+                tools:visibility="visible"
+                tools:ignore="HardcodedText" />
 
             <!-- Chat Button -->
             <ImageButton
@@ -74,7 +81,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_chat"
-                android:tint="@color/primary_blue"
+                app:tint="@color/primary_blue"
                 android:contentDescription="@string/chat_with_friend"
                 android:visibility="gone"
                 tools:visibility="visible" />
@@ -86,7 +93,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_more_vertical"
-                android:tint="@color/primary_blue"
+                app:tint="@color/primary_blue"
                 android:contentDescription="More options"
                 android:visibility="gone"
                 tools:visibility="visible"/>
