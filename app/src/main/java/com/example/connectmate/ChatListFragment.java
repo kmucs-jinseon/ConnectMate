@@ -230,7 +230,8 @@ public class ChatListFragment extends Fragment {
                         notifications.add(item);
                     }
                 }
-                Collections.sort(notifications, (a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+                // Sort oldest first (ascending order by timestamp)
+                Collections.sort(notifications, (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
                 adapterHolder[0].notifyDataSetChanged();
                 emptyText.setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
             }
