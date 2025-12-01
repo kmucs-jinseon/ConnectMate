@@ -8,6 +8,51 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:697385814271:android:084955ae153686eadba4ca",
+        "android_client_info": {
+          "package_name": "app.connectmate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "697385814271-d1kal6davc7n4ndaprtkdbup3dkutj9f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.connectmate",
+            "certificate_hash": "5e69e69ec2ba3274a864f26a0f51f0af3a79bd8e"
+          }
+        },
+        {
+          "client_id": "697385814271-tj70f89rmkspb2eel719tmeb4an3h2gn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.connectmate",
+            "certificate_hash": "6ea3a63c83f524bb9ccfe7fe65a0c1dfd9e7cafd"
+          }
+        },
+        {
+          "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsbHWm9HfZccYxGXhHfdWrYJ0W-faAoYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:697385814271:android:4384d77104a8c259dba4ca",
         "android_client_info": {
           "package_name": "com.example.connectmate"
