@@ -114,9 +114,7 @@ public class FirebaseActivityManager {
         activitiesRef.child(activity.getId()).setValue(activity)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Activity data saved successfully: " + activity.getTitle());
-                    if (listener != null) {
-                        listener.onSuccess(activity);
-                    }
+                    joinActivityAndCreateChat(activity, listener);
                 })
                 .addOnFailureListener(e -> {
                     Log.e(TAG, "Error saving activity data", e);
