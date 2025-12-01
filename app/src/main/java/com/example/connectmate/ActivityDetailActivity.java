@@ -38,6 +38,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private static final String TAG = "ActivityDetailActivity";
 
     private Activity activity;
+    private String activityId;
 
     // UI Components
     private Toolbar toolbar;
@@ -65,13 +66,17 @@ public class ActivityDetailActivity extends AppCompatActivity {
 
         // Get activity from intent
         activity = (Activity) getIntent().getSerializableExtra("activity");
+        if (activity != null) {
+            activityId = activity.getId();
+        } else {
+            activityId = getIntent().getStringExtra("activity_id");
+        }
 
         initializeViews();
         setupToolbar();
 
         if (activity == null) {
             // Try loading by ID if activity object not passed
-            String activityId = getIntent().getStringExtra("activity_id");
             if (activityId != null) {
                 loadActivityFromFirebase(activityId);
             } else {
@@ -83,7 +88,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
             // Display initial data and set up real-time listener
             displayActivityDetails();
             setupButtons();
-            setupRealTimeListener(activity.getId());
+            setupRealTimeListener(activityId);
         }
     }
 
@@ -297,6 +302,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
      * Load activity from Firebase by ID
      */
     private void loadActivityFromFirebase(String activityId) {
+        this.activityId = activityId;
         FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
         activityManager.getActivityById(activityId, new FirebaseActivityManager.OnCompleteListener<Activity>() {
             @Override
@@ -581,7 +587,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clean up Firebase listeners
-        FirebaseActivityManager.getInstance().removeAllListeners();
+        // Clean up Firebase listener for this activity
+        FirebaseActivityManager.getInstance().removeActivityListener(activityId);
     }
 }

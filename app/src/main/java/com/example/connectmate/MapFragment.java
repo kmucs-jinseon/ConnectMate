@@ -39,6 +39,7 @@ import com.example.connectmate.models.Activity;
 import com.example.connectmate.models.PlaceSearchResult;
 import com.example.connectmate.utils.CategoryMapper;
 import com.example.connectmate.utils.FirebaseActivityManager;
+import com.google.firebase.database.ChildEventListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -102,6 +103,7 @@ public class MapFragment extends Fragment {
     private Label currentLocationLabel; // Label for current location marker
     private LocationManager locationManager;
     private boolean isMapInitialized = false; // Track if map has been initialized
+    private ChildEventListener activityChangeListener;
 
     @Nullable
     @Override
@@ -293,7 +295,7 @@ public class MapFragment extends Fragment {
         });
 
         // Listen for real-time activity changes
-        activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
+        activityChangeListener = activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
             @Override
             public void onActivityAdded(Activity activity) {
                 if (activity.getLatitude() != 0 && activity.getLongitude() != 0) {
@@ -1499,7 +1501,10 @@ public class MapFragment extends Fragment {
         poiPopupWindow = null;
 
         // Clean up Firebase listeners
-        FirebaseActivityManager.getInstance().removeAllListeners();
+        if (activityChangeListener != null) {
+            FirebaseActivityManager.getInstance().removeActivityChangeListener(activityChangeListener);
+            activityChangeListener = null;
+        }
 
         // Clean up map resources
         if (mapView != null && isMapInitialized) {

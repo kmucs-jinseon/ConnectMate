@@ -52,8 +52,8 @@ public class FirebaseActivityManager {
     private static FirebaseActivityManager instance;
 
     // Listeners for real-time updates
-    private final Map<String, ActivityListener> activityListeners = new HashMap<>();
-    private ChildEventListener activitiesChildListener;
+    private final Map<String, ValueEventListener> activityListeners = new HashMap<>();
+    private final List<ChildEventListener> activityChangeListeners = new ArrayList<>();
 
     private FirebaseActivityManager() {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -231,14 +231,11 @@ public class FirebaseActivityManager {
 
     /**
      * Listen for activity changes in real-time (add, update, remove)
+     * Returns a ChildEventListener handle so callers can remove it when needed
      */
-    public void listenForActivityChanges(ActivityChangeListener listener) {
-        // Remove previous listener if exists
-        if (activitiesChildListener != null) {
-            activitiesRef.removeEventListener(activitiesChildListener);
-        }
-
-        activitiesChildListener = new ChildEventListener() {
+    @NonNull
+    public ChildEventListener listenForActivityChanges(ActivityChangeListener listener) {
+        ChildEventListener childEventListener = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 Activity activity = snapshot.getValue(Activity.class);
@@ -274,7 +271,20 @@ public class FirebaseActivityManager {
             }
         };
 
-        activitiesRef.addChildEventListener(activitiesChildListener);
+        activitiesRef.addChildEventListener(childEventListener);
+        activityChangeListeners.add(childEventListener);
+        return childEventListener;
+    }
+
+    /**
+     * Remove a specific activity change listener
+     */
+    public void removeActivityChangeListener(@Nullable ChildEventListener listener) {
+        if (listener == null) {
+            return;
+        }
+        activitiesRef.removeEventListener(listener);
+        activityChangeListeners.remove(listener);
     }
 
     /**
@@ -305,6 +315,9 @@ public class FirebaseActivityManager {
      * Listen to a specific activity for real-time updates
      */
     public void listenToActivity(String activityId, ActivityListener listener) {
+        // Remove any existing listener for this activity to avoid duplicates
+        removeActivityListener(activityId);
+
         ValueEventListener valueListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -321,7 +334,20 @@ public class FirebaseActivityManager {
         };
 
         activitiesRef.child(activityId).addValueEventListener(valueListener);
-        activityListeners.put(activityId, listener);
+        activityListeners.put(activityId, valueListener);
+    }
+
+    /**
+     * Remove the realtime listener for a specific activity
+     */
+    public void removeActivityListener(@Nullable String activityId) {
+        if (activityId == null) {
+            return;
+        }
+        ValueEventListener valueListener = activityListeners.remove(activityId);
+        if (valueListener != null) {
+            activitiesRef.child(activityId).removeEventListener(valueListener);
+        }
     }
 
     /**
@@ -1055,8 +1081,15 @@ public class FirebaseActivityManager {
      * Remove all listeners
      */
     public void removeAllListeners() {
-        if (activitiesChildListener != null) {
-            activitiesRef.removeEventListener(activitiesChildListener);
+        // Remove child event listeners
+        for (ChildEventListener listener : new ArrayList<>(activityChangeListeners)) {
+            activitiesRef.removeEventListener(listener);
+        }
+        activityChangeListeners.clear();
+
+        // Remove activity-specific listeners
+        for (Map.Entry<String, ValueEventListener> entry : new HashMap<>(activityListeners).entrySet()) {
+            activitiesRef.child(entry.getKey()).removeEventListener(entry.getValue());
         }
         activityListeners.clear();
     }

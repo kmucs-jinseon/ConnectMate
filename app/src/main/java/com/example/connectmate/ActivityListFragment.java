@@ -34,6 +34,7 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.database.ChildEventListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -62,6 +63,7 @@ public class ActivityListFragment extends Fragment {
     private List<Activity> allActivities;
     private List<Activity> filteredActivities;
     private boolean isUpdatingChipSelection = false;
+    private ChildEventListener activityChangeListener;
 
     // Location
     private FusedLocationProviderClient fusedLocationClient;
@@ -574,7 +576,7 @@ public class ActivityListFragment extends Fragment {
         // Load activities from Firebase with real-time updates
         FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
 
-        activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
+        activityChangeListener = activityManager.listenForActivityChanges(new FirebaseActivityManager.ActivityChangeListener() {
             @Override
             public void onActivityAdded(Activity activity) {
                 // Check if activity already exists by ID
@@ -691,8 +693,10 @@ public class ActivityListFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // Only remove listeners when fragment is completely destroyed
-        FirebaseActivityManager.getInstance().removeAllListeners();
-        Log.d(TAG, "Fragment destroyed, removed Firebase listeners");
+        if (activityChangeListener != null) {
+            FirebaseActivityManager.getInstance().removeActivityChangeListener(activityChangeListener);
+            activityChangeListener = null;
+            Log.d(TAG, "Fragment destroyed, removed Firebase activity listener");
+        }
     }
 }
