@@ -11,45 +11,66 @@
     android:paddingEnd="16dp"
     android:paddingBottom="8dp">
 
-    <ImageView
-        android:id="@+id/participant_profile_image"
+    <FrameLayout
         android:layout_width="44dp"
         android:layout_height="44dp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/circle_background"
-        android:clipToOutline="true"
-        android:contentDescription="Profile photo"
-        android:scaleType="centerCrop"
-        android:src="@drawable/circle_logo" />
+        android:layout_marginEnd="12dp">
+
+        <ImageView
+            android:id="@+id/participant_profile_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/circle_background"
+            android:clipToOutline="true"
+            android:contentDescription="Profile photo"
+            android:scaleType="centerCrop"
+            android:src="@drawable/circle_logo" />
+
+        <!-- Friend badge - small circle logo at bottom right -->
+        <ImageView
+            android:id="@+id/friend_badge"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_gravity="end|bottom"
+            android:src="@drawable/circle_logo"
+            android:contentDescription="Friend indicator"
+            android:visibility="gone"
+            android:elevation="2dp" />
+
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:minHeight="12dp"
         android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginEnd="10dp">
 
         <TextView
             android:id="@+id/participant_name"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="2"
             android:text="@string/participant_name"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
             android:textStyle="normal"
-            android:textSize="14sp"/>
+            android:textSize="13sp" />
 
         <ImageView
             android:id="@+id/host_badge"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:background="@drawable/host_badge_background"
             android:contentDescription="@string/host_badge"
             android:elevation="2dp"
-            android:padding="5dp"
+            android:padding="6dp"
             android:src="@drawable/ic_star_filled"
             app:tint="@color/white"
             android:visibility="gone" />
@@ -63,22 +84,24 @@
 
         <ImageButton
             android:id="@+id/add_friend_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/add_friend"
             android:src="@drawable/ic_person_add"
-            app:tint="@color/primary_blue" />
+            app:tint="@color/primary_blue"
+            android:layout_gravity="center_vertical"/>
 
         <ImageButton
             android:id="@+id/more_options_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="More options"
             android:src="@drawable/ic_more_vertical"
             app:tint="@color/primary_blue"
-            tools:ignore="HardcodedText" />
+            tools:ignore="HardcodedText"
+            android:layout_gravity="center_vertical"/>
     </LinearLayout>
 
 </LinearLayout>

@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Circular background in primary blue -->
+    <path
+        android:fillColor="#307CD4"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z"/>
+
+    <!-- Letter M in white with smooth rounded curves -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M7.5,8C7.22,8 7,8.22 7,8.5v9C7,17.78 7.22,18 7.5,18h0.8C8.58,18 8.8,17.78 8.8,17.5v-5.8c0,-0.2 0.24,-0.3 0.39,-0.15l2.46,2.46c0.19,0.19 0.5,0.19 0.69,0l2.46,-2.46c0.15,-0.15 0.39,-0.05 0.39,0.15v5.8c0,0.28 0.22,0.5 0.5,0.5h0.8c0.28,0 0.5,-0.22 0.5,-0.5v-9C17,8.22 16.78,8 16.5,8h-0.8c-0.14,0 -0.27,0.06 -0.36,0.17l-2.89,3.47c-0.25,0.3 -0.69,0.3 -0.94,0L8.66,8.17C8.57,8.06 8.44,8 8.3,8H7.5z"/>
+</vector>

@@ -12,17 +12,35 @@
     android:paddingEnd="16dp"
     android:paddingBottom="12dp">
 
-    <!-- Profile Image -->
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/profile_image"
+    <!-- Profile Image with Friend Badge -->
+    <FrameLayout
+        android:id="@+id/profile_image_container"
         android:layout_width="54dp"
         android:layout_height="54dp"
-        android:src="@drawable/circle_logo"
-        app:civ_border_color="@color/gray_200"
-        app:civ_border_width="1dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/circle_logo" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/profile_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/circle_logo"
+            app:civ_border_color="@color/gray_200"
+            app:civ_border_width="1dp"
+            tools:src="@drawable/circle_logo" />
+
+        <!-- Friend badge - small circle logo at bottom right -->
+        <ImageView
+            android:id="@+id/friend_badge"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:layout_gravity="end|bottom"
+            android:src="@drawable/circle_logo"
+            android:contentDescription="Friend indicator"
+            android:visibility="gone"
+            android:elevation="2dp" />
+
+    </FrameLayout>
 
 
     <!-- Chat Room Name -->
@@ -38,8 +56,8 @@
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@id/category_chip"
-        app:layout_constraintStart_toEndOf="@id/profile_image"
-        app:layout_constraintTop_toTopOf="@id/profile_image"
+        app:layout_constraintStart_toEndOf="@id/profile_image_container"
+        app:layout_constraintTop_toTopOf="@id/profile_image_container"
         tools:text="채팅방 이름" />
 
     <!-- Category Chip (Hidden, kept for filtering) -->
@@ -101,9 +119,9 @@
         android:maxLines="2"
         android:textColor="@color/gray_600"
         android:textSize="14sp"
-        app:layout_constraintBottom_toBottomOf="@id/profile_image"
+        app:layout_constraintBottom_toBottomOf="@id/profile_image_container"
         app:layout_constraintEnd_toStartOf="@id/unread_count"
-        app:layout_constraintStart_toEndOf="@id/profile_image"
+        app:layout_constraintStart_toEndOf="@id/profile_image_container"
         app:layout_constraintTop_toBottomOf="@id/chat_name"
         tools:text="Hey, how are you doing today?" />
 
@@ -132,7 +150,7 @@
         android:textColor="@color/white"
         android:textSize="11sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/profile_image"
+        app:layout_constraintBottom_toBottomOf="@id/profile_image_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/timestamp"
         tools:visibility="visible"
@@ -146,7 +164,7 @@
         android:layout_marginTop="12dp"
         android:background="@color/gray_200"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/profile_image"
-        app:layout_constraintTop_toBottomOf="@id/profile_image" />
+        app:layout_constraintStart_toEndOf="@id/profile_image_container"
+        app:layout_constraintTop_toBottomOf="@id/profile_image_container" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
