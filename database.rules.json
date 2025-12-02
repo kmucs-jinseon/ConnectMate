@@ -6,8 +6,8 @@
         ".read": "$uid === auth.uid",
         // Users can write their own data
         ".write": "$uid === auth.uid",
-        // Validate user data structure
-        ".validate": "newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString()"
+        // Validate user data structure (allow deletion when newData doesn't exist)
+        ".validate": "!newData.exists() || (newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString())"
       }
     },
 
@@ -19,8 +19,8 @@
         // Only authenticated users can create activities
         ".write": "auth != null && (!data.exists() || data.child('creatorId').val() === auth.uid)",
 
-        // Validate activity data structure
-        ".validate": "newData.hasChildren(['id', 'title', 'creatorId', 'createdTimestamp']) && newData.child('id').isString() && newData.child('title').isString() && newData.child('creatorId').isString() && newData.child('createdTimestamp').isNumber()",
+        // Validate activity data structure (allow deletion when newData doesn't exist)
+        ".validate": "!newData.exists() || (newData.hasChildren(['id', 'title', 'creatorId', 'createdTimestamp']) && newData.child('id').isString() && newData.child('title').isString() && newData.child('creatorId').isString() && newData.child('createdTimestamp').isNumber())",
 
         "participants": {
           // Anyone can read participants
@@ -59,8 +59,8 @@
         // Authenticated users can create chat rooms
         ".write": "auth != null && (!data.exists() || data.child('members').child(auth.uid).exists())",
 
-        // Validate chat room data structure
-        ".validate": "newData.hasChildren(['id', 'name', 'createdTimestamp']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('createdTimestamp').isNumber()",
+        // Validate chat room data structure (allow deletion when newData doesn't exist)
+        ".validate": "!newData.exists() || (newData.hasChildren(['id', 'name', 'createdTimestamp']) && newData.child('id').isString() && newData.child('name').isString() && newData.child('createdTimestamp').isNumber())",
 
         "members": {
           "$userId": {
@@ -80,8 +80,8 @@
           // Only chat room members can send messages
           ".write": "auth != null && root.child('chatRooms').child($chatRoomId).child('members').child(auth.uid).exists()",
 
-          // Validate message data structure
-          ".validate": "newData.hasChildren(['id', 'chatRoomId', 'senderId', 'message', 'timestamp']) && newData.child('id').isString() && newData.child('chatRoomId').isString() && newData.child('senderId').isString() && newData.child('message').isString() && newData.child('timestamp').isNumber()"
+          // Validate message data structure (allow deletion when newData doesn't exist)
+          ".validate": "!newData.exists() || (newData.hasChildren(['id', 'chatRoomId', 'senderId', 'message', 'timestamp']) && newData.child('id').isString() && newData.child('chatRoomId').isString() && newData.child('senderId').isString() && newData.child('message').isString() && newData.child('timestamp').isNumber())"
         }
       }
     }
