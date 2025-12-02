@@ -56,7 +56,8 @@ public class PendingReviewsFragment extends Fragment {
 
     /**
      * Create instance with activity filter
-     * @param activityId Activity ID to filter reviews, or null to show all
+     * Reviews are always filtered by activity - each activity has its own pending review page
+     * @param activityId Activity ID to filter reviews (required - should not be null)
      */
     public static PendingReviewsFragment newInstance(String activityId) {
         PendingReviewsFragment fragment = new PendingReviewsFragment();

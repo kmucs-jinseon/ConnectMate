@@ -75,4 +75,9 @@
 
     <!-- Status Colors -->
     <color name="error_red">#FF3B30</color>
+
+    <!-- Chat Bubble Colors -->
+    <color name="yellow_50">#ffffe0</color>
+    <color name="yellow_200">#EFF18E</color>
+    <color name="yellow_300">#F0ED46</color>
 </resources>

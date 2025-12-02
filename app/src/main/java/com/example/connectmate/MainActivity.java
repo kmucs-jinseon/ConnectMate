@@ -142,17 +142,6 @@ public class MainActivity extends AppCompatActivity {
     private void handleNavigationIntent(Intent intent) {
         if (intent == null) return;
 
-        // Handle navigation to pending reviews
-        if (intent.getBooleanExtra("open_pending_reviews", false)) {
-            Log.d(TAG, "Opening pending reviews");
-            // Wait for fragments to be initialized
-            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-                openPendingReviews();
-            });
-            intent.removeExtra("open_pending_reviews");
-            return;
-        }
-
         // Handle navigation to a specific tab
         if (intent.hasExtra("NAVIGATE_TO")) {
             String target = intent.getStringExtra("NAVIGATE_TO");
@@ -1254,19 +1243,5 @@ public class MainActivity extends AppCompatActivity {
             return parts[0] + " " + parts[1];
         }
         return fullAddress;
-    }
-
-    /**
-     * Open PendingReviewsFragment
-     * Opens with no activity filter (shows all pending reviews)
-     */
-    private void openPendingReviews() {
-        PendingReviewsFragment fragment = PendingReviewsFragment.newInstance(null);
-        getSupportFragmentManager()
-            .beginTransaction()
-            .replace(R.id.main_container, fragment)
-            .addToBackStack("PendingReviews")
-            .commit();
-        Log.d(TAG, "Opened PendingReviewsFragment");
     }
 }

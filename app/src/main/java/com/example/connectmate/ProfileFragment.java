@@ -458,6 +458,7 @@ public class ProfileFragment extends Fragment {
 
     /**
      * Update rating stars dynamically based on rating value
+     * Shows only filled yellow stars (no empty stars)
      * @param rating The rating value (0.0 to 5.0)
      */
     private void updateRatingStars(double rating) {
@@ -467,33 +468,28 @@ public class ProfileFragment extends Fragment {
 
         int fullStars = (int) rating;
         double decimal = rating - fullStars;
-        int emptyStars = 5 - fullStars - (decimal >= 0.25 ? 1 : 0);
 
         float density = getResources().getDisplayMetrics().density;
         int starSize = (int) (22 * density);
         int marginEnd = (int) (2 * density);
 
-        // Add full stars
+        // Add full stars only (in yellow)
         for (int i = 0; i < fullStars; i++) {
             ImageView star = createStarView(starSize, marginEnd, R.drawable.ic_star_filled, R.color.yellow_500);
             ratingStarsContainer.addView(star);
         }
 
-        // Add half star if needed
+        // Add half star if needed (in yellow)
         if (decimal >= 0.25 && decimal < 0.75) {
-            ImageView halfStar = createStarView(starSize, marginEnd, R.drawable.ic_star_half, R.color.yellow_500);
+            ImageView halfStar = createStarView(starSize, 0, R.drawable.ic_star_half, R.color.yellow_500);
             ratingStarsContainer.addView(halfStar);
         } else if (decimal >= 0.75) {
-            ImageView star = createStarView(starSize, marginEnd, R.drawable.ic_star_filled, R.color.yellow_500);
+            // Round up to next full star
+            ImageView star = createStarView(starSize, 0, R.drawable.ic_star_filled, R.color.yellow_500);
             ratingStarsContainer.addView(star);
-            emptyStars--;
         }
 
-        // Add empty stars
-        for (int i = 0; i < emptyStars; i++) {
-            ImageView star = createStarView(starSize, i == emptyStars - 1 ? 0 : marginEnd, R.drawable.ic_star_outline, R.color.gray_300);
-            ratingStarsContainer.addView(star);
-        }
+        // No empty stars shown - only display the earned stars in yellow
     }
 
     /**

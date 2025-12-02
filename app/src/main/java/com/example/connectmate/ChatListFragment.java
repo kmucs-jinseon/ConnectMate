@@ -224,9 +224,11 @@ public class ChatListFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 notifications.clear();
+                Log.d(TAG, "Loading notifications, total count: " + snapshot.getChildrenCount());
                 for (DataSnapshot child : snapshot.getChildren()) {
                     NotificationItem item = child.getValue(NotificationItem.class);
                     if (item != null) {
+                        Log.d(TAG, "Notification loaded - Type: " + item.getType() + ", Title: " + item.getTitle() + ", Message: " + item.getMessage());
                         notifications.add(item);
                     }
                 }
@@ -234,6 +236,7 @@ public class ChatListFragment extends Fragment {
                 Collections.sort(notifications, (a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
                 adapterHolder[0].notifyDataSetChanged();
                 emptyText.setVisibility(notifications.isEmpty() ? View.VISIBLE : View.GONE);
+                Log.d(TAG, "Total notifications displayed: " + notifications.size());
             }
 
             @Override
@@ -540,26 +543,32 @@ public class ChatListFragment extends Fragment {
         }
 
         DatabaseReference notificationsRef = dbRef.child("userNotifications").child(userId);
+        Log.d(TAG, "Setting up notification badge listener for user: " + userId);
         notificationListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 int unreadCount = 0;
 
+                Log.d(TAG, "Badge listener: checking " + dataSnapshot.getChildrenCount() + " notifications");
                 // Count unread notifications
                 for (DataSnapshot notificationSnapshot : dataSnapshot.getChildren()) {
                     NotificationItem notification =
                         notificationSnapshot.getValue(NotificationItem.class);
                     if (notification != null && !notification.isRead()) {
                         unreadCount++;
+                        Log.d(TAG, "Badge listener: found unread notification - Type: " + notification.getType() + ", Title: " + notification.getTitle());
                     }
                 }
 
+                Log.d(TAG, "Badge listener: total unread count = " + unreadCount);
                 // Show/hide badge based on unread count
                 if (notificationBadge != null) {
                     if (unreadCount > 0) {
                         notificationBadge.setVisibility(View.VISIBLE);
+                        Log.d(TAG, "Badge listener: showing yellow badge");
                     } else {
                         notificationBadge.setVisibility(View.GONE);
+                        Log.d(TAG, "Badge listener: hiding badge");
                     }
                 }
 

@@ -27,25 +27,26 @@
             android:id="@+id/pending_reviews_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="함께한 멤버들에게 별점과 리뷰를 남겨 더 좋은 커뮤니티를 만들어요!"
-            android:textColor="@color/text_primary"
-            android:textSize="15sp"
-            android:paddingBottom="16dp"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="16dp"
             android:layout_gravity="center"
-            android:background="@color/blue_100"/>
+            android:background="@color/blue_100"
+            android:paddingStart="20dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp"
+            android:text="함께한 멤버들에게 별점과 리뷰를 남겨 더 좋은 커뮤니티를 만들어요!"
+            android:textAlignment="viewStart"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/pending_reviews_recycler"
             android:layout_width="match_parent"
-            android:layout_height="604dp"
-            android:layout_marginBottom="14dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="30dp"
             android:layout_weight="1"
             android:clipToPadding="false"
             android:overScrollMode="always"
-            android:padding="0dp"/>
+            android:padding="0dp" />
 
         <TextView
             android:id="@+id/pending_reviews_empty"

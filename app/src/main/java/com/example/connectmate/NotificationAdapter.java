@@ -1,5 +1,7 @@
 package com.example.connectmate;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -118,6 +120,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         private final TextView senderName;
         private final TextView friendRequestMessage;
         private final TextView timestamp;
+        private final ImageView viewProfileButton;
         private final SimpleDateFormat formatter =
             new SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault());
 
@@ -127,6 +130,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             senderName = itemView.findViewById(R.id.sender_name);
             friendRequestMessage = itemView.findViewById(R.id.friend_request_message);
             timestamp = itemView.findViewById(R.id.notification_timestamp);
+            viewProfileButton = itemView.findViewById(R.id.view_profile_button);
         }
 
         void bind(NotificationItem item, OnNotificationClickListener listener) {
@@ -154,6 +158,15 @@ public class NotificationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             } else {
                 senderProfileImage.setImageResource(R.drawable.circle_logo);
             }
+
+            // Set view profile button click listener
+            viewProfileButton.setOnClickListener(v -> {
+                Context context = itemView.getContext();
+                Intent intent = new Intent(context, ProfileActivity.class);
+                intent.putExtra("USER_ID", item.getSenderId());
+                intent.putExtra("SHOW_BUTTONS", false);
+                context.startActivity(intent);
+            });
 
             // Set click listener
             itemView.setOnClickListener(v -> {

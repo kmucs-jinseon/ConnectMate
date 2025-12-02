@@ -65,6 +65,17 @@
 
         </LinearLayout>
 
+        <!-- View Profile Button -->
+        <ImageButton
+            android:id="@+id/view_profile_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="View profile"
+            android:src="@drawable/ic_more_vertical"
+            app:tint="@color/primary_blue"
+            android:layout_gravity="center_vertical" />
+
     </LinearLayout>
 
     <!-- Bottom Border -->

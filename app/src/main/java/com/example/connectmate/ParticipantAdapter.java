@@ -166,6 +166,8 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(friendId).child("friendRequests").child(currentUserId);
         friendRequestRef.setValue(true);
 
+        android.util.Log.d("ParticipantAdapter", "Sending friend request to: " + friendId);
+
         // Fetch current user's information to create notification
         DatabaseReference currentUserRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId);
         currentUserRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -175,11 +177,12 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
                     String senderName = dataSnapshot.child("displayName").getValue(String.class);
                     String senderProfileUrl = dataSnapshot.child("profileImageUrl").getValue(String.class);
 
+                    android.util.Log.d("ParticipantAdapter", "Creating notification for friend request from: " + senderName);
+
                     // Create friend request notification
                     DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
-                            .getReference("users")
-                            .child(friendId)
-                            .child("notifications");
+                            .getReference("userNotifications")
+                            .child(friendId);
 
                     String notificationId = notificationsRef.push().getKey();
                     if (notificationId != null) {
@@ -194,14 +197,24 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
                         notificationData.put("timestamp", System.currentTimeMillis());
                         notificationData.put("isRead", false);
 
-                        notificationsRef.child(notificationId).setValue(notificationData);
+                        notificationsRef.child(notificationId).setValue(notificationData)
+                                .addOnSuccessListener(aVoid -> {
+                                    android.util.Log.d("ParticipantAdapter", "Friend request notification created successfully at: userNotifications/" + friendId + "/" + notificationId);
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.e("ParticipantAdapter", "Failed to create friend request notification", e);
+                                });
+                    } else {
+                        android.util.Log.e("ParticipantAdapter", "Failed to generate notification ID");
                     }
+                } else {
+                    android.util.Log.e("ParticipantAdapter", "Current user data not found");
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                // Handle error silently
+                android.util.Log.e("ParticipantAdapter", "Failed to fetch current user data", databaseError.toException());
             }
         });
     }
