@@ -24,6 +24,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     private final List<ChatRoom> chatRooms;
     private final OnChatRoomClickListener listener;
     private final String currentUserId;
+    private List<String> friendIds;
 
     public interface OnChatRoomClickListener {
         void onChatRoomClick(ChatRoom chatRoom);
@@ -33,6 +34,11 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         this.chatRooms = chatRooms;
         this.listener = listener;
         this.currentUserId = currentUserId;
+    }
+
+    public void setFriendIds(List<String> friendIds) {
+        this.friendIds = friendIds;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -46,7 +52,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     @Override
     public void onBindViewHolder(@NonNull ChatRoomViewHolder holder, int position) {
         ChatRoom chatRoom = chatRooms.get(position);
-        holder.bind(chatRoom, listener, currentUserId);
+        holder.bind(chatRoom, listener, currentUserId, friendIds);
     }
 
     @Override
@@ -56,6 +62,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
 
     static class ChatRoomViewHolder extends RecyclerView.ViewHolder {
         private final CircleImageView profileImage;
+        private final android.widget.ImageView friendBadge;
         private final TextView chatName;
         private final Chip categoryChip;
         private final TextView memberCount;
@@ -66,6 +73,7 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         public ChatRoomViewHolder(@NonNull View itemView) {
             super(itemView);
             profileImage = itemView.findViewById(R.id.profile_image);
+            friendBadge = itemView.findViewById(R.id.friend_badge);
             chatName = itemView.findViewById(R.id.chat_name);
             categoryChip = itemView.findViewById(R.id.category_chip);
             memberCount = itemView.findViewById(R.id.member_count);
@@ -74,16 +82,26 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
             unreadCount = itemView.findViewById(R.id.unread_count);
         }
 
-        public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener, String currentUserId) {
+        public void bind(ChatRoom chatRoom, OnChatRoomClickListener listener, String currentUserId, List<String> friendIds) {
+            String otherUserId = null;
+
             if ("private".equals(chatRoom.getCategory()) && chatRoom.getMembers() != null) {
                 for (Map.Entry<String, ChatRoom.Member> entry : chatRoom.getMembers().entrySet()) {
                     if (!entry.getKey().equals(currentUserId)) {
                         chatName.setText(entry.getValue().getName());
+                        otherUserId = entry.getKey();
                         break;
                     }
                 }
             } else {
                 chatName.setText(chatRoom.getName());
+            }
+
+            // Show friend badge if this is a private chat with a friend
+            if (friendBadge != null && otherUserId != null && friendIds != null && friendIds.contains(otherUserId)) {
+                friendBadge.setVisibility(View.VISIBLE);
+            } else if (friendBadge != null) {
+                friendBadge.setVisibility(View.GONE);
             }
 
             // Category chip is hidden but data is kept for filtering

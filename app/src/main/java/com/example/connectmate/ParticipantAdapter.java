@@ -18,9 +18,16 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.example.connectmate.models.NotificationItem;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ParticipantAdapter extends ArrayAdapter<Participant> {
 
@@ -64,6 +71,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         ImageButton addFriendButton = convertView.findViewById(R.id.add_friend_button);
         ImageButton moreOptionsButton = convertView.findViewById(R.id.more_options_button);
         ImageView hostBadge = convertView.findViewById(R.id.host_badge);
+        ImageView friendBadge = convertView.findViewById(R.id.friend_badge);
 
         // Load profile image
         if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
@@ -79,6 +87,13 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
 
         boolean isFriend = friendIds != null && friendIds.contains(participantId);
         boolean isCurrentUser = participantId != null && participantId.equals(currentUserId);
+
+        // Show friend badge if this participant is a friend (but not the current user)
+        if (isFriend && !isCurrentUser) {
+            friendBadge.setVisibility(View.VISIBLE);
+        } else {
+            friendBadge.setVisibility(View.GONE);
+        }
 
         // Set participant name
         participantNameTextView.setText(participantName);
@@ -150,5 +165,44 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
     private void sendFriendRequest(String friendId) {
         DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(friendId).child("friendRequests").child(currentUserId);
         friendRequestRef.setValue(true);
+
+        // Fetch current user's information to create notification
+        DatabaseReference currentUserRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId);
+        currentUserRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    String senderName = dataSnapshot.child("displayName").getValue(String.class);
+                    String senderProfileUrl = dataSnapshot.child("profileImageUrl").getValue(String.class);
+
+                    // Create friend request notification
+                    DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
+                            .getReference("users")
+                            .child(friendId)
+                            .child("notifications");
+
+                    String notificationId = notificationsRef.push().getKey();
+                    if (notificationId != null) {
+                        Map<String, Object> notificationData = new HashMap<>();
+                        notificationData.put("id", notificationId);
+                        notificationData.put("type", "FRIEND_REQUEST");
+                        notificationData.put("title", "친구 요청");
+                        notificationData.put("message", senderName + "님이 친구 요청을 보냈습니다");
+                        notificationData.put("senderId", currentUserId);
+                        notificationData.put("senderName", senderName);
+                        notificationData.put("senderProfileUrl", senderProfileUrl != null ? senderProfileUrl : "");
+                        notificationData.put("timestamp", System.currentTimeMillis());
+                        notificationData.put("isRead", false);
+
+                        notificationsRef.child(notificationId).setValue(notificationData);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                // Handle error silently
+            }
+        });
     }
 }

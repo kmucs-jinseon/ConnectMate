@@ -59,6 +59,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             holder.userProfileImage.setImageResource(R.drawable.circle_logo);
         }
 
+        // Show friend badge (all users in this adapter are friends)
+        if (holder.friendBadge != null) {
+            holder.friendBadge.setVisibility(View.VISIBLE);
+        }
+
         // In UserAdapter, we are dealing with friends, so "add" button is hidden.
         if (holder.addFriendButton != null) {
             holder.addFriendButton.setVisibility(View.GONE);
@@ -115,6 +120,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     public static class UserViewHolder extends RecyclerView.ViewHolder {
         ImageView userProfileImage;
+        ImageView friendBadge;
         TextView userName;
         ImageButton addFriendButton;
         ImageButton chatButton;
@@ -123,6 +129,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
             userProfileImage = itemView.findViewById(R.id.user_profile_image);
+            friendBadge = itemView.findViewById(R.id.friend_badge);
             userName = itemView.findViewById(R.id.user_name);
             addFriendButton = itemView.findViewById(R.id.add_friend_button);
             chatButton = itemView.findViewById(R.id.chat_button);

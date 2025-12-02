@@ -7,10 +7,15 @@ public class NotificationItem {
     private long timestamp;
     private boolean isRead;
     private String activityId;
+    private String type; // "ACTIVITY" or "FRIEND_REQUEST"
+    private String senderId;
+    private String senderName;
+    private String senderProfileUrl;
 
     public NotificationItem() {
         // Required for Firebase
         this.isRead = false;
+        this.type = "ACTIVITY"; // Default type
     }
 
     public NotificationItem(String id, String title, String message, long timestamp) {
@@ -84,5 +89,37 @@ public class NotificationItem {
 
     public void setActivityId(String activityId) {
         this.activityId = activityId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
+    }
+
+    public String getSenderName() {
+        return senderName;
+    }
+
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
+    }
+
+    public String getSenderProfileUrl() {
+        return senderProfileUrl;
+    }
+
+    public void setSenderProfileUrl(String senderProfileUrl) {
+        this.senderProfileUrl = senderProfileUrl;
     }
 }

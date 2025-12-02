@@ -3,11 +3,13 @@ package com.example.connectmate;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.connectmate.models.NotificationItem;
 
 import java.text.SimpleDateFormat;
@@ -15,7 +17,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.NotificationViewHolder> {
+import de.hdodenhof.circleimageview.CircleImageView;
+
+public class NotificationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final int VIEW_TYPE_ACTIVITY = 1;
+    private static final int VIEW_TYPE_FRIEND_REQUEST = 2;
 
     public interface OnNotificationClickListener {
         void onNotificationClick(NotificationItem item);
@@ -32,17 +39,39 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         this.listener = listener;
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        NotificationItem item = notifications.get(position);
+        if ("FRIEND_REQUEST".equals(item.getType())) {
+            return VIEW_TYPE_FRIEND_REQUEST;
+        } else {
+            return VIEW_TYPE_ACTIVITY;
+        }
+    }
+
     @NonNull
     @Override
-    public NotificationViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-            .inflate(R.layout.item_notification, parent, false);
-        return new NotificationViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+
+        if (viewType == VIEW_TYPE_FRIEND_REQUEST) {
+            View view = inflater.inflate(R.layout.item_notification_friend_request, parent, false);
+            return new FriendRequestViewHolder(view);
+        } else {
+            View view = inflater.inflate(R.layout.item_notification, parent, false);
+            return new NotificationViewHolder(view);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NotificationViewHolder holder, int position) {
-        holder.bind(notifications.get(position), listener);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        NotificationItem item = notifications.get(position);
+
+        if (holder instanceof FriendRequestViewHolder) {
+            ((FriendRequestViewHolder) holder).bind(item, listener);
+        } else if (holder instanceof NotificationViewHolder) {
+            ((NotificationViewHolder) holder).bind(item, listener);
+        }
     }
 
     @Override
@@ -68,6 +97,65 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             title.setText(item.getTitle());
             message.setText(item.getMessage());
             timestamp.setText(formatTime(item.getTimestamp()));
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onNotificationClick(item);
+                }
+            });
+        }
+
+        private String formatTime(long ts) {
+            if (ts <= 0) {
+                return "";
+            }
+            return formatter.format(new Date(ts));
+        }
+    }
+
+    // ViewHolder for friend request notifications
+    static class FriendRequestViewHolder extends RecyclerView.ViewHolder {
+        private final CircleImageView senderProfileImage;
+        private final TextView senderName;
+        private final TextView friendRequestMessage;
+        private final TextView timestamp;
+        private final SimpleDateFormat formatter =
+            new SimpleDateFormat("yyyy.MM.dd HH:mm", Locale.getDefault());
+
+        FriendRequestViewHolder(@NonNull View itemView) {
+            super(itemView);
+            senderProfileImage = itemView.findViewById(R.id.sender_profile_image);
+            senderName = itemView.findViewById(R.id.sender_name);
+            friendRequestMessage = itemView.findViewById(R.id.friend_request_message);
+            timestamp = itemView.findViewById(R.id.notification_timestamp);
+        }
+
+        void bind(NotificationItem item, OnNotificationClickListener listener) {
+            // Set sender name
+            if (item.getSenderName() != null && !item.getSenderName().isEmpty()) {
+                senderName.setText(item.getSenderName());
+            }
+
+            // Set friend request message with sender name
+            String message = item.getSenderName() + "님이 친구 요청을 보냈습니다";
+            friendRequestMessage.setText(message);
+
+            // Set timestamp
+            timestamp.setText(formatTime(item.getTimestamp()));
+
+            // Load profile image with Glide
+            String profileUrl = item.getSenderProfileUrl();
+            if (profileUrl != null && !profileUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(profileUrl)
+                        .placeholder(R.drawable.circle_logo)
+                        .error(R.drawable.circle_logo)
+                        .circleCrop()
+                        .into(senderProfileImage);
+            } else {
+                senderProfileImage.setImageResource(R.drawable.circle_logo);
+            }
+
+            // Set click listener
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onNotificationClick(item);

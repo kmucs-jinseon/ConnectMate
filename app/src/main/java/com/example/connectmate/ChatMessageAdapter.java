@@ -27,6 +27,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private final List<ChatMessage> messages;
     private final String currentUserId;
+    private List<String> friendIds;
     private OnImageClickListener imageClickListener;
     private OnDocumentClickListener documentClickListener;
 
@@ -49,6 +50,11 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void setOnDocumentClickListener(OnDocumentClickListener listener) {
         this.documentClickListener = listener;
+    }
+
+    public void setFriendIds(List<String> friendIds) {
+        this.friendIds = friendIds;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -94,7 +100,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         } else if (holder instanceof SentMessageViewHolder) {
             ((SentMessageViewHolder) holder).bind(message, imageClickListener, documentClickListener);
         } else if (holder instanceof ReceivedMessageViewHolder) {
-            ((ReceivedMessageViewHolder) holder).bind(message, imageClickListener, documentClickListener);
+            ((ReceivedMessageViewHolder) holder).bind(message, imageClickListener, documentClickListener, friendIds);
         }
     }
 
@@ -215,6 +221,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     // ViewHolder for received messages (other users)
     static class ReceivedMessageViewHolder extends RecyclerView.ViewHolder {
         private final CircleImageView profileImage;
+        private final ImageView friendBadge;
         private final TextView senderName;
         private final TextView messageText;
         private final View imageFrame;
@@ -226,6 +233,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         public ReceivedMessageViewHolder(@NonNull View itemView) {
             super(itemView);
             profileImage = itemView.findViewById(R.id.profile_image);
+            friendBadge = itemView.findViewById(R.id.friend_badge);
             senderName = itemView.findViewById(R.id.sender_name);
             messageText = itemView.findViewById(R.id.message_text);
             imageFrame = itemView.findViewById(R.id.image_frame);
@@ -235,8 +243,15 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             messageTime = itemView.findViewById(R.id.message_time);
         }
 
-        public void bind(ChatMessage message, OnImageClickListener imageListener, OnDocumentClickListener docListener) {
+        public void bind(ChatMessage message, OnImageClickListener imageListener, OnDocumentClickListener docListener, List<String> friendIds) {
             senderName.setText(message.getSenderName());
+
+            // Show friend badge if sender is a friend
+            if (friendBadge != null && friendIds != null && friendIds.contains(message.getSenderId())) {
+                friendBadge.setVisibility(View.VISIBLE);
+            } else if (friendBadge != null) {
+                friendBadge.setVisibility(View.GONE);
+            }
 
             // Handle text message
             if (message.getMessage() != null && !message.getMessage().isEmpty()) {

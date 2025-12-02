@@ -9,15 +9,16 @@
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:strokeColor="@color/gray_200"
+    app:cardElevation="4dp"
+    app:strokeColor="@color/blue_100"
     app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:background="@color/blue_50">
 
         <!-- Title and Category Row -->
         <LinearLayout
@@ -34,7 +35,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/gray_900"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 tools:text="Weekly Soccer Match" />
@@ -64,7 +65,8 @@
                 android:layout_marginEnd="6dp"
                 android:contentDescription="@string/location"
                 android:src="@drawable/ic_map_pin"
-                app:tint="@color/gray_600" />
+                app:tint="@color/primary_blue_dark"
+                android:layout_gravity="bottom"/>
 
             <TextView
                 android:id="@+id/activity_location"
@@ -93,7 +95,8 @@
                 android:layout_marginEnd="6dp"
                 android:contentDescription="@string/time"
                 android:src="@drawable/ic_clock"
-                app:tint="@color/gray_600" />
+                app:tint="@color/primary_blue_dark"
+                android:layout_gravity="bottom"/>
 
             <TextView
                 android:id="@+id/activity_time"
@@ -120,7 +123,8 @@
                 android:layout_marginEnd="6dp"
                 android:contentDescription="@string/creator"
                 android:src="@drawable/ic_profile"
-                app:tint="@color/gray_600" />
+                app:tint="@color/primary_blue_dark"
+                android:layout_gravity="bottom"/>
 
             <TextView
                 android:id="@+id/activity_creator"
@@ -128,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/gray_600"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 tools:text="개설자: 홍길동" />
 
         </LinearLayout>
@@ -141,7 +145,7 @@
             android:layout_marginTop="12dp"
             android:ellipsize="end"
             android:maxLines="2"
-            android:textColor="@color/gray_600"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             tools:text="Join us for a friendly soccer match! All skill levels welcome. Bring your own water bottle." />
 
@@ -150,7 +154,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
-            android:background="@color/gray_200" />
+            android:background="@color/gray_300" />
 
         <!-- Participants and Action Buttons -->
         <LinearLayout
@@ -174,7 +178,8 @@
                     android:layout_marginEnd="6dp"
                     android:contentDescription="@string/participants"
                     android:src="@drawable/ic_profile"
-                    app:tint="@color/primary_blue" />
+                    app:tint="@color/primary_blue"
+                    android:layout_gravity="bottom"/>
 
                 <TextView
                     android:id="@+id/participants_count"
