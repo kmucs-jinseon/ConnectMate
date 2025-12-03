@@ -728,9 +728,6 @@ public class CreateActivityActivity extends AppCompatActivity {
                 public void onSuccess(Activity result) {
                     runOnUiThread(() -> {
                         Toast.makeText(CreateActivityActivity.this, "활동이 수정되었습니다!", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(CreateActivityActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
                         finish();
                     });
                 }
@@ -749,9 +746,6 @@ public class CreateActivityActivity extends AppCompatActivity {
                 public void onSuccess(Activity result) {
                     runOnUiThread(() -> {
                         Toast.makeText(CreateActivityActivity.this, "활동이 생성되었습니다!", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(CreateActivityActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
                         finish();
                     });
                 }
@@ -995,10 +989,6 @@ public class CreateActivityActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     Toast.makeText(CreateActivityActivity.this, "활동이 삭제되었습니다", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, "Activity deleted successfully");
-                    // Close activity and return to a stable screen
-                    Intent intent = new Intent(CreateActivityActivity.this, MainActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
                     finish();
                 });
             }

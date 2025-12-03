@@ -1350,12 +1350,12 @@ public class MapFragment extends Fragment {
             intent.putExtra("suggested_category", selectedPoi.getMappedCategory());
         }
 
+        Log.d(TAG, "Opened CreateActivityActivity with POI: " + selectedPoi.getPlaceName());
+
         startActivity(intent);
 
         // Hide the POI card after using it
         hidePoiInfo();
-
-        Log.d(TAG, "Opened CreateActivityActivity with POI: " + selectedPoi.getPlaceName());
     }
 
     /**
