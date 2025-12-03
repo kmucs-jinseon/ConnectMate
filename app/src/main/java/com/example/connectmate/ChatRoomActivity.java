@@ -148,11 +148,11 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.chat_room_menu, menu);
-        if (chatRoom != null && "private".equals(chatRoom.getCategory())) {
-            MenuItem leaveItem = menu.findItem(R.id.action_leave_room);
-            if (leaveItem != null) {
-                leaveItem.setTitle("친구 끊기");
-            }
+
+        // Show "친구 끊기" option only for private 1:1 chats
+        MenuItem unfriendItem = menu.findItem(R.id.action_unfriend);
+        if (unfriendItem != null) {
+            unfriendItem.setVisible(chatRoom != null && "private".equals(chatRoom.getCategory()));
         }
 
         MenuItem deleteItem = menu.findItem(R.id.action_delete_room);
@@ -172,11 +172,20 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.action_leave_room) {
-            if (isCurrentUserHost()) {
-                handleHostLeave();
+            // For private 1:1 chats, just delete chatroom without unfriending
+            if (chatRoom != null && "private".equals(chatRoom.getCategory())) {
+                leavePrivateChatRoom();
             } else {
-                leaveChatRoom();
+                // Group chat logic
+                if (isCurrentUserHost()) {
+                    handleHostLeave();
+                } else {
+                    leaveChatRoom();
+                }
             }
+            return true;
+        } else if (itemId == R.id.action_unfriend) {
+            removeFriend();
             return true;
         } else if (itemId == R.id.action_view_participants) {
             showParticipantsDialog();
@@ -238,6 +247,32 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
             // This case should ideally not be reached if member count > 1, but as a fallback:
             deleteChatRoomAsHost(null, false);
         }
+    }
+
+    private void leavePrivateChatRoom() {
+        if (chatRoom == null) {
+            Toast.makeText(this, "채팅방 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(this)
+            .setTitle("채팅방 나가기")
+            .setMessage("채팅방을 나가시겠습니까?\n(친구 관계는 유지됩니다)")
+            .setPositiveButton("나가기", (dialog, which) -> {
+                FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                    @Override
+                    public void onError(Exception e) {
+                        Toast.makeText(ChatRoomActivity.this, "채팅방 나가기 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            })
+            .setNegativeButton("취소", null)
+            .show();
     }
 
     private void removeFriend() {

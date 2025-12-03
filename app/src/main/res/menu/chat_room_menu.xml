@@ -19,4 +19,9 @@
         android:id="@+id/action_leave_room"
         android:title="채팅방 나가기"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_unfriend"
+        android:title="친구 끊기"
+        android:visible="false"
+        app:showAsAction="never" />
 </menu>

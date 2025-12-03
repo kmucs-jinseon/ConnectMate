@@ -1,11 +1,15 @@
 package com.example.connectmate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -63,12 +67,13 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
             holder.userProfileImage.setImageResource(R.drawable.circle_logo);
         }
 
-        // In FriendRequestAdapter, only "add" and "reject" buttons are visible.
+        // In FriendRequestAdapter, "add", "reject", and "more options" buttons are visible.
         if (holder.chatButton != null) {
             holder.chatButton.setVisibility(View.GONE);
         }
         if (holder.moreOptionsButton != null) {
-            holder.moreOptionsButton.setVisibility(View.GONE);
+            holder.moreOptionsButton.setVisibility(View.VISIBLE);
+            holder.moreOptionsButton.setOnClickListener(v -> showPopupMenu(v, user));
         }
         if (holder.addFriendButton != null) {
             holder.addFriendButton.setVisibility(View.VISIBLE);
@@ -83,6 +88,30 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     @Override
     public int getItemCount() {
         return userList.size();
+    }
+
+    private void showPopupMenu(View view, User user) {
+        PopupMenu popup = new PopupMenu(context, view);
+        MenuInflater inflater = popup.getMenuInflater();
+        inflater.inflate(R.menu.friend_request_options_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_view_profile) {
+                openUserProfile(user);
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
+    }
+
+    private void openUserProfile(User user) {
+        Intent intent = new Intent(context, ProfileActivity.class);
+        intent.putExtra("USER_ID", user.getUserId());
+        intent.putExtra("SHOW_BUTTONS", false); // Not current user, so don't show edit buttons
+        context.startActivity(intent);
     }
 
     private void acceptFriendRequest(User user) {
