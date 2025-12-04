@@ -39,4 +39,63 @@
 
 # Firebase and Google Services
 -keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
 -dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# Keep all model classes for Firebase Firestore/Realtime Database
+-keepclassmembers class * {
+    @com.google.firebase.database.PropertyName <fields>;
+    @com.google.firebase.database.PropertyName <methods>;
+    @com.google.firebase.firestore.PropertyName <fields>;
+    @com.google.firebase.firestore.PropertyName <methods>;
+}
+
+# Keep all data model classes (adjust package name if needed)
+-keep class com.example.connectmate.models.** { *; }
+-keep class com.example.connectmate.data.** { *; }
+
+# Keep Serializable and Parcelable
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final ** CREATOR;
+}
+
+# Keep attributes for debugging
+-keepattributes Signature
+-keepattributes Exceptions
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keepattributes InnerClasses
+
+# Keep enums
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Gson specific classes
+-keepattributes Signature
+-keep class sun.misc.Unsafe { *; }
+-keep class com.google.gson.** { *; }
+
+# Kakao SDK
+-keep class com.kakao.sdk.** { *; }
+-dontwarn com.kakao.sdk.**
+
+# Naver SDK
+-keep class com.navercorp.nid.** { *; }
+-dontwarn com.navercorp.nid.**
+
+# Keep all constructors for classes that might be instantiated via reflection
+-keepclassmembers class * {
+    public <init>(...);
+}
