@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "697385814271-6g4istkrlcl5998ss9bias8k7s1tftas.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.connectmate",
+            "certificate_hash": "3f43af288d1b026306d0d9f0bc86cf78e6265eac"
+          }
+        },
+        {
+          "client_id": "697385814271-bkhi7or0fdvj8nv4seta9f509s8bp3if.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.connectmate",
+            "certificate_hash": "771d97ee0429fd435466b1ea1d17d9dd33a5ac01"
+          }
+        },
+        {
           "client_id": "697385814271-d1kal6davc7n4ndaprtkdbup3dkutj9f.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -28,67 +44,6 @@
           "android_info": {
             "package_name": "app.connectmate",
             "certificate_hash": "6ea3a63c83f524bb9ccfe7fe65a0c1dfd9e7cafd"
-          }
-        },
-        {
-          "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCsbHWm9HfZccYxGXhHfdWrYJ0W-faAoYE"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "697385814271-n1dd8n729mfiuk4imj82j62mf4f18m9o.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:697385814271:android:4384d77104a8c259dba4ca",
-        "android_client_info": {
-          "package_name": "com.example.connectmate"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "697385814271-1b4s0dna3vb4jj6qvf17ptj3hbf2o0dq.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.connectmate",
-            "certificate_hash": "771d97ee0429fd435466b1ea1d17d9dd33a5ac01"
-          }
-        },
-        {
-          "client_id": "697385814271-1ht46i1kvjum1kkltlnk4bbbrchoh3i4.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.connectmate",
-            "certificate_hash": "6ea3a63c83f524bb9ccfe7fe65a0c1dfd9e7cafd"
-          }
-        },
-        {
-          "client_id": "697385814271-lgkeq03pfudddn12kgs792u5rlqqlsjm.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.connectmate",
-            "certificate_hash": "c0c7d02040c7d7f9cc2a35370e9b1ba8522b3ecf"
-          }
-        },
-        {
-          "client_id": "697385814271-ol2ga36jeinfio29r4m8u314715r4d76.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.connectmate",
-            "certificate_hash": "5e69e69ec2ba3274a864f26a0f51f0af3a79bd8e"
           }
         },
         {
