@@ -51,9 +51,24 @@
     @com.google.firebase.firestore.PropertyName <methods>;
 }
 
-# Keep all data model classes (adjust package name if needed)
+# Keep all data model classes - CRITICAL for Firebase serialization
+-keep class com.example.connectmate.User { *; }
 -keep class com.example.connectmate.models.** { *; }
 -keep class com.example.connectmate.data.** { *; }
+
+# Keep all fields and methods in model classes
+-keepclassmembers class com.example.connectmate.User {
+    public *;
+    private *;
+}
+-keepclassmembers class com.example.connectmate.models.** {
+    public *;
+    private *;
+}
+
+# Prevent obfuscation of field names in model classes
+-keepnames class com.example.connectmate.User
+-keepnames class com.example.connectmate.models.**
 
 # Keep Serializable and Parcelable
 -keepclassmembers class * implements java.io.Serializable {
