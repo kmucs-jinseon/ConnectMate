@@ -66,7 +66,7 @@
                 android:contentDescription="@string/location"
                 android:src="@drawable/ic_map_pin"
                 app:tint="@color/primary_blue_dark"
-                android:layout_gravity="bottom"/>
+                android:layout_gravity="center"/>
 
             <TextView
                 android:id="@+id/activity_location"
@@ -96,7 +96,7 @@
                 android:contentDescription="@string/time"
                 android:src="@drawable/ic_clock"
                 app:tint="@color/primary_blue_dark"
-                android:layout_gravity="bottom"/>
+                android:layout_gravity="center"/>
 
             <TextView
                 android:id="@+id/activity_time"
@@ -124,7 +124,7 @@
                 android:contentDescription="@string/creator"
                 android:src="@drawable/ic_profile"
                 app:tint="@color/primary_blue_dark"
-                android:layout_gravity="bottom"/>
+                android:layout_gravity="center"/>
 
             <TextView
                 android:id="@+id/activity_creator"
@@ -144,10 +144,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:ellipsize="end"
-            android:maxLines="2"
+            android:maxLines="3"
             android:textColor="@color/text_primary"
             android:textSize="15sp"
-            tools:text="Join us for a friendly soccer match! All skill levels welcome. Bring your own water bottle." />
+            tools:text="Join us for a friendly soccer match! All skill levels welcome. Bring your own water bottle."
+            android:fontFamily="@font/pretendard_regular"/>
 
         <!-- Divider -->
         <View

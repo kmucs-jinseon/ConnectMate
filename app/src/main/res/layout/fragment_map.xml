@@ -60,13 +60,13 @@
             <!-- Close button -->
             <ImageButton
                 android:id="@+id/btn_close_poi_info"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="end"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/bg_close_button_light"
                 android:src="@drawable/ic_close"
                 android:contentDescription="@string/close_poi_info"
-                app:tint="@color/gray_600" />
+                app:tint="@color/gray_700" />
 
             <!-- POI Name -->
             <TextView

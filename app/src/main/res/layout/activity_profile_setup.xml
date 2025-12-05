@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/background"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/profile_setup_toolbar"
@@ -11,17 +12,20 @@
         android:layout_height="wrap_content"
         android:background="@color/primary_blue"
         android:elevation="4dp"
-        android:fontFamily="@font/pretendard_bold"
         app:title="프로필 생성"
         app:navigationIcon="@drawable/ic_arrow_left"
         app:titleTextColor="@color/white"
-        app:fontFamily="@font/pretendard_bold"/>
+        app:titleTextAppearance="@style/ToolbarTitleBold"/>
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/profile_setup_container"
         android:name="com.example.connectmate.ProfileSetupFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="?attr/actionBarSize" />
+        android:layout_marginTop="?attr/actionBarSize"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:paddingTop="0dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

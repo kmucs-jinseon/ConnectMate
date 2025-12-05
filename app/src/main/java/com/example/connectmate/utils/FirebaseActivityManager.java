@@ -771,6 +771,8 @@ public class FirebaseActivityManager {
                             // Only increment count if user wasn't already a participant
                             if (!alreadyExists) {
                                 incrementParticipantCount(activityId, 1);
+                                // Send join notification to existing members
+                                sendChatJoinNotification(activityId, userId, userName);
                             }
 
                             // Add to user's activities
@@ -797,6 +799,84 @@ public class FirebaseActivityManager {
                     }
                 }
             });
+    }
+
+    /**
+     * Send notification to existing chat room members when someone joins
+     */
+    private void sendChatJoinNotification(String activityId, String newUserId, String newUserName) {
+        // Get activity details first
+        activitiesRef.child(activityId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot activitySnapshot) {
+                if (!activitySnapshot.exists()) return;
+
+                Activity activity = activitySnapshot.getValue(Activity.class);
+                if (activity == null) return;
+
+                String activityTitle = activity.getTitle();
+                String creatorId = activity.getCreatorId();
+
+                // Get new user's profile image
+                usersRef.child(newUserId).child("profileImageUrl").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot profileSnapshot) {
+                        String profileImageUrl = profileSnapshot.getValue(String.class);
+
+                        // Get all existing participants (except the new user and creator)
+                        activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(@NonNull DataSnapshot participantsSnapshot) {
+                                    for (DataSnapshot participantSnapshot : participantsSnapshot.getChildren()) {
+                                        String participantId = participantSnapshot.getKey();
+
+                                        // Don't notify the user who just joined or the creator
+                                        if (participantId == null || participantId.equals(newUserId) || participantId.equals(creatorId)) {
+                                            continue;
+                                        }
+
+                                        // Create notification for this participant
+                                        String notificationId = userNotificationsRef.child(participantId).push().getKey();
+                                        if (notificationId == null) continue;
+
+                                        Map<String, Object> notificationData = new HashMap<>();
+                                        notificationData.put("id", notificationId);
+                                        notificationData.put("type", "CHAT_JOIN");
+                                        notificationData.put("title", "새로운 참가자");
+                                        notificationData.put("message", newUserName + "님이 " + activityTitle + " 채팅방에 참가했습니다.");
+                                        notificationData.put("activityId", activityId);
+                                        notificationData.put("senderId", newUserId);
+                                        notificationData.put("senderName", newUserName);
+                                        notificationData.put("senderProfileUrl", profileImageUrl != null ? profileImageUrl : "");
+                                        notificationData.put("timestamp", System.currentTimeMillis());
+                                        notificationData.put("isRead", false);
+
+                                        userNotificationsRef.child(participantId).child(notificationId).setValue(notificationData)
+                                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Chat join notification sent to: " + participantId))
+                                            .addOnFailureListener(e -> Log.e(TAG, "Failed to send chat join notification", e));
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(@NonNull DatabaseError error) {
+                                    Log.e(TAG, "Failed to get participants for notification", error.toException());
+                                }
+                            });
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to get profile image", error.toException());
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to get activity for notification", error.toException());
+            }
+        });
     }
 
     /**

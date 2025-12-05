@@ -207,9 +207,12 @@ public class ChatListFragment extends Fragment {
                 dialog.dismiss();
                 // Pass activityId to filter reviews for specific activity
                 openPendingReviewsFragment(item.getActivityId());
+                // DON'T delete review notifications when clicked
+                // They will be deleted automatically when all reviews are completed
+                return;
             }
 
-            // Delete notification from Firebase and remove from list
+            // Delete notification from Firebase and remove from list (for non-review notifications)
             deleteNotification(userId, item, notifications, adapterHolder[0], emptyText);
         });
         recyclerView.setAdapter(adapterHolder[0]);

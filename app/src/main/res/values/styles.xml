@@ -8,8 +8,15 @@
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryDark">@color/primary_blue_dark</item>
         <item name="colorAccent">@color/mint_400</item>
-        <item name="android:statusBarColor">@color/primary_blue_dark</item>
-        <item name="android:navigationBarColor">@color/white</item>
+
+        <!-- System Bars - Transparent (respects user's system settings) -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Let system decide icon colors based on background -->
+        <item name="android:enforceNavigationBarContrast">true</item>
+        <item name="android:enforceStatusBarContrast">true</item>
+
         <item name="android:windowBackground">@color/white</item>
 
         <!-- Default Font Family -->
@@ -21,16 +28,25 @@
     <!--      TextInputLayout Style      -->
     <!-- =============================== -->
     <style name="InputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/primary_blue</item>
+        <!-- Box Colors -->
         <item name="boxBackgroundColor">@color/white</item>
-        <item name="hintTextColor">@color/gray_700</item>
-        <item name="hintAnimationEnabled">true</item>
-        <item name="hintTextAppearance">@style/TextAppearance.MaterialComponents.Body1</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.App.Corner.Medium</item>
-        <item name="errorTextColor">@color/pink_400</item>
-        <item name="helperTextTextColor">@color/gray_500</item>
-        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="boxStrokeColor">@color/primary_blue</item>
+
+        <!-- Box Stroke Width -->
         <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+
+        <!-- Hint Text -->
+        <item name="hintTextColor">@color/gray_700</item>
+        <item name="hintTextAppearance">@style/TextAppearance.MaterialComponents.Body1</item>
+        <item name="hintAnimationEnabled">true</item>
+
+        <!-- Helper & Error Text -->
+        <item name="helperTextTextColor">@color/gray_500</item>
+        <item name="errorTextColor">@color/pink_400</item>
+
+        <!-- Shape & Icons -->
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.App.Corner.Medium</item>
         <item name="endIconTint">@color/primary_blue</item>
     </style>
 
@@ -40,6 +56,7 @@
     <style name="InputEditTextStyle">
         <item name="android:lineSpacingMultiplier">1.0</item>
         <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text_primary</item>
     </style>
 
     <!-- =============================== -->
@@ -141,18 +158,25 @@
     <!--      Category Chip Style        -->
     <!-- =============================== -->
     <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Choice">
-        <item name="android:textColor">@android:color/white</item>
-        <item name="checkedIconVisible">true</item>
-        <item name="checkedIcon">@android:drawable/ic_menu_add</item>
-        <item name="checkedIconTint">@android:color/white</item>
-        <item name="chipStrokeWidth">3dp</item>
-        <item name="chipStrokeColor">@color/white</item>
+        <!-- Text and Icon Colors (Dark for pastel backgrounds) -->
+        <item name="android:textColor">@color/gray_700</item>
+        <item name="android:textStyle">bold</item>
+        <item name="checkedIconVisible">false</item>
+
+        <!-- Chip Border -->
+        <item name="chipStrokeWidth">0dp</item>
+
+        <!-- Chip Shape -->
         <item name="chipCornerRadius">16dp</item>
+        <item name="chipMinHeight">32dp</item>
+
+        <!-- Chip Padding -->
         <item name="chipStartPadding">12dp</item>
         <item name="chipEndPadding">12dp</item>
-        <item name="android:paddingTop">8dp</item>
-        <item name="android:paddingBottom">8dp</item>
-        <item name="chipMinHeight">40dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+
+        <!-- Text Size and Elevation -->
         <item name="android:textSize">13sp</item>
         <item name="android:elevation">2dp</item>
     </style>

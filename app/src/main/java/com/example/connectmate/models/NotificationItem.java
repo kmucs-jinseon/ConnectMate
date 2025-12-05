@@ -7,7 +7,7 @@ public class NotificationItem {
     private long timestamp;
     private boolean isRead;
     private String activityId;
-    private String type; // "ACTIVITY" or "FRIEND_REQUEST"
+    private String type; // "ACTIVITY", "FRIEND_REQUEST", or "CHAT_JOIN"
     private String senderId;
     private String senderName;
     private String senderProfileUrl;

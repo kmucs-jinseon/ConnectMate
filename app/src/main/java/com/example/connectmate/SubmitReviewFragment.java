@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -249,7 +250,85 @@ public class SubmitReviewFragment extends Fragment {
         pendingReviewsRef.child(reviewerId)
             .child(pendingId)
             .removeValue()
-            .addOnCompleteListener(task -> finishSubmission());
+            .addOnCompleteListener(task -> {
+                // Check if there are any more pending reviews for this activity
+                checkAndDeleteNotificationIfAllReviewsComplete(reviewerId, activityId);
+                finishSubmission();
+            });
+    }
+
+    /**
+     * Check if all reviews for this activity are complete, and if so, delete the notification
+     */
+    private void checkAndDeleteNotificationIfAllReviewsComplete(String userId, String activityId) {
+        if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(activityId)) {
+            return;
+        }
+
+        // Check if there are any remaining pending reviews for this activity
+        pendingReviewsRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                boolean hasMoreReviewsForActivity = false;
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    PendingReviewItem item = child.getValue(PendingReviewItem.class);
+                    if (item != null && activityId.equals(item.getActivityId())) {
+                        hasMoreReviewsForActivity = true;
+                        break;
+                    }
+                }
+
+                // If no more pending reviews for this activity, delete the notification
+                if (!hasMoreReviewsForActivity) {
+                    deleteReviewNotificationForActivity(userId, activityId);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("SubmitReviewFragment", "Error checking pending reviews", error.toException());
+            }
+        });
+    }
+
+    /**
+     * Delete the review notification for a specific activity
+     */
+    private void deleteReviewNotificationForActivity(String userId, String activityId) {
+        if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(activityId)) {
+            return;
+        }
+
+        DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
+            .getReference("userNotifications")
+            .child(userId);
+
+        notificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    com.example.connectmate.models.NotificationItem notification =
+                        child.getValue(com.example.connectmate.models.NotificationItem.class);
+
+                    if (notification != null &&
+                        "참여자 평가 요청".equals(notification.getTitle()) &&
+                        activityId.equals(notification.getActivityId())) {
+                        // Delete this notification
+                        child.getRef().removeValue()
+                            .addOnSuccessListener(aVoid ->
+                                Log.d("SubmitReviewFragment", "Review notification deleted for activity: " + activityId))
+                            .addOnFailureListener(e ->
+                                Log.e("SubmitReviewFragment", "Failed to delete notification", e));
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("SubmitReviewFragment", "Error loading notifications", error.toException());
+            }
+        });
     }
 
     private void finishSubmission() {

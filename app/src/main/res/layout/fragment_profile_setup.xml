@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     android:fillViewport="true"
-    android:fitsSystemWindows="true"
     android:padding="16dp">
 
     <LinearLayout
@@ -165,7 +164,7 @@
             android:textAllCaps="false"
             android:textSize="16sp"
             android:textColor="@color/white"
-            app:cornerRadius="12dp"
+            app:cornerRadius="8dp"
             app:backgroundTint="@color/primary_blue" />
 
     </LinearLayout>

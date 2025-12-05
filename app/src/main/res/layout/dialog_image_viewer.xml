@@ -5,19 +5,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Close Button -->
-    <ImageButton
-        android:id="@+id/btn_close"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_close"
-        android:tint="@color/white"
-        android:contentDescription="Close" />
-
     <!-- Full Size Image -->
     <ImageView
         android:id="@+id/full_image"
@@ -39,5 +26,19 @@
         app:tint="@color/white"
         app:backgroundTint="@color/primary_blue"
         android:contentDescription="Download image" />
+
+    <!-- Close Button (Declared last to be on top) -->
+    <ImageButton
+        android:id="@+id/btn_close"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_close_button"
+        android:src="@drawable/ic_close"
+        android:tint="@color/white"
+        android:elevation="8dp"
+        android:contentDescription="Close" />
 
 </RelativeLayout>
