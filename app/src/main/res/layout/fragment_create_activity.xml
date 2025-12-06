@@ -69,7 +69,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/spacing_medium">
+            android:padding="@dimen/spacing_medium"
+            android:background="?attr/colorSurface">
 
             <!-- Activity Title -->
             <com.google.android.material.textfield.TextInputLayout
@@ -112,7 +113,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:text="카테고리 *"
-                android:textColor="@color/gray_700"
+                android:textColor="@color/text_secondary"
                 android:textSize="16sp" />
 
             <com.google.android.material.chip.ChipGroup
@@ -201,7 +202,8 @@
                 android:layout_marginBottom="@dimen/spacing_medium"
                 android:maxHeight="300dp"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:visibility="gone">
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -234,7 +236,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:text="@string/visibility"
-                android:textColor="@color/gray_700" />
+                android:textColor="@color/text_secondary" />
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/visibility_toggle"

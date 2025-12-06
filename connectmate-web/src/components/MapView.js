@@ -3,9 +3,13 @@ import './MapView.css';
 
 const MapView = () => {
   const mapContainer = useRef(null);
+  const mapInstanceRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [mapError, setMapError] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredActivities, setFilteredActivities] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
 
   // Sample activity markers (same as Android app)
   const activities = [
@@ -50,7 +54,58 @@ const MapView = () => {
     }
   ];
 
+  // Initialize filtered activities
   useEffect(() => {
+    setFilteredActivities(activities);
+  }, []);
+
+  // Get user's current location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          console.log('User location obtained:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          // Fallback to Seoul if geolocation fails
+          setUserLocation({ lat: 37.5665, lng: 126.9780 });
+        }
+      );
+    } else {
+      console.log('Geolocation not supported, using default location');
+      setUserLocation({ lat: 37.5665, lng: 126.9780 });
+    }
+  }, []);
+
+  // Handle search functionality
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setFilteredActivities(activities);
+      return;
+    }
+
+    const searchLower = query.toLowerCase();
+    const filtered = activities.filter((activity) => {
+      return (
+        activity.title.toLowerCase().includes(searchLower) ||
+        activity.location.toLowerCase().includes(searchLower) ||
+        activity.description.toLowerCase().includes(searchLower) ||
+        activity.category.toLowerCase().includes(searchLower)
+      );
+    });
+
+    setFilteredActivities(filtered);
+  };
+
+  useEffect(() => {
+    // Wait for user location before initializing map
+    if (!userLocation) return;
+
     // Try to initialize Kakao Maps
     const script = document.createElement('script');
     script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=76e9f68c2c56d701f233ba2b44e74ea1&autoload=false`;
@@ -71,13 +126,28 @@ const MapView = () => {
           try {
             const container = mapContainer.current;
             const options = {
-              center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+              center: new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng),
               level: 7
             };
 
             const kakaoMap = new window.kakao.maps.Map(container, options);
+            mapInstanceRef.current = kakaoMap;
+
+            // Add user location marker
+            const userMarkerPosition = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+            const userMarker = new window.kakao.maps.Marker({
+              position: userMarkerPosition,
+              map: kakaoMap,
+              title: 'Your Location'
+            });
+
+            const userInfoWindow = new window.kakao.maps.InfoWindow({
+              content: '<div style="padding:10px;font-size:12px;">📍 Your Location</div>'
+            });
+            userInfoWindow.open(kakaoMap, userMarker);
 
             // Add markers for activities
+            // Note: In Kakao Maps, we show all activities. Filtering is available in the fallback map.
             activities.forEach((activity) => {
               const markerPosition = new window.kakao.maps.LatLng(activity.lat, activity.lng);
               const marker = new window.kakao.maps.Marker({
@@ -127,10 +197,17 @@ const MapView = () => {
       script.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userLocation]);
 
   const handleMarkerClick = (activity) => {
     setSelectedActivity(activity);
+  };
+
+  const handleCurrentLocation = () => {
+    if (userLocation && mapInstanceRef.current) {
+      const moveLatLng = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng);
+      mapInstanceRef.current.setCenter(moveLatLng);
+    }
   };
 
   return (
@@ -141,8 +218,20 @@ const MapView = () => {
           type="text"
           placeholder="Search activities or places..."
           className="search-input"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch(searchQuery);
+            }
+          }}
         />
-        <button className="search-button">🔍</button>
+        <button
+          className="search-button"
+          onClick={() => handleSearch(searchQuery)}
+        >
+          🔍
+        </button>
       </div>
 
       {/* Map Container */}
@@ -156,7 +245,7 @@ const MapView = () => {
             </div>
 
             {/* Activity Markers */}
-            {activities.map((activity, index) => (
+            {filteredActivities.map((activity, index) => (
               <div
                 key={activity.id}
                 className="activity-marker"
@@ -175,25 +264,31 @@ const MapView = () => {
 
           {/* Activity Info Cards */}
           <div className="activity-cards">
-            {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className={`activity-info-card ${selectedActivity?.id === activity.id ? 'selected' : ''}`}
-                onClick={() => handleMarkerClick(activity)}
-              >
-                <div className="card-header" style={{ backgroundColor: activity.color }}>
-                  <span className="card-category">{activity.category}</span>
+            {filteredActivities.length > 0 ? (
+              filteredActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className={`activity-info-card ${selectedActivity?.id === activity.id ? 'selected' : ''}`}
+                  onClick={() => handleMarkerClick(activity)}
+                >
+                  <div className="card-header" style={{ backgroundColor: activity.color }}>
+                    <span className="card-category">{activity.category}</span>
+                  </div>
+                  <div className="card-content">
+                    <h4>{activity.title}</h4>
+                    <p className="card-location">📍 {activity.location}</p>
+                    <p className="card-time">🕒 {activity.time}</p>
+                    <p className="card-participants">
+                      👥 {activity.participants}/{activity.maxParticipants}
+                    </p>
+                  </div>
                 </div>
-                <div className="card-content">
-                  <h4>{activity.title}</h4>
-                  <p className="card-location">📍 {activity.location}</p>
-                  <p className="card-time">🕒 {activity.time}</p>
-                  <p className="card-participants">
-                    👥 {activity.participants}/{activity.maxParticipants}
-                  </p>
-                </div>
+              ))
+            ) : (
+              <div className="no-results">
+                <p>No activities found matching "{searchQuery}"</p>
               </div>
-            ))}
+            )}
           </div>
 
           {selectedActivity && (
@@ -225,7 +320,7 @@ const MapView = () => {
 
       {/* Map Controls */}
       <div className="map-controls">
-        <button className="control-btn" title="Current Location">
+        <button className="control-btn" title="Current Location" onClick={handleCurrentLocation}>
           📍
         </button>
         <button className="control-btn" title="Zoom In">

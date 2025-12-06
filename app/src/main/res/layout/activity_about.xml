@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F5F5"
+    android:background="?attr/colorSurface"
     android:fitsSystemWindows="true">
 
     <!-- Header -->
@@ -50,77 +50,100 @@
             android:padding="24dp">
 
             <!-- App Logo -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@android:color/white"
-                android:padding="32dp"
                 android:layout_marginBottom="16dp"
-                android:elevation="2dp">
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/gray_300"
+                app:strokeWidth="1dp">
 
-                <ImageView
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:src="@drawable/main_logo"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Connect Mate"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary_blue"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:id="@+id/tvVersion"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="버전 1.0.0"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray_500" />
-            </LinearLayout>
-
-            <!-- App Description -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@android:color/white"
-                android:padding="20dp"
-                android:layout_marginBottom="16dp"
-                android:elevation="2dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="앱 소개"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="12dp" />
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Connect Mate는 새로운 사람들과 함께 활동을 만들고 참여하는 소셜 플랫폼입니다. 관심사를 공유하는 사람들과 연결되어 다양한 경험을 함께 나누세요."
-                    android:textSize="15sp"
-                    android:textColor="@color/gray_700"
-                    android:lineSpacingExtra="4dp" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="32dp">
 
-            <!-- Main Features -->
-            <LinearLayout
+                    <ImageView
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/main_logo"
+                        android:layout_marginBottom="16dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Connect Mate"
+                        android:textSize="28sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_blue"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvVersion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="버전 1.0.0"
+                        android:textSize="14sp"
+                        android:textColor="@color/gray_500" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- App Description -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@android:color/white"
-                android:padding="20dp"
                 android:layout_marginBottom="16dp"
-                android:elevation="2dp">
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/gray_300"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="앱 소개"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Connect Mate는 새로운 사람들과 함께 활동을 만들고 참여하는 소셜 플랫폼입니다. 관심사를 공유하는 사람들과 연결되어 다양한 경험을 함께 나누세요."
+                        android:textSize="15sp"
+                        android:textColor="@color/gray_700"
+                        android:lineSpacingExtra="4dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Main Features -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/gray_300"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -128,7 +151,7 @@
                     android:text="주요 기능"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#333333"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="16dp" />
 
                 <!-- Activity Creation -->
@@ -157,7 +180,7 @@
                             android:text="활동 만들기"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/text_primary"
                             android:layout_marginBottom="4dp" />
 
                         <TextView
@@ -195,7 +218,7 @@
                             android:text="지도 기반 탐색"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/text_primary"
                             android:layout_marginBottom="4dp" />
 
                         <TextView
@@ -233,7 +256,7 @@
                             android:text="실시간 채팅"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/text_primary"
                             android:layout_marginBottom="4dp" />
 
                         <TextView
@@ -271,7 +294,7 @@
                             android:text="친구 관리"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/text_primary"
                             android:layout_marginBottom="4dp" />
 
                         <TextView
@@ -308,7 +331,7 @@
                             android:text="맞춤 프로필"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:textColor="#333333"
+                            android:textColor="@color/text_primary"
                             android:layout_marginBottom="4dp" />
 
                         <TextView
@@ -319,41 +342,51 @@
                             android:textColor="@color/gray_600" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Developer Info -->
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@android:color/white"
-                android:padding="20dp"
-                android:elevation="2dp">
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/gray_300"
+                app:strokeWidth="1dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="개발자 정보"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="국민대학교 석지효, 유진선, 이동열, 조성민"
-                    android:textSize="15sp"
-                    android:textColor="@color/gray_700"
-                    android:layout_marginBottom="8dp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="개발자 정보"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="ⓒ 2025 Connect Mate."
-                    android:textSize="14sp"
-                    android:textColor="@color/primary_blue" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="국민대학교 유진선, 석지효, 이동열, 조성민"
+                        android:textSize="15sp"
+                        android:textColor="@color/gray_700"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ⓒ 2025 Connect Mate."
+                        android:textSize="14sp"
+                        android:textColor="@color/primary_blue" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>

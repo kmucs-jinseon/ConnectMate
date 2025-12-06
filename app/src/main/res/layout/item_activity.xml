@@ -8,17 +8,17 @@
     android:layout_marginTop="8dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="?attr/colorSurface"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/blue_100"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/activity_card_stroke"
     app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:background="@color/blue_50">
+        android:padding="16dp">
 
         <!-- Title and Category Row -->
         <LinearLayout
@@ -56,6 +56,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:layout_marginBottom="0dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -73,6 +74,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_gravity="center_vertical"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@color/gray_700"
@@ -86,6 +88,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:layout_marginBottom="0dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -103,6 +106,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_gravity="center_vertical"
                 android:textColor="@color/gray_700"
                 android:textSize="14sp"
                 tools:text="Today, 3:00 PM" />
@@ -114,6 +118,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:layout_marginBottom="0dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -131,6 +136,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_gravity="center_vertical"
                 android:textColor="@color/gray_600"
                 android:textSize="14sp"
                 tools:text="개설자: 홍길동" />
@@ -143,6 +149,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:layout_marginBottom="0dp"
             android:ellipsize="end"
             android:maxLines="3"
             android:textColor="@color/text_primary"
@@ -155,6 +162,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
+            android:layout_marginBottom="0dp"
             android:background="@color/gray_300" />
 
         <!-- Participants and Action Buttons -->
@@ -180,12 +188,13 @@
                     android:contentDescription="@string/participants"
                     android:src="@drawable/ic_profile"
                     app:tint="@color/primary_blue"
-                    android:layout_gravity="bottom"/>
+                    android:layout_gravity="center"/>
 
                 <TextView
                     android:id="@+id/participants_count"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
                     android:textColor="@color/primary_blue"
                     android:textSize="14sp"
                     android:textStyle="bold"

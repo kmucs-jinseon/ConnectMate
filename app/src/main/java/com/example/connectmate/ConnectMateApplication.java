@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities;
 import android.util.Base64;
 import android.util.Log;
 
+import com.example.connectmate.utils.ThemeManager;
 import com.kakao.sdk.common.KakaoSdk;
 import com.kakao.vectormap.KakaoMapSdk;
 import com.navercorp.nid.NaverIdLoginSDK;
@@ -23,6 +24,9 @@ public class ConnectMateApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Apply saved theme preference before anything else
+        ThemeManager.applyTheme(this);
 
         Log.d(TAG, "═══════════════════════════════════════════");
         Log.d(TAG, "ConnectMate Application Starting...");

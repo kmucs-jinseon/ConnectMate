@@ -468,7 +468,10 @@ public class ProfileSetupFragment extends Fragment {
         if (loginMethod != null) {
             updates.put("loginMethod", loginMethod);
         }
-        updates.put("profileImageUrl", imageUrl);
+        // Only update profile image if a new one is provided
+        if (!TextUtils.isEmpty(imageUrl)) {
+            updates.put("profileImageUrl", imageUrl);
+        }
 
         userRef.updateChildren(updates)
             .addOnSuccessListener(unused -> {

@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="?attr/colorSurface">
 
     <!-- App Bar with Header -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         android:elevation="0dp"
         app:elevation="0dp">
 
@@ -232,7 +232,7 @@
                 android:id="@+id/activity_recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:clipToPadding="false"
                 android:paddingTop="10dp"
                 android:paddingBottom="120dp"

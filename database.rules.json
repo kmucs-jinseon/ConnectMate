@@ -52,11 +52,11 @@
     },
 
     "chatRooms": {
-      // Anyone authenticated can read all chat rooms (could be restricted to members only)
-      ".read": "auth != null",
-
       "$chatRoomId": {
-        // Authenticated users can create chat rooms
+        // Only chat room members can read chat room data
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+
+        // Authenticated users can create chat rooms, or existing members can update
         ".write": "auth != null && (!data.exists() || data.child('members').child(auth.uid).exists())",
 
         // Validate chat room data structure (allow deletion when newData doesn't exist)
@@ -67,6 +67,18 @@
             // Users can add themselves, or existing members can add others
             ".write": "auth != null && ($userId === auth.uid || data.parent().child(auth.uid).exists())"
           }
+        }
+      }
+    },
+
+    "userChatRooms": {
+      "$userId": {
+        // Users can only read their own chat room list
+        ".read": "$userId === auth.uid",
+
+        "$chatRoomId": {
+          // Users can manage their own chat room list
+          ".write": "$userId === auth.uid"
         }
       }
     },

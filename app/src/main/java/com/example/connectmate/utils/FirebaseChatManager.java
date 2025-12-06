@@ -291,33 +291,75 @@ public class FirebaseChatManager {
 
     /**
      * Get all chat rooms that a user has joined with real-time updates.
-     * Fetches all chat rooms and filters to only those where user is a member.
+     * Uses the userChatRooms index for efficient and secure querying.
+     * Only fetches chat rooms where the user is a member.
      * Provides real-time updates for last message, unread counts, etc.
      */
     public void getJoinedChatRooms(String userId, ChatRoomListListener listener) {
-        chatRoomsRef.orderByChild("lastMessageTime")
-            .addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    List<ChatRoom> chatRooms = new ArrayList<>();
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        ChatRoom chatRoom = child.getValue(ChatRoom.class);
-                        // Only include chat rooms where the user is actually a member
-                        if (chatRoom != null && chatRoom.getMembers() != null && chatRoom.getMembers().containsKey(userId)) {
-                            chatRooms.add(0, chatRoom); // Add to beginning (newest first)
-                        }
-                    }
+        // First, get the list of chat room IDs the user is a member of
+        userChatRoomsRef.child(userId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<ChatRoom> chatRooms = new ArrayList<>();
+                long totalChatRooms = snapshot.getChildrenCount();
 
-                    Log.d(TAG, "Loaded " + chatRooms.size() + " joined chat rooms from Firebase for user " + userId);
+                if (totalChatRooms == 0) {
+                    // User has no chat rooms
+                    Log.d(TAG, "User " + userId + " has no joined chat rooms");
                     listener.onChatRoomsLoaded(chatRooms);
+                    return;
                 }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Log.e(TAG, "Error loading joined chat rooms", error.toException());
-                    listener.onError(error.toException());
+                // Counter to track loaded chat rooms
+                final int[] loadedCount = {0};
+
+                // For each chat room ID, fetch the full chat room data
+                for (DataSnapshot chatRoomSnapshot : snapshot.getChildren()) {
+                    String chatRoomId = chatRoomSnapshot.getKey();
+
+                    if (chatRoomId != null) {
+                        chatRoomsRef.child(chatRoomId).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot chatRoomData) {
+                                ChatRoom chatRoom = chatRoomData.getValue(ChatRoom.class);
+                                if (chatRoom != null) {
+                                    chatRooms.add(chatRoom);
+                                }
+
+                                loadedCount[0]++;
+
+                                // When all chat rooms are loaded, sort and return
+                                if (loadedCount[0] == totalChatRooms) {
+                                    // Sort by last message time (newest first)
+                                    chatRooms.sort((a, b) -> Long.compare(b.getLastMessageTime(), a.getLastMessageTime()));
+
+                                    Log.d(TAG, "Loaded " + chatRooms.size() + " joined chat rooms from Firebase for user " + userId);
+                                    listener.onChatRoomsLoaded(chatRooms);
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                Log.e(TAG, "Error loading chat room " + chatRoomId, error.toException());
+                                loadedCount[0]++;
+
+                                // Continue even if one chat room fails
+                                if (loadedCount[0] == totalChatRooms) {
+                                    chatRooms.sort((a, b) -> Long.compare(b.getLastMessageTime(), a.getLastMessageTime()));
+                                    listener.onChatRoomsLoaded(chatRooms);
+                                }
+                            }
+                        });
+                    }
                 }
-            });
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error loading user's chat room list", error.toException());
+                listener.onError(error.toException());
+            }
+        });
     }
 
     /**

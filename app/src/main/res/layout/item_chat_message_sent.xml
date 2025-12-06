@@ -94,7 +94,7 @@
                 android:layout_height="wrap_content"
                 android:text="Message text goes here"
                 android:textSize="15sp"
-                android:textColor="@color/white"
+                android:textColor="@color/chat_bubble_sent_text"
                 android:lineSpacingExtra="2dp"
                 android:padding="8dp"
                 android:paddingStart="12dp"

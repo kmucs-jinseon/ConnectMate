@@ -101,9 +101,12 @@ public class MapFragment extends Fragment {
     private Map<LatLng, List<Activity>> activityGroups;
     private Map<LatLng, Label> markerMap;
     private Label currentLocationLabel; // Label for current location marker
+    private Label searchResultLabel; // Label for search result marker (yellow pin)
     private LocationManager locationManager;
     private boolean isMapInitialized = false; // Track if map has been initialized
     private ChildEventListener activityChangeListener;
+    private boolean isRequestingLocation = false; // Track if actively requesting location
+    private android.location.LocationListener activeLocationListener = null; // Store active listener for cleanup
 
     @Nullable
     @Override
@@ -635,48 +638,163 @@ public class MapFragment extends Fragment {
         Log.d(TAG, "Location permission granted, attempting to get location...");
 
         try {
-            Location location = null;
+            // First try to get last known location for quick initial positioning
+            Location lastLocation = null;
 
-            // Try GPS first
             if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                Log.d(TAG, "GPS provider is enabled");
-                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                if (location != null) {
-                    Log.d(TAG, "Got location from GPS provider");
-                }
-            } else {
-                Log.d(TAG, "GPS provider is NOT enabled");
+                lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             }
 
-            // If GPS location is null, try network provider
-            if (location == null && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                Log.d(TAG, "Trying network provider...");
-                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                if (location != null) {
-                    Log.d(TAG, "Got location from network provider");
-                }
+            if (lastLocation == null && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             }
 
-            if (location != null) {
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
+            // If we have a cached location, use it immediately for quick feedback
+            if (lastLocation != null) {
+                double latitude = lastLocation.getLatitude();
+                double longitude = lastLocation.getLongitude();
                 LatLng currentLocation = LatLng.from(latitude, longitude);
 
-                Log.d(TAG, "=== MOVING TO CURRENT LOCATION ===");
-                Log.d(TAG, "Latitude: " + latitude + ", Longitude: " + longitude);
-
+                Log.d(TAG, "Using cached location: " + latitude + ", " + longitude);
                 kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(currentLocation, 17));
-
-                // Add current location marker
                 addCurrentLocationMarker(latitude, longitude);
-
-                Log.d(TAG, "Camera moved to current location: " + latitude + ", " + longitude);
-            } else {
-                Log.w(TAG, "Location is null, using default location");
-                moveToDefaultLocation();
             }
+
+            // Always request fresh location for accuracy (will update if different)
+            requestFreshLocationUpdate();
+
         } catch (SecurityException e) {
             Log.e(TAG, "Location permission error", e);
+            moveToDefaultLocation();
+        }
+    }
+
+    /**
+     * Request a fresh location update from GPS/Network providers
+     */
+    private void requestFreshLocationUpdate() {
+        if (isRequestingLocation) {
+            Log.d(TAG, "Already requesting location, skipping duplicate request");
+            return;
+        }
+
+        if (lacksLocationPermission() || locationManager == null || getContext() == null) {
+            Log.w(TAG, "Cannot request location update - permission:" + !lacksLocationPermission() +
+                  ", locationManager:" + (locationManager != null) +
+                  ", context:" + (getContext() != null));
+            moveToDefaultLocation();
+            return;
+        }
+
+        Log.d(TAG, "Starting fresh location request...");
+        isRequestingLocation = true;
+
+        try {
+            // Clean up any existing listener first
+            if (activeLocationListener != null && locationManager != null) {
+                try {
+                    locationManager.removeUpdates(activeLocationListener);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error removing old location listener", e);
+                }
+            }
+
+            activeLocationListener = new android.location.LocationListener() {
+                @Override
+                public void onLocationChanged(@NonNull Location location) {
+                    Log.d(TAG, "Fresh location received: " + location.getLatitude() + ", " + location.getLongitude());
+
+                    // Update map to new location
+                    LatLng currentLocation = LatLng.from(location.getLatitude(), location.getLongitude());
+                    if (kakaoMap != null) {
+                        kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(currentLocation, 17));
+                        addCurrentLocationMarker(location.getLatitude(), location.getLongitude());
+                    }
+
+                    // Remove this listener after receiving first update
+                    isRequestingLocation = false;
+                    if (locationManager != null) {
+                        locationManager.removeUpdates(this);
+                    }
+                    activeLocationListener = null;
+                }
+
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {
+                    Log.d(TAG, "Location provider enabled: " + provider);
+                }
+
+                @Override
+                public void onProviderDisabled(@NonNull String provider) {
+                    Log.d(TAG, "Location provider disabled: " + provider);
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+                    Log.d(TAG, "Location provider status changed: " + provider + ", status: " + status);
+                }
+            };
+
+            // Check which providers are available
+            boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            boolean networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+
+            Log.d(TAG, "Provider status - GPS: " + gpsEnabled + ", Network: " + networkEnabled);
+
+            // Request updates from GPS if available
+            if (gpsEnabled) {
+                Log.d(TAG, "Requesting location updates from GPS provider");
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    0,     // minTime: request immediately
+                    0,     // minDistance: any movement
+                    activeLocationListener
+                );
+            }
+            // Also request from Network provider as backup
+            else if (networkEnabled) {
+                Log.d(TAG, "Requesting location updates from Network provider");
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    0,     // minTime: request immediately
+                    0,     // minDistance: any movement
+                    activeLocationListener
+                );
+            } else {
+                // No providers available - use default location
+                Log.w(TAG, "No location providers available - GPS: " + gpsEnabled + ", Network: " + networkEnabled);
+                if (getContext() != null) {
+                    Toast.makeText(getContext(),
+                        "위치 서비스를 사용할 수 없습니다. GPS를 켜주세요.",
+                        Toast.LENGTH_LONG).show();
+                }
+                isRequestingLocation = false;
+                activeLocationListener = null;
+                moveToDefaultLocation();
+                return;
+            }
+
+            // Set a timeout - if no location received within 10 seconds, use default
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (isRequestingLocation && activeLocationListener != null) {
+                    Log.w(TAG, "Location request timeout - using default location");
+                    if (locationManager != null) {
+                        try {
+                            locationManager.removeUpdates(activeLocationListener);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error removing location listener on timeout", e);
+                        }
+                    }
+                    isRequestingLocation = false;
+                    activeLocationListener = null;
+                    moveToDefaultLocation();
+                }
+            }, 10000); // 10 second timeout
+
+        } catch (SecurityException e) {
+            Log.e(TAG, "Security exception when requesting location updates", e);
+            isRequestingLocation = false;
+            activeLocationListener = null;
             moveToDefaultLocation();
         }
     }
@@ -733,8 +851,11 @@ public class MapFragment extends Fragment {
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "Location permission granted!");
-                // Permission granted, try to move to current location again
-                moveToCurrentLocation();
+                // Permission granted, request fresh location
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "위치 권한이 허용되었습니다. 현재 위치를 가져오는 중...", Toast.LENGTH_SHORT).show();
+                }
+                requestFreshLocationUpdate();
             } else {
                 Log.w(TAG, "Location permission denied by user");
                 Toast.makeText(getContext(), "위치 권한이 거부되었습니다. 기본 위치로 이동합니다.", Toast.LENGTH_SHORT).show();
@@ -831,20 +952,56 @@ public class MapFragment extends Fragment {
             // Move camera to target location with appropriate zoom level
             kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(targetLocation, 17));
 
-            // Add a marker for the target location
+            // Remove previous search result marker if it exists
+            if (searchResultLabel != null && kakaoMap.getLabelManager() != null) {
+                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+                if (labelLayer != null) {
+                    labelLayer.remove(searchResultLabel);
+                    searchResultLabel = null;
+                    Log.d(TAG, "Removed previous search result marker");
+                }
+            }
+
+            // Add a yellow marker for the search result location
             if (kakaoMap.getLabelManager() != null) {
                 LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
 
                 if (labelLayer != null) {
-                    LabelStyles styles = kakaoMap.getLabelManager()
-                        .addLabelStyles(LabelStyles.from(LabelStyle.from(R.drawable.ic_map_pin)));
+                    // Create yellow marker bitmap from drawable
+                    android.graphics.drawable.Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map_pin_yellow);
+                    Bitmap markerBitmap;
 
-                    LabelOptions options = LabelOptions.from(
-                        "target_" + System.currentTimeMillis(),
-                        targetLocation
-                    ).setStyles(styles);
+                    if (drawable != null) {
+                        // Use normal size for yellow marker
+                        int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 24;
+                        int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 24;
+                        markerBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(markerBitmap);
+                        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                        drawable.draw(canvas);
 
-                    labelLayer.addLabel(options);
+                        // Create label style with yellow marker
+                        LabelStyle labelStyle = LabelStyle.from(markerBitmap)
+                            .setAnchorPoint(0.5f, 1.0f)  // Anchor at bottom center for pin
+                            .setZoomLevel(0);  // Visible at all zoom levels
+
+                        LabelStyles styles = kakaoMap.getLabelManager()
+                            .addLabelStyles(LabelStyles.from(labelStyle));
+
+                        LabelOptions options = LabelOptions.from(
+                            "search_result",
+                            targetLocation
+                        ).setStyles(styles)
+                         .setRank(200);  // Very high rank to appear on top of all other markers
+
+                        // Add the yellow marker and store reference
+                        searchResultLabel = labelLayer.addLabel(options);
+
+                        if (searchResultLabel != null) {
+                            searchResultLabel.show();
+                            Log.d(TAG, "Yellow search result marker added at: " + latitude + ", " + longitude);
+                        }
+                    }
                 }
             }
 
@@ -852,7 +1009,7 @@ public class MapFragment extends Fragment {
                 Toast.makeText(getContext(), "위치로 이동 됨: " + title, Toast.LENGTH_SHORT).show();
             }
 
-            Log.d(TAG, "Successfully navigated to location");
+            Log.d(TAG, "Successfully navigated to location with yellow marker");
         } catch (Exception e) {
             Log.e(TAG, "Failed to navigate to location", e);
             if (getContext() != null) {
@@ -1500,6 +1657,18 @@ public class MapFragment extends Fragment {
         }
         poiPopupWindow = null;
 
+        // Clean up location listener
+        if (activeLocationListener != null && locationManager != null) {
+            try {
+                locationManager.removeUpdates(activeLocationListener);
+                Log.d(TAG, "Location listener removed");
+            } catch (Exception e) {
+                Log.e(TAG, "Error removing location listener", e);
+            }
+        }
+        activeLocationListener = null;
+        isRequestingLocation = false;
+
         // Clean up Firebase listeners
         if (activityChangeListener != null) {
             FirebaseActivityManager.getInstance().removeActivityChangeListener(activityChangeListener);
@@ -1527,6 +1696,7 @@ public class MapFragment extends Fragment {
             activityGroups.clear();
         }
         currentLocationLabel = null;
+        searchResultLabel = null; // Clear search result marker reference
 
         Log.d(TAG, "MapFragment view destroyed");
     }

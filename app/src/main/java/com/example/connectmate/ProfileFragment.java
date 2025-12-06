@@ -18,9 +18,11 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.connectmate.models.UserReview;
+import com.example.connectmate.utils.ThemeManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
@@ -57,7 +59,7 @@ public class ProfileFragment extends Fragment {
     private ValueEventListener userListener;
 
     // UI elements - Profile Card
-    private ImageButton backButton;
+    // private ImageButton backButton; // Removed - not needed in bottom nav fragment
     private CircleImageView profileAvatar;
     private TextView profileName;
     private TextView profileUsername;
@@ -79,6 +81,9 @@ public class ProfileFragment extends Fragment {
     private LinearLayout notificationSettings;
     private LinearLayout privacySettings;
     private LinearLayout appInfo;
+
+    // UI elements - Theme
+    private MaterialButton themeButton;
 
     // UI elements - Logout
     private MaterialButton logoutButton;
@@ -138,7 +143,7 @@ public class ProfileFragment extends Fragment {
     private void initializeViews(View view) {
 
         // Header
-        backButton = view.findViewById(R.id.back_button);
+        // backButton = view.findViewById(R.id.back_button); // Removed - not needed in bottom nav fragment
 
         // Profile card
         profileAvatar = view.findViewById(R.id.profile_avatar);
@@ -157,20 +162,26 @@ public class ProfileFragment extends Fragment {
         reviewsEmptyText = view.findViewById(R.id.reviews_empty_text);
         seeAllReviewsButton = view.findViewById(R.id.btn_see_all_reviews);
 
+        // Theme button
+        themeButton = view.findViewById(R.id.theme_button);
+
         // Logout button
         logoutButton = view.findViewById(R.id.logout_button);
         deleteAccountButton = view.findViewById(R.id.delete_account_button);
+
+        // Update theme button text
+        updateThemeButtonText();
 
         showNoReviewsState();
     }
 
     private void setupClickListeners() {
-        // Back button
-        if (backButton != null) {
-            backButton.setOnClickListener(v -> {
-                requireActivity().finish();
-            });
-        }
+        // Back button - Removed (not needed in bottom nav fragment)
+        // if (backButton != null) {
+        //     backButton.setOnClickListener(v -> {
+        //         requireActivity().finish();
+        //     });
+        // }
 
         // Edit profile button
         if (editProfileButton != null) {
@@ -182,6 +193,11 @@ public class ProfileFragment extends Fragment {
 
         if (seeAllReviewsButton != null) {
             seeAllReviewsButton.setOnClickListener(v -> openAllReviews());
+        }
+
+        // Theme button
+        if (themeButton != null) {
+            themeButton.setOnClickListener(v -> showThemeDialog());
         }
 
         // Settings options
@@ -900,5 +916,72 @@ public class ProfileFragment extends Fragment {
         requireActivity().finish();
 
         android.util.Log.d("ProfileFragment", "=== Logout complete - redirected to LoginActivity ===");
+    }
+
+    /**
+     * Update theme button text and icon to show current theme mode
+     */
+    private void updateThemeButtonText() {
+        if (themeButton != null && getContext() != null) {
+            int currentMode = ThemeManager.getThemeMode(getContext());
+            themeButton.setText(ThemeManager.getThemeModeName(currentMode));
+
+            // Update icon based on current mode
+            int iconRes;
+            if (currentMode == ThemeManager.MODE_DARK) {
+                iconRes = R.drawable.ic_dark_mode;
+            } else if (currentMode == ThemeManager.MODE_LIGHT) {
+                iconRes = R.drawable.ic_light_mode;
+            } else {
+                // System mode - use current theme to decide icon
+                iconRes = ThemeManager.isDarkModeActive(getContext())
+                    ? R.drawable.ic_dark_mode
+                    : R.drawable.ic_light_mode;
+            }
+            themeButton.setIcon(ContextCompat.getDrawable(getContext(), iconRes));
+        }
+    }
+
+    /**
+     * Show dialog to select theme mode
+     */
+    private void showThemeDialog() {
+        if (getContext() == null || getActivity() == null) return;
+
+        String[] themeOptions = {
+            ThemeManager.getThemeModeName(ThemeManager.MODE_LIGHT),
+            ThemeManager.getThemeModeName(ThemeManager.MODE_DARK),
+            ThemeManager.getThemeModeName(ThemeManager.MODE_SYSTEM)
+        };
+
+        int currentMode = ThemeManager.getThemeMode(getContext());
+        int checkedItem = currentMode; // Current selection
+
+        new AlertDialog.Builder(requireContext())
+            .setTitle("테마 설정")
+            .setSingleChoiceItems(themeOptions, checkedItem, (dialog, which) -> {
+                if (which != currentMode && getActivity() != null && getContext() != null) {
+                    // Apply selected theme
+                    ThemeManager.setThemeMode(getContext(), which);
+
+                    // Show toast to inform user
+                    Toast.makeText(getContext(),
+                        themeOptions[which] + " 적용됨",
+                        Toast.LENGTH_SHORT).show();
+
+                    dialog.dismiss();
+
+                    // Post recreation to avoid crash
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (getActivity() != null && !getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                            getActivity().recreate();
+                        }
+                    }, 300);
+                } else {
+                    dialog.dismiss();
+                }
+            })
+            .setNegativeButton("취소", null)
+            .show();
     }
 }

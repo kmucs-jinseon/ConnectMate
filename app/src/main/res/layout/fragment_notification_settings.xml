@@ -9,7 +9,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         app:elevation="4dp">
 
         <androidx.appcompat.widget.Toolbar
@@ -58,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -91,7 +91,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 언급 알림 -->
             <LinearLayout
@@ -99,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -132,7 +132,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 활동 알림 섹션 -->
             <TextView
@@ -155,7 +155,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -188,7 +188,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 새로운 참여자 알림 -->
             <LinearLayout
@@ -196,7 +196,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -229,7 +229,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 활동 시작 전 알림 -->
             <LinearLayout
@@ -237,7 +237,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -270,7 +270,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 새로운 추천 활동 알림 -->
             <LinearLayout
@@ -278,7 +278,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -311,7 +311,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 친구 및 소셜 알림 섹션 -->
             <TextView
@@ -334,7 +334,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -367,7 +367,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
             <!-- 친구 요청 수락 알림 -->
             <LinearLayout
@@ -375,7 +375,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:padding="16dp"
-                android:background="@color/white"
+                android:background="?attr/colorSurface"
                 android:gravity="center_vertical">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -408,7 +408,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#EEEEEE"/>
+                android:background="@color/gray_200"/>
 
         </LinearLayout>
 

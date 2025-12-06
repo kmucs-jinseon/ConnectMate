@@ -420,9 +420,8 @@ public class CreateActivityActivity extends AppCompatActivity {
                     new android.content.res.ColorStateList(states, colors);
 
             chip.setChipBackgroundColor(chipColorStateList);
-            chip.setChipStrokeColorResource(R.color.category_chip_stroke);
-            chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density); // 2dp
-            chip.setTextColor(getResources().getColorStateList(R.color.category_chip_text, null));
+            // Remove stroke and text color overrides - let CategoryChipStyle handle it
+            // The style already defines: chipStrokeColor=#000000, chipStrokeWidth=2dp, textColor=#000000
 
 
             Log.d(TAG, "Created chip: " + category);

@@ -100,7 +100,7 @@
         android:paddingTop="3dp"
         android:paddingEnd="8dp"
         android:paddingBottom="3dp"
-        android:textColor="@color/primary_blue"
+        android:textColor="@color/participant_count_text"
         android:textSize="11sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@id/timestamp"

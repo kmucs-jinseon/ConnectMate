@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark Mode Primary Colors -->
+    <color name="primary_blue">#5A9CFF</color>
+    <color name="primary_blue_dark">#4A8CE7</color>
+
+    <!-- Dark Mode Background Colors -->
+    <color name="background">#9CA3AF</color>  <!-- Light gray for chat background -->
+    <color name="white">#2C2C2C</color> <!-- Surface color for dark mode -->
+
+    <!-- Dark Mode Text Colors -->
+    <color name="text_primary">#E0E0E0</color>
+    <color name="text_secondary">#A0A0A0</color>
+
+    <!-- Dark Mode Neutral Colors -->
+    <color name="gray_50">#2C2C2C</color>
+    <color name="gray_100">#323232</color>
+    <color name="gray_200">#3A3A3A</color>
+    <color name="gray_300">#4A4A4A</color>
+    <color name="gray_400">#767676</color>
+    <color name="gray_500">#9CA3AF</color>
+    <color name="gray_600">#B0B0B0</color>
+    <color name="gray_700">#C8C8C8</color>
+    <color name="gray_900">#E8E8E8</color>
+
+    <!-- Dark Mode Chat Bubble Colors -->
+    <color name="yellow_50">#ffffe0</color>
+    <color name="yellow_200">#EFF18E</color>
+    <color name="yellow_300">#F0ED46</color>
+
+    <!-- Dark Mode Activity Card Colors -->
+    <color name="activity_card_background">@color/gray_200</color>
+    <color name="activity_card_stroke">@color/gray_300</color>
+
+    <!-- Dark Mode Category Colors (Pretty pastels that work with dark text) -->
+    <color name="pastel_green">#7FD4B8</color>       <!-- Sports - Soft Mint -->
+    <color name="pastel_teal">#80CBC4</color>        <!-- Outdoor - Soft Teal -->
+    <color name="pastel_blue">#90CAF9</color>        <!-- Study - Soft Blue -->
+    <color name="pastel_pink">#F48FB1</color>        <!-- Culture - Soft Pink -->
+    <color name="pastel_amber">#FFD54F</color>       <!-- Social - Soft Yellow -->
+    <color name="pastel_peach">#FFAB91</color>       <!-- Food - Soft Peach -->
+    <color name="pastel_sky">#81D4FA</color>         <!-- Travel - Soft Sky Blue -->
+    <color name="pastel_lavender">#CE93D8</color>    <!-- Game - Soft Lavender -->
+    <color name="pastel_lemon">#FFF59D</color>       <!-- Hobby - Soft Lemon -->
+    <color name="pastel_rose">#F48FB1</color>        <!-- Volunteer - Soft Rose -->
+    <color name="pastel_gray">#B0BEC5</color>        <!-- Other - Soft Gray -->
+
+
+    <!-- Dark Mode Chat Bubble Colors -->
+    <color name="chat_bubble_sent_start">#1565C0</color>  <!-- Darker blue -->
+    <color name="chat_bubble_sent_end">#1976D2</color>    <!-- Darker blue -->
+    <color name="chat_bubble_sent_text">#FFFFFF</color>
+    <color name="chat_bubble_received_start">#90CAF9</color>  <!-- Light blue -->
+    <color name="chat_bubble_received_end">#64B5F6</color>    <!-- Light blue -->
+    <color name="chat_bubble_received_text">@color/black</color>  <!-- Dark text for light blue bubble -->
+
+    <!-- Dark Mode Participant Count Colors (Reversed) -->
+    <color name="participant_count_background">@color/primary_blue</color>  <!-- Blue background -->
+    <color name="participant_count_text">@color/white</color>  <!-- White text -->
+
+    <!-- Dark Mode Message Input Bar Colors -->
+    <color name="message_input_bar_background">@color/gray_100</color>  <!-- Dark gray background -->
+    <color name="message_input_icon_tint">@color/primary_blue</color>  <!-- Keep blue icons -->
+</resources>

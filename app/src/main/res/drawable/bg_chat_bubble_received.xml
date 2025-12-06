@@ -3,8 +3,8 @@
     android:shape="rectangle">
     <gradient
         android:angle="135"
-        android:startColor="@color/yellow_300"
-        android:endColor="@color/yellow_200"
+        android:startColor="@color/chat_bubble_received_start"
+        android:endColor="@color/chat_bubble_received_end"
         android:type="linear" />
     <corners
         android:topLeftRadius="4dp"
