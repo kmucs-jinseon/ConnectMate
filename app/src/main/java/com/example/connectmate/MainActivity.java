@@ -1189,7 +1189,7 @@ public class MainActivity extends AppCompatActivity {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
                     JsonArray documents = jsonObject.getAsJsonArray("documents");
 
-                    if (documents.size() > 0) {
+                    if (documents != null && !documents.isEmpty()) {
                         JsonObject doc = documents.get(0).getAsJsonObject();
 
                         // Try to get road address first, fallback to regular address

@@ -707,7 +707,7 @@ public class CreateActivityActivity extends AppCompatActivity {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
                     JsonArray documents = jsonObject.getAsJsonArray("documents");
 
-                    if (documents.size() > 0) {
+                    if (documents != null && !documents.isEmpty()) {
                         JsonObject doc = documents.get(0).getAsJsonObject();
                         activity.setLatitude(doc.get("y").getAsDouble());
                         activity.setLongitude(doc.get("x").getAsDouble());

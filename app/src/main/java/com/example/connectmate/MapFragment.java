@@ -247,7 +247,7 @@ public class MapFragment extends Fragment {
                 mapView.requestLayout();
 
                 if (getContext() != null) {
-                    Toast.makeText(getContext(), "✓ Map loaded!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "✓ 지도 활성화 됨!", Toast.LENGTH_SHORT).show();
                 }
 
                 // Center on current location or default
@@ -470,7 +470,7 @@ public class MapFragment extends Fragment {
 
             Toast.makeText(getContext(), placeName, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Log.e(TAG, "Error moving to location", e);
+            Log.e(TAG, "장소로 이동하는 데 실패했습니다", e);
         }
     }
 
@@ -849,14 +849,14 @@ public class MapFragment extends Fragment {
             }
 
             if (getContext() != null) {
-                Toast.makeText(getContext(), "Navigated to: " + title, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "위치로 이동 됨: " + title, Toast.LENGTH_SHORT).show();
             }
 
             Log.d(TAG, "Successfully navigated to location");
         } catch (Exception e) {
             Log.e(TAG, "Failed to navigate to location", e);
             if (getContext() != null) {
-                Toast.makeText(getContext(), "Failed to navigate to location", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "장소로 이동하는 데 실패했습니다", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -1016,7 +1016,7 @@ public class MapFragment extends Fragment {
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (getContext() != null) {
-                            Toast.makeText(getContext(), "POI 정보를 불러올 수 없습니다", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "장소의 정보를 불러올 수 없습니다", Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -1399,7 +1399,7 @@ public class MapFragment extends Fragment {
                     JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
                     JsonArray documents = jsonObject.getAsJsonArray("documents");
 
-                    if (documents != null && documents.size() > 0) {
+                    if (documents != null && !documents.isEmpty()) {
                         JsonObject doc = documents.get(0).getAsJsonObject();
 
                         // Try to get road address first, fallback to regular address

@@ -509,7 +509,8 @@ public class LoginActivity extends AppCompatActivity {
                 // Save login state with user ID
                 saveLoginState("google", userId);
 
-                Toast.makeText(this, "Google sign in successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
+                String displayName = account.getDisplayName() != null ? account.getDisplayName() : "Google User";
+                Toast.makeText(this, "Google 로그인 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
             }
         } catch (ApiException e) {
             Log.w(TAG, "Google sign in failed", e);
@@ -540,12 +541,14 @@ public class LoginActivity extends AppCompatActivity {
                         Log.d(TAG, "signInWithCredential:success");
                         FirebaseUser user = mAuth.getCurrentUser();
 
+                        String displayName = "Google User";
                         if (user != null) {
+                            displayName = user.getDisplayName() != null ? user.getDisplayName() : "Google User";
                             // Save user to Realtime Database (navigation handled inside)
                             saveUserToRealtimeDatabase(
                                     user.getUid(),
                                     user.getEmail() != null ? user.getEmail() : "",
-                                    user.getDisplayName() != null ? user.getDisplayName() : "Google User",
+                                    displayName,
                                     user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
                                     "google"
                             );
@@ -554,11 +557,11 @@ public class LoginActivity extends AppCompatActivity {
                             saveLoginState("google", user.getUid());
                         }
 
-                        Toast.makeText(LoginActivity.this, "Google sign in successful!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Google 로그인 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                     } else {
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
                         String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                        Toast.makeText(LoginActivity.this, "Authentication failed: " + errorMsg,
+                        Toast.makeText(LoginActivity.this, "인증 실패: " + errorMsg,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -629,7 +632,7 @@ public class LoginActivity extends AppCompatActivity {
             Log.e(TAG, "═══════════════════════════════════════════");
             e.printStackTrace();
             kakaoSignInButton.setEnabled(true);
-            Toast.makeText(this, "Kakao login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Kakao 로그인 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -692,7 +695,7 @@ public class LoginActivity extends AppCompatActivity {
                     // Save login state with user ID
                     saveLoginState("kakao", userId);
 
-                    Toast.makeText(LoginActivity.this, "Kakao login successful!\nWelcome " + nickname, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "Kakao 로그인 성공!\n" + nickname + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                 });
             }
             return Unit.INSTANCE;
@@ -869,7 +872,7 @@ public class LoginActivity extends AppCompatActivity {
             Log.e(TAG, "═══════════════════════════════════════════");
             e.printStackTrace();
             naverSignInButton.setEnabled(true);
-            Toast.makeText(this, "Naver login error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Naver 로그인 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -990,7 +993,7 @@ public class LoginActivity extends AppCompatActivity {
                             // Save login state with user ID
                             saveLoginState("naver", realtimeUserId);
 
-                            Toast.makeText(LoginActivity.this, "Naver login successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, "Naver 로그인 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                         });
                     } else {
                         Log.e(TAG, "═══════════════════════════════════════════");

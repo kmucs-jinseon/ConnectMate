@@ -372,7 +372,7 @@ public class SignUpActivity extends AppCompatActivity {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             if (account == null) {
                 Log.w(TAG, "Google sign in account is null");
-                Toast.makeText(this, "Google sign up failed: Account is null", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Google 로그인 실패: 존재하지 않는 계정입니다", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -397,7 +397,8 @@ public class SignUpActivity extends AppCompatActivity {
                 // Save login state with user ID
                 saveLoginState("google", userId);
 
-                Toast.makeText(this, "Google sign up successful!\nEmail: " + account.getEmail(), Toast.LENGTH_SHORT).show();
+                String displayName = account.getDisplayName() != null ? account.getDisplayName() : "Google User";
+                Toast.makeText(this, "Google 로그인 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                 navigateToProfileSetup(
                         userId,
                         account.getEmail(),
@@ -407,23 +408,23 @@ public class SignUpActivity extends AppCompatActivity {
             }
         } catch (ApiException e) {
             Log.w(TAG, "Google sign in failed", e);
-            String errorMessage = "Google sign up failed";
+            String errorMessage = "Google 로그인 실패";
             if (e.getStatusCode() == 12501) {
-                errorMessage = "Google sign up cancelled";
+                errorMessage = "Google 로그인 취소";
             } else if (e.getStatusCode() == 7) {
-                errorMessage = "Network error. Please check your connection.";
+                errorMessage = "네트워크 오류: 연결 상태를 확인해 주세요";
             }
             Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Log.e(TAG, "Unexpected error during Google sign up", e);
-            Toast.makeText(this, "Unexpected error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Google 로그인 중 예상치 못한 오류가 발생했습니다", e);
+            Toast.makeText(this, "비정상적 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
         if (idToken == null || idToken.isEmpty()) {
-            Log.w(TAG, "Cannot authenticate with Firebase: ID token is null or empty");
-            Toast.makeText(this, "Cannot complete Firebase authentication", Toast.LENGTH_LONG).show();
+            Log.w(TAG, "Firebase로 인증 불가: ID 토큰이 비어 있습니다");
+            Toast.makeText(this, "Firebase 인증을 완료할 수 없습니다", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -434,27 +435,29 @@ public class SignUpActivity extends AppCompatActivity {
                         Log.d(TAG, "signInWithCredential:success");
                         FirebaseUser user = mAuth.getCurrentUser();
 
+                        String displayName = "Google User";
                         if (user != null) {
+                            displayName = user.getDisplayName() != null ? user.getDisplayName() : "Google User";
                             saveUserToRealtimeDatabase(
                                     user.getUid(),
                                     user.getEmail() != null ? user.getEmail() : "",
-                                    user.getDisplayName() != null ? user.getDisplayName() : "Google User",
+                                    displayName,
                                     user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
                                     "google"
                             );
                         }
 
-                        Toast.makeText(SignUpActivity.this, "Google sign up successful!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignUpActivity.this, "Google 회원가입 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                         navigateToProfileSetup(
                                 user != null ? user.getUid() : null,
                                 user != null ? user.getEmail() : null,
-                                user != null ? user.getDisplayName() : "Google User",
+                                displayName,
                                 "google"
                         );
                     } else {
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
-                        String errorMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                        Toast.makeText(SignUpActivity.this, "Authentication failed: " + errorMsg,
+                        String errorMsg = task.getException() != null ? task.getException().getMessage() : "알 수 없는 오류";
+                        Toast.makeText(SignUpActivity.this, "인증 실패: " + errorMsg,
                                 Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -463,7 +466,7 @@ public class SignUpActivity extends AppCompatActivity {
     // Kakao Sign-Up Methods (uses same SDK as login)
     private void signUpWithKakao() {
         if (!isValidApiKey(BuildConfig.KAKAO_APP_KEY)) {
-            Toast.makeText(this, "Kakao Sign-Up is not configured", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Kakao 회원가입이 불가능합니다", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -473,10 +476,10 @@ public class SignUpActivity extends AppCompatActivity {
             runOnUiThread(() -> kakaoSignUpButton.setEnabled(true));
 
             if (error != null) {
-                Log.e(TAG, "Kakao signup failed", error);
-                runOnUiThread(() -> Toast.makeText(SignUpActivity.this, "Kakao signup failed: " + error.getMessage(), Toast.LENGTH_SHORT).show());
+                Log.e(TAG, "Kakao 회원가입 실패", error);
+                runOnUiThread(() -> Toast.makeText(SignUpActivity.this, "Kakao 회원가입 실패: " + error.getMessage(), Toast.LENGTH_SHORT).show());
             } else if (token != null) {
-                Log.d(TAG, "Kakao signup success: " + token.getAccessToken());
+                Log.d(TAG, "Kakao 회원가입 성공: " + token.getAccessToken());
                 getUserInfoFromKakao();
             }
             return Unit.INSTANCE;
@@ -487,19 +490,19 @@ public class SignUpActivity extends AppCompatActivity {
             Log.d(TAG, "Using Kakao Account signup (web-based OAuth)");
             UserApiClient.getInstance().loginWithKakaoAccount(this, callback);
         } catch (Exception e) {
-            Log.e(TAG, "Kakao signup exception", e);
+            Log.e(TAG, "Kakao 회원가입 예외", e);
             kakaoSignUpButton.setEnabled(true);
-            Toast.makeText(this, "Kakao signup error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Kakao 회원가입 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void getUserInfoFromKakao() {
         UserApiClient.getInstance().me((user, error) -> {
             if (error != null) {
-                Log.e(TAG, "Failed to get Kakao user info", error);
-                Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Kakao 사용자 정보를 가져오는 데 실패하였습니다", error);
+                Toast.makeText(SignUpActivity.this, "사용자 정보 가져오기 실패", Toast.LENGTH_SHORT).show();
             } else if (user != null) {
-                Log.d(TAG, "Kakao user info: " + user.getId());
+                Log.d(TAG, "Kakao 사용자 정보: " + user.getId());
 
                 final String email;
                 final String nickname;
@@ -530,7 +533,7 @@ public class SignUpActivity extends AppCompatActivity {
                     // Save login state with user ID
                     saveLoginState("kakao", userId);
 
-                    Toast.makeText(SignUpActivity.this, "Kakao signup successful!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SignUpActivity.this, "Kakao 회원가입 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                     navigateToProfileSetup(userId, email, displayName, "kakao");
                 });
             }
@@ -541,7 +544,7 @@ public class SignUpActivity extends AppCompatActivity {
     // Naver Sign-Up Methods (uses same SDK as login)
     private void signUpWithNaver() {
         if (!isValidApiKey(BuildConfig.NAVER_CLIENT_ID) || !isValidApiKey(BuildConfig.NAVER_CLIENT_SECRET)) {
-            Toast.makeText(this, "Naver Sign-Up is not configured", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Naver로 회원가입을 할 수 없습니다", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -619,19 +622,19 @@ public class SignUpActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(int httpStatus, @NonNull String message) {
-                Log.e(TAG, "Naver signup failed - HTTP " + httpStatus + ": " + message);
+                Log.e(TAG, "Naver 회원가입 실패 - HTTP " + httpStatus + ": " + message);
                 runOnUiThread(() -> {
                     naverSignUpButton.setEnabled(true);
-                    Toast.makeText(SignUpActivity.this, "Naver signup failed: " + message, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SignUpActivity.this, "Naver 회원가입 실패: " + message, Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
             public void onError(int errorCode, @NonNull String message) {
-                Log.e(TAG, "Naver signup error - Code " + errorCode + ": " + message);
+                Log.e(TAG, "Naver 회원가입 오류 - Code " + errorCode + ": " + message);
                 runOnUiThread(() -> {
                     naverSignUpButton.setEnabled(true);
-                    Toast.makeText(SignUpActivity.this, "Naver signup error: " + message, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SignUpActivity.this, "Naver 회원가입 오류: " + message, Toast.LENGTH_SHORT).show();
                 });
             }
         };
@@ -640,9 +643,9 @@ public class SignUpActivity extends AppCompatActivity {
             Log.d(TAG, "Starting OAuth authentication flow for signup...");
             NaverIdLoginSDK.INSTANCE.authenticate(this, callback);
         } catch (Exception e) {
-            Log.e(TAG, "Naver signup exception", e);
+            Log.e(TAG, "Naver 회원가입 예외", e);
             naverSignUpButton.setEnabled(true);
-            Toast.makeText(this, "Naver signup error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Naver 회원가입 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -670,7 +673,7 @@ public class SignUpActivity extends AppCompatActivity {
                 Log.e(TAG, "Failed to fetch Naver user info", e);
                 runOnUiThread(() -> {
                     naverSignUpButton.setEnabled(true);
-                    Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(SignUpActivity.this, "사용자 정보를 가져오는 데 실패하였습니다", Toast.LENGTH_SHORT).show();
                 });
             }
 
@@ -680,7 +683,7 @@ public class SignUpActivity extends AppCompatActivity {
                     Log.e(TAG, "Naver API error: " + response.code());
                     runOnUiThread(() -> {
                         naverSignUpButton.setEnabled(true);
-                        Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignUpActivity.this, "사용자 정보를 가져오는 데 실패했습니다", Toast.LENGTH_SHORT).show();
                     });
                     return;
                 }
@@ -714,21 +717,21 @@ public class SignUpActivity extends AppCompatActivity {
                             // Save login state with user ID
                             saveLoginState("naver", realtimeUserId);
 
-                            Toast.makeText(SignUpActivity.this, "Naver signup successful!\nWelcome " + displayName, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SignUpActivity.this, "Naver 회원가입 성공!\n" + displayName + "님, 환영합니다", Toast.LENGTH_SHORT).show();
                             navigateToProfileSetup(realtimeUserId, email, displayName, "naver");
                         });
                     } else {
                         Log.e(TAG, "Naver API error: Invalid result code " + resultCode);
                         runOnUiThread(() -> {
                             naverSignUpButton.setEnabled(true);
-                            Toast.makeText(SignUpActivity.this, "Failed to get user info", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SignUpActivity.this, "사용자 정보를 가져오는 데 실패했습니다", Toast.LENGTH_SHORT).show();
                         });
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to parse Naver user info", e);
                     runOnUiThread(() -> {
                         naverSignUpButton.setEnabled(true);
-                        Toast.makeText(SignUpActivity.this, "Failed to parse user info", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignUpActivity.this, "사용자 정보를 분석하는 데 실패했습니다", Toast.LENGTH_SHORT).show();
                     });
                 }
             }
