@@ -236,6 +236,12 @@ public class SettingsFragment extends Fragment {
      * Fallback method to load user data from SharedPreferences
      */
     private void loadUserDataFromSharedPreferences() {
+        // Check if fragment is attached before accessing context
+        if (!isAdded() || getContext() == null) {
+            android.util.Log.w("SettingsFragment", "Fragment not attached, skipping SharedPreferences load");
+            return;
+        }
+
         SharedPreferences prefs = requireContext().getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
 
         // Load user name

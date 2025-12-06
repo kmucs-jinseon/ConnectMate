@@ -340,6 +340,11 @@ public class MainActivity extends AppCompatActivity {
         mainSearchResultsCard = findViewById(R.id.main_search_results_card);
         mainSearchResultsRecycler = findViewById(R.id.main_search_results_recycler);
 
+        // Ensure search results are hidden on initialization
+        if (mainSearchResultsCard != null) {
+            mainSearchResultsCard.setVisibility(View.GONE);
+        }
+
         // Initialize HTTP client and search components
         httpClient = new OkHttpClient();
         gson = new Gson();
@@ -745,7 +750,7 @@ public class MainActivity extends AppCompatActivity {
             transaction.add(R.id.main_container, targetFragment, tag);
         }
 
-        transaction.commitNow(); // Use commitNow for immediate execution
+        transaction.commitNowAllowingStateLoss(); // Use commitNowAllowingStateLoss for immediate execution even after onSaveInstanceState
 
         // Update active fragment reference
         activeFragment = targetFragment;
@@ -902,6 +907,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "MainActivity resumed");
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Handle theme changes without recreating the activity
+        // The search bar visibility is already managed, no need to do anything special
+        Log.d(TAG, "Configuration changed - theme switched");
     }
 
     @Override

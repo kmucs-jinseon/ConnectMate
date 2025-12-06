@@ -28,14 +28,14 @@
     <style name="InputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <!-- Box Colors -->
         <item name="boxBackgroundColor">@color/gray_50</item>
-        <item name="boxStrokeColor">@color/primary_blue</item>
+        <item name="boxStrokeColor">@color/input_box_stroke_color</item>
 
         <!-- Box Stroke Width -->
         <item name="boxStrokeWidth">1dp</item>
         <item name="boxStrokeWidthFocused">2dp</item>
 
         <!-- Hint Text -->
-        <item name="hintTextColor">@color/gray_600</item>
+        <item name="hintTextColor">@color/gray_400</item>
         <item name="hintTextAppearance">@style/TextAppearance.MaterialComponents.Body1</item>
         <item name="hintAnimationEnabled">true</item>
 
@@ -45,7 +45,7 @@
 
         <!-- Shape & Icons -->
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.App.Corner.Medium</item>
-        <item name="endIconTint">@color/primary_blue</item>
+        <item name="endIconTint">@color/pastel_blue</item>
     </style>
 
     <!-- =============================== -->
@@ -151,14 +151,14 @@
     <!--      Category Chip Style        -->
     <!-- =============================== -->
     <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Choice">
-        <!-- Text and Icon Colors - Dark text for pastel backgrounds -->
-        <item name="android:textColor">#000000</item>
+        <!-- Text color: dark gray when unchecked, white when checked (high contrast on saturated backgrounds) -->
+        <item name="android:textColor">@color/category_chip_text_color</item>
         <item name="android:textStyle">bold</item>
         <item name="checkedIconVisible">false</item>
 
-        <!-- Chip Border - Dark outline -->
+        <!-- Border: dark gray when unchecked, light gray when checked (clear definition) -->
         <item name="chipStrokeWidth">2dp</item>
-        <item name="chipStrokeColor">#000000</item>
+        <item name="chipStrokeColor">@color/category_chip_stroke_color</item>
 
         <!-- Chip Shape -->
         <item name="chipCornerRadius">16dp</item>

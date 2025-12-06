@@ -30,7 +30,7 @@
     <style name="InputLayoutStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <!-- Box Colors -->
         <item name="boxBackgroundColor">@color/white</item>
-        <item name="boxStrokeColor">@color/primary_blue</item>
+        <item name="boxStrokeColor">@color/input_box_stroke_color</item>
 
         <!-- Box Stroke Width -->
         <item name="boxStrokeWidth">1dp</item>
@@ -158,14 +158,14 @@
     <!--      Category Chip Style        -->
     <!-- =============================== -->
     <style name="CategoryChipStyle" parent="Widget.MaterialComponents.Chip.Choice">
-        <!-- Text and Icon Colors (Dark for pastel backgrounds) -->
-        <item name="android:textColor">@color/gray_900</item>
+        <!-- Text color: muted when unchecked, dark when checked -->
+        <item name="android:textColor">@color/category_chip_text_color</item>
         <item name="android:textStyle">bold</item>
         <item name="checkedIconVisible">false</item>
 
-        <!-- Chip Border - Dark outline -->
+        <!-- Border: lighter when unchecked, darker when checked -->
         <item name="chipStrokeWidth">2dp</item>
-        <item name="chipStrokeColor">@color/gray_700</item>
+        <item name="chipStrokeColor">@color/category_chip_stroke_color</item>
 
         <!-- Chip Shape -->
         <item name="chipCornerRadius">16dp</item>

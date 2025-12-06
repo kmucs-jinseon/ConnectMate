@@ -92,9 +92,12 @@ public class UserReviewsAdapter extends RecyclerView.Adapter<UserReviewsAdapter.
 
             String comment = review.getComment();
             if (comment == null || comment.trim().isEmpty()) {
-                comment = "한 줄 평이 없습니다.";
+                // Hide the comment text when there's no review message
+                commentText.setVisibility(View.GONE);
+            } else {
+                commentText.setText(comment);
+                commentText.setVisibility(View.VISIBLE);
             }
-            commentText.setText(comment);
         }
     }
 }

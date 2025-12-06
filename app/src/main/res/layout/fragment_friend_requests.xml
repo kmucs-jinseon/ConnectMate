@@ -5,6 +5,7 @@
     android:id="@+id/friend_requests_recycler_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:clipToPadding="false"
     android:paddingTop="8dp"
     android:paddingBottom="8dp"

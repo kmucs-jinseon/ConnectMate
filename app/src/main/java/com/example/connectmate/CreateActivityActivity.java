@@ -406,14 +406,23 @@ public class CreateActivityActivity extends AppCompatActivity {
                     new int[]{}                                 // default (unchecked) state
             };
 
-            float[] hsv = new float[3];
-            android.graphics.Color.colorToHSV(categoryColor, hsv);
-            hsv[1] *= 0.3; // Reduce saturation for muted effect
-            int mutedColor = android.graphics.Color.HSVToColor(hsv);
+            // Unchecked state: more muted (lighter, less saturated)
+            float[] hsvUnchecked = new float[3];
+            android.graphics.Color.colorToHSV(categoryColor, hsvUnchecked);
+            hsvUnchecked[1] *= 0.25f; // Reduce saturation significantly for muted effect
+            hsvUnchecked[2] = Math.min(1.0f, hsvUnchecked[2] * 1.3f); // Increase brightness for lighter appearance
+            int mutedColor = android.graphics.Color.HSVToColor(hsvUnchecked);
+
+            // Checked state: highly saturated and darker for strong contrast with white text
+            float[] hsvChecked = new float[3];
+            android.graphics.Color.colorToHSV(categoryColor, hsvChecked);
+            hsvChecked[1] = Math.min(1.0f, hsvChecked[1] * 1.4f); // Maximum saturation for vibrant, rich colors
+            hsvChecked[2] *= 0.65f; // Significantly darker for excellent contrast with white text
+            int saturatedColor = android.graphics.Color.HSVToColor(hsvChecked);
 
             int[] colors = new int[]{
-                    categoryColor,      // checked: full vibrant color
-                    mutedColor      // unchecked: semi-transparent
+                    saturatedColor,     // checked: highly saturated, darker, strong contrast with white text
+                    mutedColor          // unchecked: desaturated, lighter, subtle with dark gray text
             };
 
             android.content.res.ColorStateList chipColorStateList =

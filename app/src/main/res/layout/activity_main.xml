@@ -73,6 +73,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:elevation="4dp"
+            app:cardBackgroundColor="@color/fab_background"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp"
             app:cardUseCompatPadding="true">
@@ -178,6 +179,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="96dp"
             android:maxHeight="250dp"
+            app:cardBackgroundColor="@color/fab_background"
             app:cardCornerRadius="12dp"
             app:cardElevation="16dp"
             android:visibility="gone">
@@ -525,7 +527,7 @@
             android:layout_marginBottom="12dp"
             android:contentDescription="@string/current_location"
             android:src="@drawable/ic_map_pin"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/fab_background"
             app:elevation="4dp"
             app:fabSize="normal"
             app:tint="@color/primary_blue" />
@@ -537,7 +539,7 @@
             android:layout_marginBottom="8dp"
             android:contentDescription="@string/zoom_in"
             android:src="@drawable/ic_plus"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/fab_background"
             app:elevation="4dp"
             app:fabSize="mini"
             app:tint="@color/primary_blue" />
@@ -548,7 +550,7 @@
             android:layout_height="82dp"
             android:contentDescription="@string/zoom_out"
             android:src="@drawable/ic_minus"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/fab_background"
             app:elevation="4dp"
             app:fabSize="mini"
             app:tint="@color/primary_blue" />

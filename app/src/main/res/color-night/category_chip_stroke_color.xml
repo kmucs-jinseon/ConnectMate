@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Checked state: Dark gray border for clear definition on saturated backgrounds -->
+    <item android:color="#333333" android:state_checked="true" />
+    <!-- Unchecked state: Light gray border for subtle definition -->
+    <item android:color="#808080" />
+</selector>

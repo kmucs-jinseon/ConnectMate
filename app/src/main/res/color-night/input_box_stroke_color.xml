@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focused state: Bright blue for visibility -->
+    <item android:color="@color/pastel_blue" android:state_focused="true" />
+    <!-- Error state: Pink/Red -->
+    <item android:color="@color/pink_400" android:state_hovered="true" />
+    <!-- Default/Unfocused state: Light gray for better visibility in dark mode -->
+    <item android:color="@color/gray_400" />
+</selector>

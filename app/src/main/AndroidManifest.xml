@@ -110,7 +110,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:hardwareAccelerated="true"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:configChanges="uiMode">
             <!-- App Links for connectmate.app -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

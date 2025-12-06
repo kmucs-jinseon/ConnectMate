@@ -7,7 +7,7 @@
     android:paddingBottom="15dp"
     android:layout_marginStart="20dp"
     android:layout_marginEnd="20dp"
-    android:background="@drawable/bottom_border">
+    android:background="@android:color/transparent">
 
     <!-- Activity Title -->
     <TextView
@@ -52,5 +52,12 @@
         android:text="한줄평 내용"
         android:textColor="@color/text_primary"
         android:textSize="15sp" />
+
+    <!-- Bottom divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="15dp"
+        android:background="@color/gray_500" />
 
 </LinearLayout>

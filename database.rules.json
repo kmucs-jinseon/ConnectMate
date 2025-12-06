@@ -2,9 +2,9 @@
   "rules": {
     "users": {
       "$uid": {
-        // Users can read their own data
-        ".read": "$uid === auth.uid",
-        // Users can write their own data
+        // Users can read any user's basic profile data (needed for friends list, activity participants, etc.)
+        ".read": "auth != null",
+        // Users can only write their own data
         ".write": "$uid === auth.uid",
         // Validate user data structure (allow deletion when newData doesn't exist)
         ".validate": "!newData.exists() || (newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString())"

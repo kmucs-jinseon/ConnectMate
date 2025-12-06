@@ -275,6 +275,9 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for activity markers
         kakaoMap.setOnLabelClickListener((map, layer, label) -> {
+            // Remove yellow search marker when clicking on activity markers
+            removeSearchResultMarker();
+
             LatLng position = label.getPosition();
             if (getContext() != null && position != null) {
                 List<Activity> activities = activityGroups.get(position);
@@ -294,6 +297,8 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for map (to search for nearby POIs)
         kakaoMap.setOnMapClickListener((kakaoMap1, position, screenPoint, poi) -> {
+            // Remove yellow search marker when clicking on POIs
+            removeSearchResultMarker();
             fetchPoiDetails(Objects.requireNonNull(poi).getName(), position.getLatitude(), position.getLongitude());
         });
 
@@ -440,6 +445,20 @@ public class MapFragment extends Fragment {
 
 
 
+
+    /**
+     * Remove the yellow search result marker from the map
+     */
+    private void removeSearchResultMarker() {
+        if (searchResultLabel != null && kakaoMap != null && kakaoMap.getLabelManager() != null) {
+            LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
+            if (labelLayer != null) {
+                labelLayer.remove(searchResultLabel);
+                searchResultLabel = null;
+                Log.d(TAG, "Search result marker removed");
+            }
+        }
+    }
 
     /**
      * Move camera to a specific location and add marker
@@ -953,14 +972,7 @@ public class MapFragment extends Fragment {
             kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(targetLocation, 17));
 
             // Remove previous search result marker if it exists
-            if (searchResultLabel != null && kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-                if (labelLayer != null) {
-                    labelLayer.remove(searchResultLabel);
-                    searchResultLabel = null;
-                    Log.d(TAG, "Removed previous search result marker");
-                }
-            }
+            removeSearchResultMarker();
 
             // Add a yellow marker for the search result location
             if (kakaoMap.getLabelManager() != null) {
