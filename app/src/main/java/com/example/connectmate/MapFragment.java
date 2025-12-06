@@ -108,11 +108,36 @@ public class MapFragment extends Fragment {
     private boolean isRequestingLocation = false; // Track if actively requesting location
     private android.location.LocationListener activeLocationListener = null; // Store active listener for cleanup
 
+    // Saved state keys
+    private static final String KEY_CAMERA_LAT = "camera_lat";
+    private static final String KEY_CAMERA_LNG = "camera_lng";
+    private static final String KEY_CAMERA_ZOOM = "camera_zoom";
+
+    // Saved camera position
+    private Double savedCameraLat = null;
+    private Double savedCameraLng = null;
+    private Integer savedCameraZoom = null;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map, container, false);
+
+        // Restore saved camera position if available
+        if (savedInstanceState != null) {
+            savedCameraLat = savedInstanceState.getDouble(KEY_CAMERA_LAT, Double.NaN);
+            savedCameraLng = savedInstanceState.getDouble(KEY_CAMERA_LNG, Double.NaN);
+            savedCameraZoom = savedInstanceState.getInt(KEY_CAMERA_ZOOM, -1);
+
+            if (savedCameraLat.isNaN() || savedCameraLng.isNaN() || savedCameraZoom == -1) {
+                savedCameraLat = null;
+                savedCameraLng = null;
+                savedCameraZoom = null;
+            } else {
+                Log.d(TAG, "Restored camera position: " + savedCameraLat + ", " + savedCameraLng + " zoom: " + savedCameraZoom);
+            }
+        }
 
         // Initialize views
         mapView = view.findViewById(R.id.map_view);
@@ -253,8 +278,19 @@ public class MapFragment extends Fragment {
                     Toast.makeText(getContext(), "✓ 지도 활성화 됨!", Toast.LENGTH_SHORT).show();
                 }
 
-                // Center on current location or default
-                moveToCurrentLocation();
+                // Center on saved position, or current location if no saved state
+                if (savedCameraLat != null && savedCameraLng != null && savedCameraZoom != null) {
+                    Log.d(TAG, "Restoring saved camera position: " + savedCameraLat + ", " + savedCameraLng + " zoom: " + savedCameraZoom);
+                    LatLng savedPosition = LatLng.from(savedCameraLat, savedCameraLng);
+                    kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(savedPosition, savedCameraZoom));
+                    // Clear saved state after using it
+                    savedCameraLat = null;
+                    savedCameraLng = null;
+                    savedCameraZoom = null;
+                } else {
+                    Log.d(TAG, "No saved camera position, moving to current location");
+                    moveToCurrentLocation();
+                }
 
                 // Load activity markers from Firebase with real-time updates
                 loadActivitiesFromFirebase();
@@ -1657,6 +1693,30 @@ public class MapFragment extends Fragment {
             }
         }
         Log.d(TAG, "MapFragment paused");
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Save current camera position if map is initialized
+        if (kakaoMap != null) {
+            try {
+                LatLng cameraTarget = kakaoMap.getCameraPosition().getPosition();
+                int zoomLevel = kakaoMap.getCameraPosition().getZoomLevel();
+
+                if (cameraTarget != null) {
+                    outState.putDouble(KEY_CAMERA_LAT, cameraTarget.getLatitude());
+                    outState.putDouble(KEY_CAMERA_LNG, cameraTarget.getLongitude());
+                    outState.putInt(KEY_CAMERA_ZOOM, zoomLevel);
+                    Log.d(TAG, "Saved camera position: " + cameraTarget.getLatitude() +
+                            ", " + cameraTarget.getLongitude() +
+                            " zoom: " + zoomLevel);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error saving camera position", e);
+            }
+        }
     }
 
     @Override

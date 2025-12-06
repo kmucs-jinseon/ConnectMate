@@ -34,11 +34,13 @@ public class FirebaseChatManager {
     private static final String PATH_MESSAGES = "messages";
     private static final String PATH_USERS = "users";
     private static final String PATH_USER_CHAT_ROOMS = "userChatRooms";
+    private static final String PATH_ACTIVITY_CHAT_ROOMS = "activityChatRooms";
 
     private final DatabaseReference chatRoomsRef;
     private final DatabaseReference messagesRef;
     private final DatabaseReference usersRef;
     private final DatabaseReference userChatRoomsRef;
+    private final DatabaseReference activityChatRoomsRef;
     private final FirebaseAuth auth;
 
     private static FirebaseChatManager instance;
@@ -61,6 +63,7 @@ public class FirebaseChatManager {
         messagesRef = database.getReference(PATH_MESSAGES);
         usersRef = database.getReference(PATH_USERS);
         userChatRoomsRef = database.getReference(PATH_USER_CHAT_ROOMS);
+        activityChatRoomsRef = database.getReference(PATH_ACTIVITY_CHAT_ROOMS);
         auth = FirebaseAuth.getInstance();
 
         // Keep chat data synced locally
@@ -134,39 +137,64 @@ public class FirebaseChatManager {
     private void createOrGetChatRoomInternal(String activityId, String activityTitle, String activityCategory,
                                              String hostId, String hostName,
                                              OnCompleteListener<ChatRoom> listener) {
-        chatRoomsRef.orderByChild("activityId").equalTo(activityId)
-            .addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        for (DataSnapshot child : snapshot.getChildren()) {
-                            ChatRoom existingRoom = child.getValue(ChatRoom.class);
-                            if (existingRoom != null && listener != null) {
-                                maybeBackfillHost(existingRoom, hostId, hostName);
-                                Log.d(TAG, "Chat room already exists for activity: " + activityId);
-                                listener.onSuccess(existingRoom);
-                                return;
+        // First check if a chat room ID exists for this activity using the mapping
+        activityChatRoomsRef.child(activityId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    // Chat room ID found in mapping, fetch the actual chat room
+                    String chatRoomId = snapshot.getValue(String.class);
+                    if (chatRoomId != null) {
+                        chatRoomsRef.child(chatRoomId).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot chatSnapshot) {
+                                ChatRoom existingRoom = chatSnapshot.getValue(ChatRoom.class);
+                                if (existingRoom != null && listener != null) {
+                                    maybeBackfillHost(existingRoom, hostId, hostName);
+                                    Log.d(TAG, "Chat room already exists for activity: " + activityId);
+                                    listener.onSuccess(existingRoom);
+                                } else {
+                                    // Chat room ID exists but room doesn't - create new one
+                                    createNewChatRoom(activityId, activityTitle, activityCategory, hostId, hostName, listener);
+                                }
                             }
-                        }
-                    }
 
-                    ChatRoom chatRoom = new ChatRoom(activityTitle, activityId);
-                    chatRoom.setCategory(activityCategory);
-                    if (hostId != null && !hostId.isEmpty()) {
-                        chatRoom.setHostId(hostId);
-                        chatRoom.setHostName(hostName);
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                Log.e(TAG, "Error fetching chat room", error.toException());
+                                if (listener != null) {
+                                    listener.onError(error.toException());
+                                }
+                            }
+                        });
+                        return;
                     }
-                    saveChatRoom(chatRoom, listener);
                 }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    Log.e(TAG, "Error checking for existing chat room", error.toException());
-                    if (listener != null) {
-                        listener.onError(error.toException());
-                    }
+                // No mapping found, create new chat room
+                createNewChatRoom(activityId, activityTitle, activityCategory, hostId, hostName, listener);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Error checking activity chat room mapping", error.toException());
+                if (listener != null) {
+                    listener.onError(error.toException());
                 }
-            });
+            }
+        });
+    }
+
+    private void createNewChatRoom(String activityId, String activityTitle, String activityCategory,
+                                   String hostId, String hostName,
+                                   OnCompleteListener<ChatRoom> listener) {
+        ChatRoom chatRoom = new ChatRoom(activityTitle, activityId);
+        chatRoom.setCategory(activityCategory);
+        if (hostId != null && !hostId.isEmpty()) {
+            chatRoom.setHostId(hostId);
+            chatRoom.setHostName(hostName);
+        }
+        saveChatRoomWithMapping(chatRoom, listener);
     }
 
     private void maybeBackfillHost(ChatRoom chatRoom, String hostId, String hostName) {
@@ -255,6 +283,46 @@ public class FirebaseChatManager {
             })
             .addOnFailureListener(e -> {
                 Log.e(TAG, "Error saving chat room", e);
+                if (listener != null) {
+                    listener.onError(e);
+                }
+            });
+    }
+
+    /**
+     * Save a chat room to Firebase and create activityId -> chatRoomId mapping
+     */
+    private void saveChatRoomWithMapping(ChatRoom chatRoom, OnCompleteListener<ChatRoom> listener) {
+        if (chatRoom.getId() == null || chatRoom.getId().isEmpty()) {
+            // Generate new ID if not set
+            String id = chatRoomsRef.push().getKey();
+            chatRoom.setId(id);
+        }
+
+        // Update timestamp
+        if (chatRoom.getCreatedTimestamp() == 0) {
+            chatRoom.setCreatedTimestamp(System.currentTimeMillis());
+        }
+
+        String activityId = chatRoom.getActivityId();
+        String chatRoomId = chatRoom.getId();
+
+        // Save both chat room and mapping atomically
+        Map<String, Object> updates = new HashMap<>();
+        updates.put(PATH_CHAT_ROOMS + "/" + chatRoomId, chatRoom);
+        if (activityId != null && !activityId.isEmpty()) {
+            updates.put(PATH_ACTIVITY_CHAT_ROOMS + "/" + activityId, chatRoomId);
+        }
+
+        FirebaseDatabase.getInstance().getReference().updateChildren(updates)
+            .addOnSuccessListener(aVoid -> {
+                Log.d(TAG, "Chat room and mapping saved: " + chatRoom.getName());
+                if (listener != null) {
+                    listener.onSuccess(chatRoom);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Error saving chat room with mapping", e);
                 if (listener != null) {
                     listener.onError(e);
                 }

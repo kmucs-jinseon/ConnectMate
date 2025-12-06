@@ -42,7 +42,7 @@
         app:fontFamily="@font/pretendard_extrabold"
         android:fontFamily="@font/pretendard_extrabold"
         android:text="Connect Mate"
-        android:textColor="#4479CE"
+        android:textColor="@color/primary_blue"
         android:textSize="28sp"
         tools:ignore="HardcodedText" />
 
@@ -102,7 +102,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="자동 로그인"
-        android:textColor="#666666"
+        android:textColor="?attr/colorOnSurface"
+        android:alpha="0.6"
         android:textSize="14sp"
         tools:ignore="HardcodedText" />
 
@@ -131,13 +132,14 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1"
-            android:background="#CCCCCC" />
+            android:background="@color/divider_color" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="또는"
-            android:textColor="#666666"
+            android:textColor="?attr/colorOnSurface"
+            android:alpha="0.6"
             android:textSize="14sp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -147,7 +149,7 @@
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1"
-            android:background="#CCCCCC" />
+            android:background="@color/divider_color" />
     </LinearLayout>
 
     <!-- Social Login Text -->
@@ -155,7 +157,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="계속하기"
-        android:textColor="#666666"
+        android:textColor="?attr/colorOnSurface"
+        android:alpha="0.6"
         android:textSize="14sp"
         android:layout_marginBottom="16dp"
         tools:ignore="HardcodedText" />

@@ -99,7 +99,8 @@
             android:layout_height="wrap_content"
             android:scrollbars="none"
             android:visibility="gone"
-            tools:visibility="visible">
+            tools:visibility="visible"
+            android:background="@color/activity_card_background">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/filter_chips"

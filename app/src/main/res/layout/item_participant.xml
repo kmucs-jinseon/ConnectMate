@@ -9,7 +9,8 @@
     android:paddingStart="16dp"
     android:paddingTop="8dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="8dp">
+    android:paddingBottom="8dp"
+    android:background="?attr/selectableItemBackground">
 
     <FrameLayout
         android:layout_width="44dp"

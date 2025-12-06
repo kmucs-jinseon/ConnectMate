@@ -59,7 +59,7 @@ public class ProfileFragment extends Fragment {
     private ValueEventListener userListener;
 
     // UI elements - Profile Card
-    // private ImageButton backButton; // Removed - not needed in bottom nav fragment
+    private ImageButton backButton;
     private CircleImageView profileAvatar;
     private TextView profileName;
     private TextView profileUsername;
@@ -143,7 +143,7 @@ public class ProfileFragment extends Fragment {
     private void initializeViews(View view) {
 
         // Header
-        // backButton = view.findViewById(R.id.back_button); // Removed - not needed in bottom nav fragment
+        backButton = view.findViewById(R.id.btn_back);
 
         // Profile card
         profileAvatar = view.findViewById(R.id.profile_avatar);
@@ -176,12 +176,15 @@ public class ProfileFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // Back button - Removed (not needed in bottom nav fragment)
-        // if (backButton != null) {
-        //     backButton.setOnClickListener(v -> {
-        //         requireActivity().finish();
-        //     });
-        // }
+        // Back button
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> {
+                // Pop back stack if exists, otherwise do nothing (bottom nav handles navigation)
+                if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                    getParentFragmentManager().popBackStack();
+                }
+            });
+        }
 
         // Edit profile button
         if (editProfileButton != null) {

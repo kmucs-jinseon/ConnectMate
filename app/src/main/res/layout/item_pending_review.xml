@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/white">
+    android:background="?attr/selectableItemBackground">
 
     <!-- Activity Section Header -->
     <TextView
@@ -79,7 +79,7 @@
             app:cornerRadius="20dp"
             app:strokeColor="@color/primary_blue"
             app:strokeWidth="1dp"
-            app:backgroundTint="@color/blue_50"/>
+            app:backgroundTint="@color/activity_card_background"/>
     </LinearLayout>
 
     <View

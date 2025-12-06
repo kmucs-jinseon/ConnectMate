@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Dark mode: Lighter blue for profile accents for better visibility -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- All states: Pure black border for clear definition -->
-    <item android:color="#000000" />
+    <item android:color="@color/blue_300" />
 </selector>

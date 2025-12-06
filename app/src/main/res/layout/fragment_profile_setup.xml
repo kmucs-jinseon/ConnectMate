@@ -17,7 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="환영합니다!"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -27,8 +27,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="프로필을 완성하여 다른 사용자들에게 자신을 소개해 주세요."
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:alpha="0.6" />
 
         <!-- Profile Image Selection -->
         <LinearLayout
@@ -50,7 +51,7 @@
                 app:cardCornerRadius="60dp"
                 app:cardElevation="4dp"
                 app:strokeWidth="2dp"
-                app:strokeColor="@color/primary_blue">
+                app:strokeColor="@color/profile_accent">
 
                 <ImageView
                     android:id="@+id/profile_setup_image"
@@ -69,7 +70,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="사진 변경"
-                android:textColor="@color/primary_blue"
+                android:textColor="@color/profile_accent"
                 android:textSize="14sp"
                 android:fontFamily="@font/pretendard_medium"
                 android:clickable="true"
@@ -80,10 +81,10 @@
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:hint="이름">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -95,10 +96,10 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:hint="사용자 이름"
             app:prefixText="\@">
 
@@ -111,10 +112,10 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:hint="MBTI">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -127,10 +128,10 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/InputLayoutStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:hint="소개"
             app:counterEnabled="true"
             app:counterMaxLength="150">
@@ -148,7 +149,7 @@
 
         <ProgressBar
             android:id="@+id/profile_setup_progress"
-            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Small"
+            style="?android:attr/progressBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"

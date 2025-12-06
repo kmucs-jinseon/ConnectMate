@@ -146,7 +146,7 @@
                 android:paddingEnd="16dp"
                 android:paddingTop="16dp"
                 android:paddingBottom="16dp"
-                android:background="@color/blue_100"
+                android:background="@color/activity_card_background"
                 android:layout_gravity="center_vertical"/>
 
             <!-- 참여 활동 업데이트 -->

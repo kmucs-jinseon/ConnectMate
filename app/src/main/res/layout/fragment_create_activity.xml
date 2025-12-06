@@ -78,7 +78,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="활동 제목 *">
+                android:hint="@string/activity_title_required">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/title_input"
@@ -94,7 +94,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="활동 설명 *">
+                android:hint="@string/activity_description_required">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/description_input"
@@ -112,9 +112,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:text="카테고리 *"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp" />
+                android:text="@string/category_required"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:alpha="0.87" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/category_chip_group"
@@ -142,7 +143,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/spacing_small"
                     android:layout_weight="1"
-                    android:hint="날짜 *"
+                    android:hint="@string/date_required"
                     app:endIconDrawable="@drawable/ic_calendar"
                     app:endIconMode="custom">
 
@@ -161,7 +162,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/spacing_small"
                     android:layout_weight="1"
-                    android:hint="시간 *"
+                    android:hint="@string/time_required"
                     app:endIconDrawable="@drawable/ic_clock"
                     app:endIconMode="custom">
 
@@ -181,7 +182,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:hint="장소 *"
+                android:hint="@string/location_required"
                 app:endIconDrawable="@drawable/ic_search"
                 app:endIconMode="custom">
 
@@ -220,7 +221,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="참가 인원 제한 *">
+                android:hint="@string/participant_limit_required">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/participant_limit_input"
@@ -236,7 +237,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:text="@string/visibility"
-                android:textColor="@color/text_secondary" />
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:alpha="0.87" />
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/visibility_toggle"
@@ -249,7 +252,7 @@
 
                 <Button
                     android:id="@+id/visibility_public"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    style="@style/VisibilityToggleButtonStyle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -257,7 +260,7 @@
 
                 <Button
                     android:id="@+id/visibility_private"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    style="@style/VisibilityToggleButtonStyle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -287,7 +290,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="@dimen/spacing_medium"
-                android:text="+ 새로운 활동 생성하기"
+                android:text="@string/create_new_activity"
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -301,12 +304,12 @@
                 android:layout_height="56dp"
                 android:layout_marginTop="@dimen/spacing_small"
                 android:layout_marginBottom="@dimen/spacing_large"
-                android:text="활동 삭제"
+                android:text="@string/delete_activity"
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                app:backgroundTint="@android:color/holo_red_dark"
+                app:backgroundTint="@color/error_red"
                 app:cornerRadius="12dp"/>
 
         </LinearLayout>

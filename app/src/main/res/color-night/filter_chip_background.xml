@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Light mode: Light gray when unchecked, primary blue when checked -->
+<!-- Dark mode: Dark gray when unchecked, primary blue when checked -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Checked state: Primary blue background for emphasis -->
     <item android:color="@color/primary_blue" android:state_checked="true" />
-    <!-- Unchecked state: Light gray background -->
-    <item android:color="@color/gray_100" />
+    <!-- Unchecked state: Dark gray background -->
+    <item android:color="@color/gray_700" />
 </selector>

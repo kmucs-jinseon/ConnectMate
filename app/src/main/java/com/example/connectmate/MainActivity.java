@@ -909,13 +909,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "MainActivity resumed");
     }
 
-    @Override
-    public void onConfigurationChanged(@NonNull android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        // Handle theme changes without recreating the activity
-        // The search bar visibility is already managed, no need to do anything special
-        Log.d(TAG, "Configuration changed - theme switched");
-    }
+    // Removed onConfigurationChanged to allow activity recreation on theme change
+    // This ensures all UI elements properly update with the new theme
 
     @Override
     protected void onNewIntent(Intent intent) {

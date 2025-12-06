@@ -30,6 +30,17 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+                <!-- Back Button -->
+                <ImageButton
+                    android:id="@+id/btn_back"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="뒤로 가기"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_arrow_left"
+                    app:tint="@color/white" />
+
                 <!-- Title -->
                 <TextView
                     android:layout_width="0dp"

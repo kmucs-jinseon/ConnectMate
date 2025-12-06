@@ -32,10 +32,10 @@
             android:paddingTop="16dp"
             android:paddingEnd="20dp"
             android:paddingBottom="16dp"
-            android:text="함께한 멤버들에게 별점과 리뷰를 남겨 더 좋은 커뮤니티를 만들어가요!"
+            android:text="함께한 멤버들에게 별점과 리뷰를 남겨 커뮤니티를 발전시켜 보아요!"
             android:textAlignment="viewStart"
             android:textColor="@color/text_primary"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/pending_reviews_recycler"

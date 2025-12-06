@@ -51,6 +51,14 @@
       }
     },
 
+    "activityChatRooms": {
+      // Mapping of activityId -> chatRoomId (public for finding chat rooms by activity)
+      "$activityId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
     "chatRooms": {
       "$chatRoomId": {
         // Only chat room members can read chat room data
