@@ -3,6 +3,6 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Checked state: Primary blue background for emphasis -->
     <item android:color="@color/primary_blue" android:state_checked="true" />
-    <!-- Unchecked state: Light gray background -->
-    <item android:color="@color/gray_100" />
+    <!-- Unchecked state: Light blue background -->
+    <item android:color="@color/blue_200" />
 </selector>

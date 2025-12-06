@@ -211,10 +211,16 @@ public class ActivityDetailActivity extends AppCompatActivity {
                     chip.setText(trimmedCategory);
                     chip.setClickable(false);
 
-                    // Set color based on category
+                    // Set category-specific pastel color for display
                     int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(trimmedCategory);
                     int color = getResources().getColor(colorRes, null);
                     chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
+
+                    // Set dark gray text and stroke for pastel background (hardcoded to ensure dark in both themes)
+                    int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
+                    chip.setTextColor(textColor);
+                    chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(textColor));
+                    chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density);
 
                     detailCategoryGroup.addView(chip);
                 }

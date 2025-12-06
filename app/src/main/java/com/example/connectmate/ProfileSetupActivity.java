@@ -2,10 +2,13 @@ package com.example.connectmate;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.ImageButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import com.example.connectmate.utils.ThemeManager;
 
 public class ProfileSetupActivity extends AppCompatActivity implements ProfileSetupFragment.ProfileSetupHost {
 
@@ -18,6 +21,7 @@ public class ProfileSetupActivity extends AppCompatActivity implements ProfileSe
     private String defaultEmail;
     private String defaultName;
     private String loginMethod;
+    private ImageButton themeToggleButton;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -33,6 +37,13 @@ public class ProfileSetupActivity extends AppCompatActivity implements ProfileSe
         if (toolbar != null) {
             setSupportActionBar(toolbar);
             toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        }
+
+        // Set up theme toggle button
+        themeToggleButton = findViewById(R.id.theme_toggle_button);
+        if (themeToggleButton != null) {
+            updateThemeIcon();
+            themeToggleButton.setOnClickListener(v -> toggleTheme());
         }
 
         if (savedInstanceState == null) {
@@ -56,5 +67,46 @@ public class ProfileSetupActivity extends AppCompatActivity implements ProfileSe
         intent.putExtra("just_logged_in", true);
         startActivity(intent);
         finish();
+    }
+
+    /**
+     * Toggle between light and dark mode
+     */
+    private void toggleTheme() {
+        int currentMode = ThemeManager.getThemeMode(this);
+        int newMode;
+
+        // Cycle through: Light -> Dark -> Light
+        if (currentMode == ThemeManager.MODE_LIGHT) {
+            newMode = ThemeManager.MODE_DARK;
+        } else {
+            newMode = ThemeManager.MODE_LIGHT;
+        }
+
+        ThemeManager.setThemeMode(this, newMode);
+        // Activity will be recreated automatically by AppCompatDelegate
+    }
+
+    /**
+     * Update the theme toggle icon based on current theme
+     */
+    private void updateThemeIcon() {
+        if (themeToggleButton == null) return;
+
+        boolean isDarkMode = ThemeManager.isDarkModeActive(this);
+
+        // Show light mode icon when in dark mode (to indicate switching to light)
+        // Show dark mode icon when in light mode (to indicate switching to dark)
+        if (isDarkMode) {
+            themeToggleButton.setImageResource(R.drawable.ic_light_mode);
+        } else {
+            themeToggleButton.setImageResource(R.drawable.ic_dark_mode);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateThemeIcon();
     }
 }

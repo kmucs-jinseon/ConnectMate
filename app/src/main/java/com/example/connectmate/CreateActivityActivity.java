@@ -396,42 +396,34 @@ public class CreateActivityActivity extends AppCompatActivity {
             chip.setCheckable(true);
             chip.setClickable(true);
 
-            // Get category color from CategoryMapper
-            int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
-            int categoryColor = getResources().getColor(colorRes, null);
+            // Set category-specific colors for checked/unchecked states
+            int uncheckedColorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
+            int checkedColorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColorChecked(category);
+            int uncheckedColor = getResources().getColor(uncheckedColorRes, null);
+            int checkedColor = getResources().getColor(checkedColorRes, null);
 
-            // Create ColorStateList for checked/unchecked states
             int[][] states = new int[][]{
                     new int[]{android.R.attr.state_checked},  // checked state
                     new int[]{}                                 // default (unchecked) state
             };
 
-            // Unchecked state: more muted (lighter, less saturated)
-            float[] hsvUnchecked = new float[3];
-            android.graphics.Color.colorToHSV(categoryColor, hsvUnchecked);
-            hsvUnchecked[1] *= 0.25f; // Reduce saturation significantly for muted effect
-            hsvUnchecked[2] = Math.min(1.0f, hsvUnchecked[2] * 1.3f); // Increase brightness for lighter appearance
-            int mutedColor = android.graphics.Color.HSVToColor(hsvUnchecked);
+            // Background: vibrant when checked, pastel when unchecked
+            int[] bgColors = new int[]{checkedColor, uncheckedColor};
+            android.content.res.ColorStateList chipBgColorStateList =
+                    new android.content.res.ColorStateList(states, bgColors);
+            chip.setChipBackgroundColor(chipBgColorStateList);
 
-            // Checked state: highly saturated and darker for strong contrast with white text
-            float[] hsvChecked = new float[3];
-            android.graphics.Color.colorToHSV(categoryColor, hsvChecked);
-            hsvChecked[1] = Math.min(1.0f, hsvChecked[1] * 1.4f); // Maximum saturation for vibrant, rich colors
-            hsvChecked[2] *= 0.65f; // Significantly darker for excellent contrast with white text
-            int saturatedColor = android.graphics.Color.HSVToColor(hsvChecked);
+            // Text: dark gray for both states (hardcoded to ensure it's dark in both themes)
+            int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
+            int[] textColors = new int[]{textColor, textColor};
+            android.content.res.ColorStateList chipTextColorStateList =
+                    new android.content.res.ColorStateList(states, textColors);
+            chip.setTextColor(chipTextColorStateList);
 
-            int[] colors = new int[]{
-                    saturatedColor,     // checked: highly saturated, darker, strong contrast with white text
-                    mutedColor          // unchecked: desaturated, lighter, subtle with dark gray text
-            };
-
-            android.content.res.ColorStateList chipColorStateList =
-                    new android.content.res.ColorStateList(states, colors);
-
-            chip.setChipBackgroundColor(chipColorStateList);
-            // Remove stroke and text color overrides - let CategoryChipStyle handle it
-            // The style already defines: chipStrokeColor=#000000, chipStrokeWidth=2dp, textColor=#000000
-
+            // Stroke: dark gray outline for both states (hardcoded to ensure it's dark in both themes)
+            int strokeColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
+            chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(strokeColor));
+            chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density);
 
             Log.d(TAG, "Created chip: " + category);
 
@@ -480,9 +472,16 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         DatePickerDialog dialog = new DatePickerDialog(this, R.style.DatePickerTheme,
                 (view, selectedYear, selectedMonth, selectedDay) -> {
-                    String date = selectedYear + "-" + (selectedMonth + 1) + "-" + selectedDay;
+                    // Format date with leading zeros: YYYY-MM-DD
+                    String date = String.format(java.util.Locale.KOREA, "%04d-%02d-%02d",
+                            selectedYear, selectedMonth + 1, selectedDay);
                     dateInput.setText(date);
                 }, year, month, day);
+
+        // Set Korean button labels
+        dialog.setButton(DatePickerDialog.BUTTON_POSITIVE, "확인", dialog);
+        dialog.setButton(DatePickerDialog.BUTTON_NEGATIVE, "취소", dialog);
+
         dialog.show();
     }
 
@@ -493,9 +492,15 @@ public class CreateActivityActivity extends AppCompatActivity {
 
         TimePickerDialog dialog = new TimePickerDialog(this, R.style.TimePickerTheme,
                 (view, selectedHour, selectedMinute) -> {
-                    String time = String.format("%02d:%02d", selectedHour, selectedMinute);
+                    // Format time with leading zeros: HH:MM
+                    String time = String.format(java.util.Locale.KOREA, "%02d:%02d", selectedHour, selectedMinute);
                     timeInput.setText(time);
                 }, hour, minute, true);
+
+        // Set Korean button labels
+        dialog.setButton(TimePickerDialog.BUTTON_POSITIVE, "확인", dialog);
+        dialog.setButton(TimePickerDialog.BUTTON_NEGATIVE, "취소", dialog);
+
         dialog.show();
     }
 

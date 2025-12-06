@@ -53,27 +53,21 @@ public class PoiActivityAdapter extends RecyclerView.Adapter<PoiActivityAdapter.
             for (String category : categoryArray) {
                 category = category.trim();
                 if (!category.isEmpty()) {
-                    // Create a new chip for each category
-                    Chip chip = new Chip(context);
+                    // Create chip with CategoryChipStyle
+                    Chip chip = new Chip(new android.view.ContextThemeWrapper(context, R.style.CategoryChipStyle));
                     chip.setText(category);
-                    chip.setTextSize(12);
-
-                    // Get the category-specific color
-                    int colorResId = CategoryMapper.getCategoryColor(category);
-                    int color = ContextCompat.getColor(context, colorResId);
-                    chip.setChipBackgroundColor(ColorStateList.valueOf(color));
-
-                    // Use dark text color for better readability on pastel backgrounds
-                    int textColor = ContextCompat.getColor(context, R.color.text_primary);
-                    chip.setTextColor(textColor);
-
-                    // Set chip styling
-                    chip.setChipCornerRadius(16 * context.getResources().getDisplayMetrics().density);
-                    chip.setChipMinHeight(28 * context.getResources().getDisplayMetrics().density);
-                    chip.setChipStartPadding(8 * context.getResources().getDisplayMetrics().density);
-                    chip.setChipEndPadding(8 * context.getResources().getDisplayMetrics().density);
                     chip.setClickable(false);
-                    chip.setCheckable(false);
+
+                    // Set category-specific pastel color for display
+                    int colorRes = com.example.connectmate.utils.CategoryMapper.getCategoryColor(category);
+                    int color = androidx.core.content.ContextCompat.getColor(context, colorRes);
+                    chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(color));
+
+                    // Set dark gray text and stroke for pastel background (hardcoded to ensure dark in both themes)
+                    int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
+                    chip.setTextColor(textColor);
+                    chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(textColor));
+                    chip.setChipStrokeWidth(2 * context.getResources().getDisplayMetrics().density);
 
                     holder.categoryGroup.addView(chip);
                 }

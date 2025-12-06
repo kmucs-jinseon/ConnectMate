@@ -32,18 +32,18 @@
     <color name="activity_card_background">@color/gray_200</color>
     <color name="activity_card_stroke">@color/gray_300</color>
 
-    <!-- Dark Mode Category Colors (Vibrant pastels - dark text when unselected, white text when selected) -->
-    <color name="pastel_green">#66D9B3</color>       <!-- Sports - Vibrant Mint -->
-    <color name="pastel_teal">#6ACFC7</color>        <!-- Outdoor - Vibrant Teal -->
-    <color name="pastel_blue">#7EC4FC</color>        <!-- Study - Vibrant Blue -->
-    <color name="pastel_pink">#FF80AB</color>        <!-- Culture - Vibrant Pink -->
-    <color name="pastel_amber">#FFD740</color>       <!-- Social - Vibrant Yellow -->
-    <color name="pastel_peach">#FF9E80</color>       <!-- Food - Vibrant Peach -->
-    <color name="pastel_sky">#6DCFFF</color>         <!-- Travel - Vibrant Sky Blue -->
-    <color name="pastel_lavender">#D484E6</color>    <!-- Game - Vibrant Lavender -->
-    <color name="pastel_lemon">#FFF176</color>       <!-- Hobby - Vibrant Lemon -->
-    <color name="pastel_rose">#FF80AB</color>        <!-- Volunteer - Vibrant Rose -->
-    <color name="pastel_gray">#A0B0BA</color>        <!-- Other - Vibrant Gray -->
+    <!-- Dark Mode Category Colors (Same as Light Mode) -->
+    <color name="pastel_green">#A7F4D8</color>       <!-- Sports - Pastel Mint Green -->
+    <color name="pastel_teal">#99E2DA</color>        <!-- Outdoor - Pastel Teal -->
+    <color name="pastel_blue">#9FC9F8</color>        <!-- Study - Pastel Blue -->
+    <color name="pastel_pink">#FAA4CE</color>        <!-- Culture - Pastel Pink -->
+    <color name="pastel_amber">#FFE5A0</color>       <!-- Social - Pastel Yellow/Amber -->
+    <color name="pastel_peach">#FFC386</color>       <!-- Food - Pastel Peach -->
+    <color name="pastel_sky">#A2D9E6</color>         <!-- Travel - Pastel Sky Blue -->
+    <color name="pastel_lavender">#D5AAFF</color>    <!-- Game - Pastel Lavender -->
+    <color name="pastel_lemon">#FFFAAC</color>       <!-- Hobby - Pastel Lemon -->
+    <color name="pastel_rose">#F69DA5</color>        <!-- Volunteer - Pastel Rose -->
+    <color name="pastel_gray">#D4D4D4</color>        <!-- Other - Pastel Gray -->
 
 
     <!-- Dark Mode Chat Bubble Colors -->

@@ -57,7 +57,7 @@ public class ThemeManager {
      */
     public static int getThemeMode(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getInt(KEY_THEME_MODE, MODE_LIGHT); // Default to light mode
+        return prefs.getInt(KEY_THEME_MODE, MODE_SYSTEM); // Default to system preference
     }
 
     /**

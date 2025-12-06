@@ -179,9 +179,14 @@ public class ProfileFragment extends Fragment {
         // Back button
         if (backButton != null) {
             backButton.setOnClickListener(v -> {
-                // Pop back stack if exists, otherwise do nothing (bottom nav handles navigation)
+                // Try to pop back stack first
                 if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                     getParentFragmentManager().popBackStack();
+                } else {
+                    // If no back stack, simulate back press to go to previous screen
+                    if (getActivity() != null) {
+                        getActivity().onBackPressed();
+                    }
                 }
             });
         }
