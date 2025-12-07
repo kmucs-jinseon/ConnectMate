@@ -2,8 +2,8 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
 
-    <!-- Solid background color -->
-    <solid android:color="@color/primary_blue" />
+    <!-- Solid background color - Yellow for unread messages -->
+    <solid android:color="#FFC107" />
 
     <!-- Perfect circle with equal width and height -->
     <size

@@ -125,10 +125,7 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                             public void onDataChange(@NonNull DataSnapshot userSnapshot) {
                                 User user = userSnapshot.getValue(User.class);
                                 if (user != null) {
-                                     // Check if they are mutually friends before adding
-                                    if (user.getFriends() != null && user.getFriends().containsKey(currentUserId)) {
-                                        friendList.add(user);
-                                    }
+                                    friendList.add(user);
                                 }
                                 userAdapter.notifyDataSetChanged();
                             }
