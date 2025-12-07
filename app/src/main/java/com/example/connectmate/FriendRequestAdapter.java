@@ -16,6 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
+import android.util.Log;
 import java.util.List;
 
 public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdapter.FriendRequestViewHolder> {
@@ -139,6 +143,9 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friendRequests").child(user.getUserId());
         friendRequestRef.removeValue().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
+                // Delete the friend request notification
+                deleteFriendRequestNotification(user.getUserId());
+
                 if (listener != null) {
                     listener.onFriendRequestAccepted(user);
                 }
@@ -153,9 +160,49 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
         DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friendRequests").child(user.getUserId());
         friendRequestRef.removeValue().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
+                // Delete the friend request notification
+                deleteFriendRequestNotification(user.getUserId());
+
                 if (rejectListener != null) {
                     rejectListener.onFriendRequestRejected(user);
                 }
+            }
+        });
+    }
+
+    /**
+     * Delete the friend request notification for a specific sender
+     */
+    private void deleteFriendRequestNotification(String senderId) {
+        if (currentUserId == null || senderId == null) return;
+
+        DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
+            .getReference("userNotifications")
+            .child(currentUserId);
+
+        notificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String type = child.child("type").getValue(String.class);
+                    String notifSenderId = child.child("senderId").getValue(String.class);
+
+                    // Find the friend request notification from this sender
+                    if ("FRIEND_REQUEST".equals(type) && senderId.equals(notifSenderId)) {
+                        // Delete this notification
+                        child.getRef().removeValue()
+                            .addOnSuccessListener(aVoid ->
+                                Log.d("FriendRequestAdapter", "Friend request notification deleted for sender: " + senderId))
+                            .addOnFailureListener(e ->
+                                Log.e("FriendRequestAdapter", "Failed to delete friend request notification", e));
+                        break; // Only delete the first matching notification
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("FriendRequestAdapter", "Error loading notifications", error.toException());
             }
         });
     }

@@ -522,22 +522,30 @@ public class FirebaseActivityManager {
             if (endId != null) {
                 Map<String, Object> endNotif = new HashMap<>();
                 endNotif.put("id", endId);
+                endNotif.put("type", "ACTIVITY");
                 endNotif.put("title", "활동 종료");
                 endNotif.put("message", endMessage);
                 endNotif.put("timestamp", timestamp);
                 endNotif.put("activityId", activityId);
-                userRef.child(endId).setValue(endNotif);
+                endNotif.put("isRead", false);
+                userRef.child(endId).setValue(endNotif)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Activity end notification created for user: " + userId))
+                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create activity end notification", e));
             }
 
             String reviewId = userRef.push().getKey();
             if (reviewId != null) {
                 Map<String, Object> reviewNotif = new HashMap<>();
                 reviewNotif.put("id", reviewId);
+                reviewNotif.put("type", "ACTIVITY");
                 reviewNotif.put("title", "참여자 평가 요청");
                 reviewNotif.put("message", reviewMessage);
                 reviewNotif.put("timestamp", timestamp + 1);
                 reviewNotif.put("activityId", activityId);
-                userRef.child(reviewId).setValue(reviewNotif);
+                reviewNotif.put("isRead", false);
+                userRef.child(reviewId).setValue(reviewNotif)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Review request notification created for user: " + userId))
+                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create review request notification", e));
             }
         }
     }
