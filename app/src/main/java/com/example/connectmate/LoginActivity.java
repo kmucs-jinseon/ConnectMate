@@ -1122,6 +1122,33 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Log.e(TAG, "Failed to check user existence", error.toException());
+
+                // Handle permission denied error - create user anyway
+                if (error.getCode() == DatabaseError.PERMISSION_DENIED) {
+                    Log.w(TAG, "Permission denied - creating user directly without checking existence");
+
+                    // Create new user directly
+                    User user = new User(userId, email, displayName, loginMethod);
+                    if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                        user.setProfileImageUrl(profileImageUrl);
+                    }
+
+                    userRef.setValue(user)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d(TAG, "User created successfully after permission error");
+                                navigateToProfileSetup(userId, email, displayName, loginMethod);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e(TAG, "Failed to create user after permission error", e);
+                                Toast.makeText(LoginActivity.this,
+                                    "데이터베이스 권한 오류가 발생했습니다. 관리자에게 문의하세요.",
+                                    Toast.LENGTH_LONG).show();
+                            });
+                } else {
+                    Toast.makeText(LoginActivity.this,
+                        "사용자 정보를 불러오지 못했습니다: " + error.getMessage(),
+                        Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

@@ -117,13 +117,16 @@ public class PendingReviewsFragment extends Fragment {
             return;
         }
 
+        android.util.Log.d("PendingReviewsFragment", "📋 Loading pending reviews for user: " + userId + ", filter activityId: " + filterActivityId);
         showLoading(true);
         pendingListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                android.util.Log.d("PendingReviewsFragment", "📋 Received snapshot with " + snapshot.getChildrenCount() + " pending reviews");
                 pendingItems.clear();
                 for (DataSnapshot child : snapshot.getChildren()) {
                     PendingReviewItem item = child.getValue(PendingReviewItem.class);
+                    android.util.Log.d("PendingReviewsFragment", "📋 Review item - key: " + child.getKey() + ", activityId: " + (item != null ? item.getActivityId() : "null"));
                     if (item != null) {
                         item.setId(child.getKey());
 
@@ -131,11 +134,15 @@ public class PendingReviewsFragment extends Fragment {
                         if (filterActivityId != null && !filterActivityId.isEmpty()) {
                             // Only add items that match the filter activity
                             if (filterActivityId.equals(item.getActivityId())) {
+                                android.util.Log.d("PendingReviewsFragment", "✅ Adding filtered review: " + child.getKey());
                                 pendingItems.add(item);
                                 fetchTargetUser(item.getTargetUserId());
+                            } else {
+                                android.util.Log.d("PendingReviewsFragment", "⚠️ Skipping review (filter mismatch): expected=" + filterActivityId + ", actual=" + item.getActivityId());
                             }
                         } else {
                             // No filter, add all items
+                            android.util.Log.d("PendingReviewsFragment", "✅ Adding unfiltered review: " + child.getKey());
                             pendingItems.add(item);
                             fetchTargetUser(item.getTargetUserId());
                         }
@@ -153,6 +160,7 @@ public class PendingReviewsFragment extends Fragment {
                     return Long.compare(b.getTimestamp(), a.getTimestamp());
                 });
 
+                android.util.Log.d("PendingReviewsFragment", "📋 Final pending items count: " + pendingItems.size());
                 adapter.notifyDataSetChanged();
                 showLoading(false);
                 updateEmptyState();

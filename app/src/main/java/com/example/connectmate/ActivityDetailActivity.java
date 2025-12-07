@@ -152,45 +152,74 @@ public class ActivityDetailActivity extends AppCompatActivity {
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
             .setTitle("활동 삭제")
-            .setMessage("이 활동을 삭제하시겠습니까? 관련된 채팅방도 함께 삭제됩니다.")
-            .setPositiveButton("삭제", (dialog, which) -> deleteActivity())
+            .setMessage("활동 기록이 남지 않습니다. 활동이 정상적으로 종료되었다면 '활동 종료'를 선택해주세요.\n\n계속하시겠습니까?")
+            .setPositiveButton("삭제", (dialog, which) -> deleteActivity(false))
+            .setNeutralButton("활동 종료", (dialog, which) -> deleteActivity(true))
             .setNegativeButton("취소", null)
             .show();
     }
 
     /**
      * Delete the activity and associated chat room
+     * @param isCompletion true if activity is being completed (triggers reviews/notifications), false for simple deletion
      */
-    private void deleteActivity() {
+    private void deleteActivity(boolean isCompletion) {
         if (activity == null) {
             Toast.makeText(this, "활동을 찾을 수 없습니다", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d(TAG, "🗑️ User requested to delete activity: " + activity.getId());
+        Log.d(TAG, "🗑️ User requested to delete activity: " + activity.getId() + " (completion: " + isCompletion + ")");
         Log.d(TAG, "Activity title: " + activity.getTitle());
         Log.d(TAG, "Creator ID: " + activity.getCreatorId());
 
         // Show progress
-        Toast.makeText(this, "삭제 중...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, isCompletion ? "종료 중..." : "삭제 중...", Toast.LENGTH_SHORT).show();
 
         FirebaseActivityManager activityManager = FirebaseActivityManager.getInstance();
-        activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
-            @Override
-            public void onSuccess(Void result) {
-                Log.d(TAG, "✅ Activity deleted successfully!");
-                Toast.makeText(ActivityDetailActivity.this, "활동이 삭제되었습니다", Toast.LENGTH_SHORT).show();
-                finish();
-            }
 
-            @Override
-            public void onError(Exception e) {
-                Log.e(TAG, "❌ Failed to delete activity: " + e.getMessage(), e);
-                Toast.makeText(ActivityDetailActivity.this,
-                    "활동 삭제에 실패했습니다: " + e.getMessage(),
-                    Toast.LENGTH_LONG).show();
-            }
-        });
+        if (isCompletion) {
+            // Activity completion - create reviews and notifications
+            activityManager.deleteActivity(
+                activity.getId(),
+                true,  // increment participation count
+                activity.getTitle(),  // activity title for notifications
+                new FirebaseActivityManager.OnCompleteListener<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        Log.d(TAG, "✅ Activity completed successfully!");
+                        Toast.makeText(ActivityDetailActivity.this, "활동이 종료되었습니다", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "❌ Failed to complete activity: " + e.getMessage(), e);
+                        Toast.makeText(ActivityDetailActivity.this,
+                            "활동 종료에 실패했습니다: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    }
+                }
+            );
+        } else {
+            // Simple deletion - no reviews or notifications
+            activityManager.deleteActivity(activity.getId(), new FirebaseActivityManager.OnCompleteListener<Void>() {
+                @Override
+                public void onSuccess(Void result) {
+                    Log.d(TAG, "✅ Activity deleted successfully!");
+                    Toast.makeText(ActivityDetailActivity.this, "활동이 삭제되었습니다", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "❌ Failed to delete activity: " + e.getMessage(), e);
+                    Toast.makeText(ActivityDetailActivity.this,
+                        "활동 삭제에 실패했습니다: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                }
+            });
+        }
     }
 
     private void displayActivityDetails() {

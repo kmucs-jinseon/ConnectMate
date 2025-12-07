@@ -55,7 +55,7 @@
     <color name="chat_bubble_received_text">@color/black</color>  <!-- Dark text for light blue bubble -->
 
     <!-- Dark Mode Participant Count Colors (Reversed) -->
-    <color name="participant_count_background">@color/primary_blue</color>  <!-- Blue background -->
+    <color name="participant_count_background">@color/gray_300</color>  <!-- gray background -->
     <color name="participant_count_text">@color/white</color>  <!-- White text -->
 
     <!-- Dark Mode Message Input Bar Colors -->

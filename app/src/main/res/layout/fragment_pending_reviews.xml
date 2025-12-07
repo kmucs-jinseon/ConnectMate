@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:background="@color/activity_card_background"
+            android:background="@color/gray_300"
             android:paddingStart="20dp"
             android:paddingTop="16dp"
             android:paddingEnd="20dp"
@@ -41,11 +41,12 @@
             android:id="@+id/pending_reviews_recycler"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="30dp"
+            android:layout_marginBottom="0dp"
             android:layout_weight="1"
             android:clipToPadding="false"
             android:overScrollMode="always"
-            android:padding="0dp" />
+            android:padding="0dp"
+            android:background="?attr/colorSurface"/>
 
         <TextView
             android:id="@+id/pending_reviews_empty"

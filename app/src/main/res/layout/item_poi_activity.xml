@@ -50,7 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:ellipsize="end"
-        android:maxLines="1"
+        android:maxLines="2"
         android:text="This is a sample description of the activity that can be quite long but will be truncated with ellipsis if it overflows"
         android:textColor="@color/text_secondary"
         android:textSize="14sp" />

@@ -1,10 +1,12 @@
 package com.example.connectmate.models;
 
+import java.io.Serializable;
+
 /**
  * Represents a pending review task for a user.
  * reviewerId is implied by the parent node path and is not stored here.
  */
-public class PendingReviewItem {
+public class PendingReviewItem implements Serializable {
     private String id;
     private String targetUserId;
     private String activityId;

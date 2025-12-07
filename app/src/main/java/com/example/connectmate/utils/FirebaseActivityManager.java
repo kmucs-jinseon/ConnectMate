@@ -428,13 +428,20 @@ public class FirebaseActivityManager {
                         }
                     }
                     Log.d(TAG, "Found " + participantIds.size() + " participants to clean up");
+                    Log.d(TAG, "incrementParticipationCount=" + incrementParticipationCount + ", mode=" + mode);
 
                     if (incrementParticipationCount && !participantIds.isEmpty()) {
+                        Log.d(TAG, "✅ Incrementing participation counts and creating reviews/notifications");
                         incrementParticipationCounts(participantIds);
                         if (mode == ActivityDeletionMode.WITH_NOTIFICATIONS) {
+                            Log.d(TAG, "📢 Creating notifications for participants");
                             addNotificationsForParticipants(activityId, resolvedTitle, participantIds);
+                        } else {
+                            Log.d(TAG, "⚠️ Skipping notifications (mode is SILENT)");
                         }
                         createPendingReviewRequests(activityId, resolvedTitle, participantIds);
+                    } else {
+                        Log.d(TAG, "⚠️ Skipping participation increment/reviews - incrementParticipationCount=" + incrementParticipationCount + ", participantIds.isEmpty()=" + participantIds.isEmpty());
                     }
 
                     // Step 2: Delete the chat room
@@ -509,14 +516,19 @@ public class FirebaseActivityManager {
     }
 
     private void addNotificationsForParticipants(@Nullable String activityId, @Nullable String activityTitle, List<String> participantIds) {
+        Log.d(TAG, "📢 addNotificationsForParticipants called - activity: " + activityTitle + ", participants: " + participantIds.size());
         String title = !TextUtils.isEmpty(activityTitle) ? activityTitle : "활동";
         String endMessage = title + " 활동이 종료되었습니다.";
         String reviewMessage = "함께한 멤버를 평가해주세요.";
+
+        // Only create review notifications if there are at least 2 participants
+        boolean shouldCreateReviewNotification = participantIds != null && participantIds.size() >= 2;
 
         for (String userId : participantIds) {
             if (userId == null || userId.isEmpty()) continue;
             DatabaseReference userRef = userNotificationsRef.child(userId);
             long timestamp = System.currentTimeMillis();
+            Log.d(TAG, "Creating notifications for user: " + userId + " (review notification: " + shouldCreateReviewNotification + ")");
 
             String endId = userRef.push().getKey();
             if (endId != null) {
@@ -529,23 +541,28 @@ public class FirebaseActivityManager {
                 endNotif.put("activityId", activityId);
                 endNotif.put("isRead", false);
                 userRef.child(endId).setValue(endNotif)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Activity end notification created for user: " + userId))
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create activity end notification", e));
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ Activity end notification created for user: " + userId))
+                    .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to create activity end notification", e));
             }
 
-            String reviewId = userRef.push().getKey();
-            if (reviewId != null) {
-                Map<String, Object> reviewNotif = new HashMap<>();
-                reviewNotif.put("id", reviewId);
-                reviewNotif.put("type", "ACTIVITY");
-                reviewNotif.put("title", "참여자 평가 요청");
-                reviewNotif.put("message", reviewMessage);
-                reviewNotif.put("timestamp", timestamp + 1);
-                reviewNotif.put("activityId", activityId);
-                reviewNotif.put("isRead", false);
-                userRef.child(reviewId).setValue(reviewNotif)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Review request notification created for user: " + userId))
-                    .addOnFailureListener(e -> Log.e(TAG, "Failed to create review request notification", e));
+            // Only create review notification if there are other participants to review
+            if (shouldCreateReviewNotification) {
+                String reviewId = userRef.push().getKey();
+                if (reviewId != null) {
+                    Map<String, Object> reviewNotif = new HashMap<>();
+                    reviewNotif.put("id", reviewId);
+                    reviewNotif.put("type", "ACTIVITY");
+                    reviewNotif.put("title", "참여자 평가 요청");
+                    reviewNotif.put("message", reviewMessage);
+                    reviewNotif.put("timestamp", timestamp + 1);
+                    reviewNotif.put("activityId", activityId);
+                    reviewNotif.put("isRead", false);
+                    userRef.child(reviewId).setValue(reviewNotif)
+                        .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ Review request notification created for user: " + userId))
+                        .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to create review request notification", e));
+                }
+            } else {
+                Log.d(TAG, "⚠️ Skipping review notification - only " + participantIds.size() + " participant(s)");
             }
         }
     }
@@ -554,12 +571,15 @@ public class FirebaseActivityManager {
                                              @Nullable String activityTitle,
                                              List<String> participantIds) {
         if (TextUtils.isEmpty(activityId) || participantIds == null || participantIds.size() < 2) {
+            Log.d(TAG, "⚠️ Skipping pending review creation - activityId: " + activityId + ", participants: " + (participantIds != null ? participantIds.size() : "null"));
             return;
         }
 
+        Log.d(TAG, "📝 Creating pending review requests for activity: " + activityTitle + " with " + participantIds.size() + " participants");
         String title = !TextUtils.isEmpty(activityTitle) ? activityTitle : "활동";
         long timestamp = System.currentTimeMillis();
 
+        int reviewCount = 0;
         for (String reviewerId : participantIds) {
             if (TextUtils.isEmpty(reviewerId)) continue;
             for (String targetId : participantIds) {
@@ -573,9 +593,17 @@ public class FirebaseActivityManager {
                 data.put("activityTitle", title);
                 data.put("timestamp", timestamp);
                 data.put("status", "pending");
-                reviewRef.setValue(data);
+
+                reviewCount++;
+                final int currentReviewCount = reviewCount;
+                reviewRef.setValue(data)
+                    .addOnSuccessListener(aVoid ->
+                        Log.d(TAG, "✅ Pending review created (" + currentReviewCount + "): reviewer=" + reviewerId + ", target=" + targetId))
+                    .addOnFailureListener(e ->
+                        Log.e(TAG, "❌ Failed to create pending review: reviewer=" + reviewerId + ", target=" + targetId, e));
             }
         }
+        Log.d(TAG, "📝 Total pending reviews to create: " + reviewCount);
     }
 
     public enum ActivityDeletionMode {
@@ -831,7 +859,7 @@ public class FirebaseActivityManager {
                     public void onDataChange(@NonNull DataSnapshot profileSnapshot) {
                         String profileImageUrl = profileSnapshot.getValue(String.class);
 
-                        // Get all existing participants (except the new user and creator)
+                        // Get all existing participants (except the new user)
                         activitiesRef.child(activityId).child(PATH_PARTICIPANTS)
                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
@@ -839,12 +867,12 @@ public class FirebaseActivityManager {
                                     for (DataSnapshot participantSnapshot : participantsSnapshot.getChildren()) {
                                         String participantId = participantSnapshot.getKey();
 
-                                        // Don't notify the user who just joined or the creator
-                                        if (participantId == null || participantId.equals(newUserId) || participantId.equals(creatorId)) {
+                                        // Don't notify the user who just joined
+                                        if (participantId == null || participantId.equals(newUserId)) {
                                             continue;
                                         }
 
-                                        // Create notification for this participant
+                                        // Create notification for this participant (including creator)
                                         String notificationId = userNotificationsRef.child(participantId).push().getKey();
                                         if (notificationId == null) continue;
 

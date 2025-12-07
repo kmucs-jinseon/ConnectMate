@@ -243,11 +243,15 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
                         @Override
                         public void onSuccess(Void aVoid) {
                             Toast.makeText(FriendsActivity.this, user.getDisplayName() + "님과의 연결이 정리되었습니다.", Toast.LENGTH_SHORT).show();
+                            // Navigate back to chat list
+                            finish();
                         }
 
                         @Override
                         public void onError(Exception e) {
                             Log.e(TAG, "Error deleting chat room", e);
+                            // Navigate back even on error
+                            finish();
                         }
                     });
                 })
@@ -266,6 +270,8 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
         friendRequestList.remove(user);
         friendRequestAdapter.notifyDataSetChanged();
         Toast.makeText(this, user.getDisplayName() + "님의 친구 요청을 거절했습니다.", Toast.LENGTH_SHORT).show();
+        // Navigate back to chat list
+        finish();
     }
 
     // ViewPager Adapter

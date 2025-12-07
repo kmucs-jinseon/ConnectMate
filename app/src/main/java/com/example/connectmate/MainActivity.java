@@ -191,6 +191,38 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+
+        // Handle opening submit review fragment
+        if (intent.getBooleanExtra("open_submit_review", false)) {
+            com.example.connectmate.models.PendingReviewItem reviewItem =
+                (com.example.connectmate.models.PendingReviewItem) intent.getSerializableExtra("review_item");
+            if (reviewItem != null) {
+                Log.d(TAG, "Opening SubmitReviewFragment for: " + reviewItem.getTargetDisplayName());
+                SubmitReviewFragment fragment = SubmitReviewFragment.newInstance(reviewItem);
+                getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.main_container, fragment)
+                    .addToBackStack("SubmitReview")
+                    .commit();
+                intent.removeExtra("open_submit_review");
+                intent.removeExtra("review_item");
+            }
+        }
+
+        // Handle opening pending reviews fragment
+        if (intent.getBooleanExtra("open_pending_reviews", false)) {
+            String activityId = intent.getStringExtra("activity_id");
+            Log.d(TAG, "Opening PendingReviewsFragment" + (activityId != null ? " for activity: " + activityId : ""));
+            PendingReviewsFragment fragment = activityId != null ?
+                PendingReviewsFragment.newInstance(activityId) : new PendingReviewsFragment();
+            getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.main_container, fragment)
+                .addToBackStack("PendingReviews")
+                .commit();
+            intent.removeExtra("open_pending_reviews");
+            intent.removeExtra("activity_id");
+        }
     }
 
 

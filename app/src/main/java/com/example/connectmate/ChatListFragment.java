@@ -203,7 +203,9 @@ public class ChatListFragment extends Fragment {
 
         adapterHolder[0] = new NotificationAdapter(notifications, item -> {
             // Handle notification click
+            Log.d(TAG, "🔔 Notification clicked - Type: " + item.getType() + ", Title: " + item.getTitle() + ", ActivityId: " + item.getActivityId());
             if ("참여자 평가 요청".equals(item.getTitle())) {
+                Log.d(TAG, "🔔 Opening pending reviews for activity: " + item.getActivityId());
                 dialog.dismiss();
                 // Pass activityId to filter reviews for specific activity
                 openPendingReviewsFragment(item.getActivityId());
@@ -213,6 +215,7 @@ public class ChatListFragment extends Fragment {
             }
 
             // Delete notification from Firebase and remove from list (for non-review notifications)
+            Log.d(TAG, "🔔 Deleting non-review notification: " + item.getTitle());
             deleteNotification(userId, item, notifications, adapterHolder[0], emptyText);
         });
         recyclerView.setAdapter(adapterHolder[0]);
@@ -233,6 +236,13 @@ public class ChatListFragment extends Fragment {
                     if (item != null) {
                         Log.d(TAG, "Notification loaded - Type: " + item.getType() + ", Title: " + item.getTitle() + ", Message: " + item.getMessage());
                         notifications.add(item);
+
+                        // Mark notification as read
+                        if (!item.isRead()) {
+                            child.getRef().child("isRead").setValue(true)
+                                .addOnSuccessListener(aVoid -> Log.d(TAG, "Marked notification as read: " + item.getId()))
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to mark notification as read", e));
+                        }
                     }
                 }
                 // Sort oldest first (ascending order by timestamp)
@@ -289,12 +299,14 @@ public class ChatListFragment extends Fragment {
     }
 
     private void openPendingReviewsFragment(String activityId) {
+        Log.d(TAG, "🔔 Opening PendingReviewsFragment with activityId: " + activityId);
         PendingReviewsFragment fragment = PendingReviewsFragment.newInstance(activityId);
         requireActivity().getSupportFragmentManager()
             .beginTransaction()
             .replace(R.id.main_container, fragment)
             .addToBackStack("PendingReviews")
             .commit();
+        Log.d(TAG, "🔔 Fragment transaction committed");
     }
 
     private void toggleSearch() {

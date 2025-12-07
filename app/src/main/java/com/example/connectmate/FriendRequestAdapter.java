@@ -132,7 +132,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     }
 
     private void acceptFriendRequest(User user) {
-        if (currentUserId == null) return; // Do nothing if user is not logged in
+        if (currentUserId == null || user == null || user.getUserId() == null) {
+            Log.e("FriendRequestAdapter", "Cannot accept friend request - invalid user data");
+            return;
+        }
 
         DatabaseReference currentUserFriendsRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friends").child(user.getUserId());
         currentUserFriendsRef.setValue(true);
@@ -154,7 +157,10 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     }
 
     private void rejectFriendRequest(User user) {
-        if (currentUserId == null) return; // Do nothing if user is not logged in
+        if (currentUserId == null || user == null || user.getUserId() == null) {
+            Log.e("FriendRequestAdapter", "Cannot reject friend request - invalid user data");
+            return;
+        }
 
         // Simply remove the friend request without adding to friends
         DatabaseReference friendRequestRef = FirebaseDatabase.getInstance().getReference("users").child(currentUserId).child("friendRequests").child(user.getUserId());

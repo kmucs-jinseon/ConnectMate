@@ -921,7 +921,11 @@ public class ProfileFragment extends Fragment {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.putExtra("from_logout", true); // Flag to indicate this is from logout
         startActivity(intent);
-        // No need to call finish() - FLAG_ACTIVITY_CLEAR_TASK handles clearing the stack
+
+        // Explicitly finish the current activity to prevent any further operations
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
 
         android.util.Log.d("ProfileFragment", "=== Logout complete - redirected to LoginActivity ===");
     }

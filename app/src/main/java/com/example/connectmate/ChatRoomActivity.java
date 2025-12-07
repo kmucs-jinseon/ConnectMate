@@ -443,6 +443,10 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 // Navigate to MainActivity and open pending reviews
                 Intent intent = new Intent(ChatRoomActivity.this, MainActivity.class);
                 intent.putExtra("open_pending_reviews", true);
+                // Pass the activity ID so it filters to just this activity's reviews
+                if (chatRoom != null && chatRoom.getActivityId() != null) {
+                    intent.putExtra("activity_id", chatRoom.getActivityId());
+                }
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();

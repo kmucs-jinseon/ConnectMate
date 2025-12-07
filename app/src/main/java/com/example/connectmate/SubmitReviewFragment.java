@@ -292,7 +292,7 @@ public class SubmitReviewFragment extends Fragment {
     }
 
     /**
-     * Delete the review notification for a specific activity
+     * Delete the review notification and activity end notification for a specific activity
      */
     private void deleteReviewNotificationForActivity(String userId, String activityId) {
         if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(activityId)) {
@@ -306,21 +306,28 @@ public class SubmitReviewFragment extends Fragment {
         notificationsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                int deletedCount = 0;
                 for (DataSnapshot child : snapshot.getChildren()) {
                     com.example.connectmate.models.NotificationItem notification =
                         child.getValue(com.example.connectmate.models.NotificationItem.class);
 
-                    if (notification != null &&
-                        "참여자 평가 요청".equals(notification.getTitle()) &&
-                        activityId.equals(notification.getActivityId())) {
-                        // Delete this notification
-                        child.getRef().removeValue()
-                            .addOnSuccessListener(aVoid ->
-                                Log.d("SubmitReviewFragment", "Review notification deleted for activity: " + activityId))
-                            .addOnFailureListener(e ->
-                                Log.e("SubmitReviewFragment", "Failed to delete notification", e));
-                        break;
+                    if (notification != null && activityId.equals(notification.getActivityId())) {
+                        // Delete both review request and activity end notifications
+                        if ("참여자 평가 요청".equals(notification.getTitle()) ||
+                            "활동 종료".equals(notification.getTitle())) {
+                            final String notifTitle = notification.getTitle();
+                            child.getRef().removeValue()
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d("SubmitReviewFragment", notifTitle + " notification deleted for activity: " + activityId);
+                                })
+                                .addOnFailureListener(e ->
+                                    Log.e("SubmitReviewFragment", "Failed to delete " + notifTitle + " notification", e));
+                            deletedCount++;
+                        }
                     }
+                }
+                if (deletedCount > 0) {
+                    Log.d("SubmitReviewFragment", "Deleted " + deletedCount + " notifications for activity: " + activityId);
                 }
             }
 

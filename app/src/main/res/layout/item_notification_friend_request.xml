@@ -8,7 +8,7 @@
     android:paddingEnd="16dp"
     android:paddingTop="16dp"
     android:paddingBottom="0dp"
-    android:background="?attr/selectableItemBackground">
+    android:background="@color/activity_card_background">
 
     <!-- Content Row -->
     <LinearLayout
