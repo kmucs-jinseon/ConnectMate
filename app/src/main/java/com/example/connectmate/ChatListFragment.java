@@ -593,10 +593,8 @@ public class ChatListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload unread counts when fragment resumes (e.g., after returning from chat room)
-        for (ChatRoom chatRoom : allChatRooms) {
-            loadUnreadCountForChatRoom(chatRoom);
-        }
+        // Reload chat rooms to get latest messages and profile images
+        loadChatRoomsFromFirebase();
         // Refresh notification badge
         loadUnreadNotificationCount();
     }

@@ -51,6 +51,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +92,11 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     private boolean isInitialLoad = true;
     private boolean hasScrolledToUnread = false;
 
+    // Callback for when user info is loaded
+    private interface OnUserInfoLoadedListener {
+        void onUserInfoLoaded();
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,37 +105,54 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
         // Initialize file list
         selectedFileUris = new java.util.ArrayList<>();
 
-        // Get chat room from intent
-        chatRoom = (ChatRoom) getIntent().getSerializableExtra("chat_room");
-        String chatRoomName = getIntent().getStringExtra("chat_room_name");
-
-        // Get current user info
-        getCurrentUserInfo();
-
-        // Initialize UI
-        initializeViews();
-        setupRecyclerView();
-        setupMessageInput();
+        // IMPORTANT: setupImagePicker() must be called BEFORE activity is STARTED
+        // registerForActivityResult() requires registration before lifecycle STARTED state
         setupImagePicker();
 
-        if (chatRoom == null) {
+        // Get user info first, then proceed with chat room logic
+        getCurrentUserInfo(() -> {
+            // This code runs only after user info is loaded from Firebase
+            Log.d(TAG, "User info loaded, continuing with chat room initialization");
+            Log.d(TAG, "currentUserId: " + currentUserId);
+            Log.d(TAG, "currentUserName: " + currentUserName);
+
+            // Get chat room from intent
+            chatRoom = (ChatRoom) getIntent().getSerializableExtra("chat_room");
+            String chatRoomName = getIntent().getStringExtra("chat_room_name");
             String chatRoomId = getIntent().getStringExtra("chat_room_id");
-            if (chatRoomId != null) {
-                loadChatRoomFromFirebase(chatRoomId);
+            boolean isPrivateChat = getIntent().getBooleanExtra("is_private_chat", false);
+
+            Log.d(TAG, "Intent extras - chatRoom: " + (chatRoom != null ? "exists" : "null") +
+                ", chatRoomId: " + chatRoomId + ", chatRoomName: " + chatRoomName +
+                ", isPrivateChat: " + isPrivateChat);
+
+            // Initialize UI
+            initializeViews();
+            setupRecyclerView();
+            setupMessageInput();
+
+            if (chatRoom == null) {
+                Log.d(TAG, "chatRoom is null, checking for chat_room_id extra: " + chatRoomId);
+                if (chatRoomId != null) {
+                    Log.d(TAG, "Loading chat room from Firebase with ID: " + chatRoomId);
+                    loadChatRoomFromFirebase(chatRoomId);
+                } else {
+                    Log.e(TAG, "No chat_room_id extra found");
+                    Toast.makeText(this, "채팅방 정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
             } else {
-                Toast.makeText(this, "Chat room not found", Toast.LENGTH_SHORT).show();
-                finish();
-                return;
+                Log.d(TAG, "chatRoom object passed via intent");
+                if (chatRoomName != null) {
+                    chatRoom.setName(chatRoomName);
+                }
+                setupToolbar();
+                loadMessagesFromFirebase();
+                listenForChatRoomUpdates();
+                markMessagesAsRead();
             }
-        } else {
-            if (chatRoomName != null) {
-                chatRoom.setName(chatRoomName);
-            }
-            setupToolbar();
-            loadMessagesFromFirebase();
-            listenForChatRoomUpdates();
-            markMessagesAsRead();
-        }
+        });
     }
 
     /**
@@ -163,6 +186,16 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
         MenuItem endActivityItem = menu.findItem(R.id.action_end_activity);
         if (endActivityItem != null) {
             endActivityItem.setVisible(isCurrentUserHost());
+        }
+
+        // Use popup menu text color which adapts to theme automatically
+        int textColor = getResources().getColor(R.color.popup_menu_text_color);
+
+        for (int i = 0; i < menu.size(); i++) {
+            MenuItem item = menu.getItem(i);
+            android.text.SpannableString spannableString = new android.text.SpannableString(item.getTitle());
+            spannableString.setSpan(new android.text.style.ForegroundColorSpan(textColor), 0, spannableString.length(), 0);
+            item.setTitle(spannableString);
         }
 
         return true;
@@ -529,9 +562,15 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 .setTitle("참여자 목록 (" + participants.size() + "명)")
                 .setView(dialogView)
                 .setPositiveButton("확인", null);
-        
+
         participantsDialog = builder.create();
         participantsDialog.show();
+
+        // Style the dialog button to match theme
+        android.widget.Button positiveButton = participantsDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        if (positiveButton != null) {
+            positiveButton.setTextColor(ContextCompat.getColor(this, R.color.primary_blue));
+        }
     }
 
     @Override
@@ -605,15 +644,36 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 .setMessage("정말 채팅방을 나가시겠습니까?")
                 .setPositiveButton("나가기", (dialog, which) -> {
 
-                    // Remove member through FirebaseActivityManager
-                    FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<>() {
+                    // First remove member from chat room to update member count
+                    FirebaseChatManager.getInstance().removeMemberFromChatRoom(chatRoom.getId(), currentUserId, new FirebaseChatManager.OnCompleteListener<>() {
                         @Override
                         public void onSuccess(Void aVoid) {
-                            Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
-                            finish();
+                            Log.d(TAG, "Member removed from chat room successfully");
+
+                            // Then remove participant from activity if this chat has an associated activity
+                            if (chatRoom.getActivityId() != null && !chatRoom.getActivityId().isEmpty()) {
+                                FirebaseActivityManager.getInstance().removeParticipant(chatRoom.getActivityId(), currentUserId, new FirebaseActivityManager.OnCompleteListener<>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }
+                                    @Override
+                                    public void onError(Exception e) {
+                                        Log.e(TAG, "Error removing participant from activity", e);
+                                        Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                                        finish();
+                                    }
+                                });
+                            } else {
+                                // No associated activity, just finish
+                                Toast.makeText(ChatRoomActivity.this, "채팅방에서 나갔습니다.", Toast.LENGTH_SHORT).show();
+                                finish();
+                            }
                         }
                         @Override
                         public void onError(Exception e) {
+                            Log.e(TAG, "Error removing member from chat room", e);
                             Toast.makeText(ChatRoomActivity.this, "채팅방 나가기 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -622,7 +682,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
             .show();
     }
 
-    private void getCurrentUserInfo() {
+    private void getCurrentUserInfo(OnUserInfoLoadedListener listener) {
         // Get user ID first
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
@@ -646,7 +706,12 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
 
         // Fetch real displayName and profileImageUrl from Firebase Realtime Database
         if (currentUserId != null && !currentUserId.isEmpty()) {
-            loadUserInfoFromFirebase(currentUserId);
+            loadUserInfoFromFirebase(currentUserId, listener);
+        } else {
+            // If no user ID, run listener immediately
+            if (listener != null) {
+                listener.onUserInfoLoaded();
+            }
         }
 
         Log.d(TAG, "=== Initial getUserInfo result ===");
@@ -658,7 +723,7 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
     /**
      * Load real user info (displayName and profileImageUrl) from Firebase Realtime Database
      */
-    private void loadUserInfoFromFirebase(String userId) {
+    private void loadUserInfoFromFirebase(String userId, OnUserInfoLoadedListener listener) {
         Log.d(TAG, "Loading user info from Firebase for user: " + userId);
         FirebaseDatabase.getInstance()
             .getReference("users")
@@ -702,6 +767,10 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                         // Set default name if user not found
                         currentUserName = "사용자";
                     }
+                    // Trigger callback
+                    if (listener != null) {
+                        listener.onUserInfoLoaded();
+                    }
                 }
 
                 @Override
@@ -709,6 +778,10 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                     Log.e(TAG, "Failed to load user info from Firebase", error.toException());
                     // Set default name on error
                     currentUserName = "사용자";
+                    // Trigger callback even on error
+                    if (listener != null) {
+                        listener.onUserInfoLoaded();
+                    }
                 }
             });
     }
@@ -937,7 +1010,97 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
         chatManager.getChatRoomById(chatRoomId, new FirebaseChatManager.OnCompleteListener<>() {
             @Override
             public void onSuccess(ChatRoom result) {
-                chatRoom = result;
+                if (result != null) {
+                    // Chat room exists, use it
+                    chatRoom = result;
+                    setupToolbar();
+                    loadMessagesFromFirebase();
+                    listenForChatRoomUpdates();
+                    markMessagesAsRead();
+                } else {
+                    // Chat room doesn't exist
+                    // Check if this is a private chat that needs to be created
+                    boolean isPrivateChat = getIntent().getBooleanExtra("is_private_chat", false);
+                    if (isPrivateChat) {
+                        Log.d(TAG, "Private chat room doesn't exist, creating it...");
+                        createPrivateChatRoom(chatRoomId);
+                    } else {
+                        Log.e(TAG, "Chat room not found");
+                        Toast.makeText(ChatRoomActivity.this, "채팅방을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Log.e(TAG, "Error loading chat room", e);
+                Toast.makeText(ChatRoomActivity.this, "채팅방을 불러오는데 실패했습니다.", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    /**
+     * Create a new private chat room for 1:1 messaging
+     */
+    private void createPrivateChatRoom(String chatRoomId) {
+        String otherUserId = getIntent().getStringExtra("other_user_id");
+        String otherUserName = getIntent().getStringExtra("other_user_name");
+        String chatRoomName = getIntent().getStringExtra("chat_room_name");
+
+        Log.d(TAG, "=== createPrivateChatRoom called ===");
+        Log.d(TAG, "Chat room ID: " + chatRoomId);
+        Log.d(TAG, "Other user ID: " + otherUserId);
+        Log.d(TAG, "Other user name: " + otherUserName);
+        Log.d(TAG, "Chat room name: " + chatRoomName);
+        Log.d(TAG, "Current user ID: " + currentUserId);
+        Log.d(TAG, "Current user name: " + currentUserName);
+
+        if (otherUserId == null || otherUserName == null) {
+            Log.e(TAG, "Missing other user information for private chat");
+            Toast.makeText(this, "채팅방 정보가 부족합니다.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Log.e(TAG, "Current user ID is null or empty!");
+            Toast.makeText(this, "사용자 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        if (currentUserName == null || currentUserName.isEmpty()) {
+            Log.e(TAG, "Current user name is null or empty!");
+            Toast.makeText(this, "사용자 이름을 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        Log.d(TAG, "Creating private chat room: " + chatRoomId);
+        Log.d(TAG, "Current user: " + currentUserId + " (" + currentUserName + ")");
+        Log.d(TAG, "Other user: " + otherUserId + " (" + otherUserName + ")");
+
+        // Create new chat room
+        ChatRoom newChatRoom = new ChatRoom(chatRoomName != null ? chatRoomName : otherUserName, null);
+        newChatRoom.setId(chatRoomId);
+        newChatRoom.setCategory("private");
+        newChatRoom.setHostId(currentUserId);
+        newChatRoom.setCreatedTimestamp(System.currentTimeMillis());
+
+        // Add members
+        Map<String, ChatRoom.Member> members = new HashMap<>();
+        members.put(currentUserId, new ChatRoom.Member(currentUserName, 0));
+        members.put(otherUserId, new ChatRoom.Member(otherUserName, 0));
+        newChatRoom.setMembers(members);
+
+        // Save to Firebase
+        FirebaseChatManager.getInstance().saveChatRoom(newChatRoom, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
+            @Override
+            public void onSuccess(ChatRoom savedChatRoom) {
+                Log.d(TAG, "Private chat room created successfully");
+                chatRoom = savedChatRoom;
                 setupToolbar();
                 loadMessagesFromFirebase();
                 listenForChatRoomUpdates();
@@ -946,8 +1109,8 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
 
             @Override
             public void onError(Exception e) {
-                Log.e(TAG, "Error loading chat room", e);
-                Toast.makeText(ChatRoomActivity.this, "Failed to load chat room", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Failed to create private chat room", e);
+                Toast.makeText(ChatRoomActivity.this, "채팅방 생성에 실패했습니다.", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -1626,6 +1789,21 @@ public class ChatRoomActivity extends AppCompatActivity implements ParticipantAd
                 Log.d(TAG, "Scrolled to bottom (latest message)");
             });
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload user profile information to ensure latest profile image is used
+        SharedPreferences prefs = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE);
+        currentUserProfileUrl = prefs.getString("profile_image_url", null);
+
+        // Also reload from Firebase to get the most up-to-date info
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            loadUserInfoFromFirebase(currentUserId, null);
+        }
+
+        Log.d(TAG, "onResume: Reloaded user profile info");
     }
 
     @Override

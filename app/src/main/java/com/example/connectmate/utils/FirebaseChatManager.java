@@ -66,9 +66,10 @@ public class FirebaseChatManager {
         activityChatRoomsRef = database.getReference(PATH_ACTIVITY_CHAT_ROOMS);
         auth = FirebaseAuth.getInstance();
 
-        // Keep chat data synced locally
+        // Keep chat data synced locally for better real-time performance
         chatRoomsRef.keepSynced(true);
         usersRef.keepSynced(true);
+        messagesRef.keepSynced(true);  // Keep messages synced for faster real-time updates
     }
 
     /**
@@ -260,7 +261,7 @@ public class FirebaseChatManager {
     }
 
     /**
-     * Save a chat room to Firebase
+     * Save a chat room to Firebase and update userChatRooms index for all members
      */
     public void saveChatRoom(ChatRoom chatRoom, OnCompleteListener<ChatRoom> listener) {
         if (chatRoom.getId() == null || chatRoom.getId().isEmpty()) {
@@ -274,9 +275,24 @@ public class FirebaseChatManager {
             chatRoom.setCreatedTimestamp(System.currentTimeMillis());
         }
 
-        chatRoomsRef.child(chatRoom.getId()).setValue(chatRoom)
+        String chatRoomId = chatRoom.getId();
+
+        // First, save the chat room
+        chatRoomsRef.child(chatRoomId).setValue(chatRoom)
             .addOnSuccessListener(aVoid -> {
                 Log.d(TAG, "Chat room saved: " + chatRoom.getName());
+
+                // Then add to each member's userChatRooms index
+                if (chatRoom.getMembers() != null) {
+                    for (String memberId : chatRoom.getMembers().keySet()) {
+                        userChatRoomsRef.child(memberId).child(chatRoomId).setValue(true)
+                            .addOnSuccessListener(aVoid2 ->
+                                Log.d(TAG, "Added chat room to user's list: " + memberId))
+                            .addOnFailureListener(e ->
+                                Log.w(TAG, "Could not add to user's chat list: " + memberId, e));
+                    }
+                }
+
                 if (listener != null) {
                     listener.onSuccess(chatRoom);
                 }
@@ -307,22 +323,36 @@ public class FirebaseChatManager {
         String activityId = chatRoom.getActivityId();
         String chatRoomId = chatRoom.getId();
 
-        // Save both chat room and mapping atomically
-        Map<String, Object> updates = new HashMap<>();
-        updates.put(PATH_CHAT_ROOMS + "/" + chatRoomId, chatRoom);
-        if (activityId != null && !activityId.isEmpty()) {
-            updates.put(PATH_ACTIVITY_CHAT_ROOMS + "/" + activityId, chatRoomId);
-        }
-
-        FirebaseDatabase.getInstance().getReference().updateChildren(updates)
+        // First save the chat room
+        chatRoomsRef.child(chatRoomId).setValue(chatRoom)
             .addOnSuccessListener(aVoid -> {
-                Log.d(TAG, "Chat room and mapping saved: " + chatRoom.getName());
-                if (listener != null) {
-                    listener.onSuccess(chatRoom);
+                Log.d(TAG, "Chat room saved: " + chatRoom.getName());
+
+                // Then save the activity mapping if needed
+                if (activityId != null && !activityId.isEmpty()) {
+                    activityChatRoomsRef.child(activityId).setValue(chatRoomId)
+                        .addOnSuccessListener(aVoid2 -> {
+                            Log.d(TAG, "Activity chat room mapping saved");
+                            if (listener != null) {
+                                listener.onSuccess(chatRoom);
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Error saving mapping, but chat room created", e);
+                            // Chat room was created successfully, so still return success
+                            if (listener != null) {
+                                listener.onSuccess(chatRoom);
+                            }
+                        });
+                } else {
+                    // No activity mapping needed
+                    if (listener != null) {
+                        listener.onSuccess(chatRoom);
+                    }
                 }
             })
             .addOnFailureListener(e -> {
-                Log.e(TAG, "Error saving chat room with mapping", e);
+                Log.e(TAG, "Error saving chat room", e);
                 if (listener != null) {
                     listener.onError(e);
                 }

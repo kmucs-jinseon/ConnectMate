@@ -220,7 +220,7 @@ public class ActivityDetailActivity extends AppCompatActivity {
                     int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
                     chip.setTextColor(textColor);
                     chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(textColor));
-                    chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density);
+                    chip.setChipStrokeWidth(1 * getResources().getDisplayMetrics().density);
 
                     detailCategoryGroup.addView(chip);
                 }
@@ -475,7 +475,9 @@ public class ActivityDetailActivity extends AppCompatActivity {
                             @Override
                             public void onError(Exception e) {
                                 Log.e(TAG, "Failed to add member to chat room", e);
-                                navigateToChatRoom(chatRoom);
+                                String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+                                Toast.makeText(ActivityDetailActivity.this, "채팅방 멤버 추가 실패: " + errorMsg, Toast.LENGTH_LONG).show();
+                                // Don't navigate if adding member failed
                             }
                         });
                     }
@@ -483,7 +485,8 @@ public class ActivityDetailActivity extends AppCompatActivity {
                     @Override
                     public void onError(Exception e) {
                         Log.e(TAG, "Failed to add participant to activity", e);
-                        Toast.makeText(ActivityDetailActivity.this, "참여 실패", Toast.LENGTH_SHORT).show();
+                        String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+                        Toast.makeText(ActivityDetailActivity.this, "참여 실패: " + errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
             }
@@ -491,7 +494,8 @@ public class ActivityDetailActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Failed to create chat room", e);
-                Toast.makeText(ActivityDetailActivity.this, "채팅방 생성 실패", Toast.LENGTH_SHORT).show();
+                String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+                Toast.makeText(ActivityDetailActivity.this, "채팅방 생성 실패: " + errorMsg, Toast.LENGTH_LONG).show();
             }
         });
             }
@@ -499,7 +503,8 @@ public class ActivityDetailActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Failed to check participant status", e);
-                Toast.makeText(ActivityDetailActivity.this, "참여 확인 실패", Toast.LENGTH_SHORT).show();
+                String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+                Toast.makeText(ActivityDetailActivity.this, "참여 확인 실패: " + errorMsg, Toast.LENGTH_LONG).show();
             }
         });
                 }

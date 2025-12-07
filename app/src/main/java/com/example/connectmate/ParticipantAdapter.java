@@ -99,7 +99,7 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
         participantNameTextView.setText(participantName);
 
         // Show host badge if the participant is the host
-        if (participantId.equals(hostId)) {
+        if (participantId != null && participantId.equals(hostId)) {
             hostBadge.setVisibility(View.VISIBLE);
         } else {
             hostBadge.setVisibility(View.GONE);
@@ -124,16 +124,29 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
     }
 
     private void showPopupMenu(View view, Participant participant) {
-        PopupMenu popup = new PopupMenu(context, view);
+        android.view.ContextThemeWrapper wrapper = new android.view.ContextThemeWrapper(context, R.style.ParticipantPopupMenu);
+        PopupMenu popup = new PopupMenu(wrapper, view);
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.participant_options_menu, popup.getMenu());
+
+        // Use popup menu text color which adapts to theme automatically
+        int textColor = context.getResources().getColor(R.color.popup_menu_text_color);
+
+        // Apply text color to each menu item
+        android.view.Menu menu = popup.getMenu();
+        for (int i = 0; i < menu.size(); i++) {
+            android.view.MenuItem item = menu.getItem(i);
+            android.text.SpannableString spannableString = new android.text.SpannableString(item.getTitle());
+            spannableString.setSpan(new android.text.style.ForegroundColorSpan(textColor), 0, spannableString.length(), 0);
+            item.setTitle(spannableString);
+        }
 
         // Conditionally show/hide "Kick" and "Grant Admin" options
         MenuItem kickItem = popup.getMenu().findItem(R.id.action_kick);
         MenuItem grantAdminItem = popup.getMenu().findItem(R.id.action_grant_admin);
 
-        boolean isHost = currentUserId.equals(hostId);
-        boolean isSelf = participant.getId().equals(currentUserId);
+        boolean isHost = currentUserId != null && currentUserId.equals(hostId);
+        boolean isSelf = participant.getId() != null && participant.getId().equals(currentUserId);
 
         kickItem.setVisible(isHost && !isSelf);
         grantAdminItem.setVisible(isHost && !isSelf);

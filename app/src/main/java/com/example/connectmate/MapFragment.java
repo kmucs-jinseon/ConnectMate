@@ -101,22 +101,11 @@ public class MapFragment extends Fragment {
     private Map<LatLng, List<Activity>> activityGroups;
     private Map<LatLng, Label> markerMap;
     private Label currentLocationLabel; // Label for current location marker
-    private Label searchResultLabel; // Label for search result marker (yellow pin)
     private LocationManager locationManager;
     private boolean isMapInitialized = false; // Track if map has been initialized
     private ChildEventListener activityChangeListener;
     private boolean isRequestingLocation = false; // Track if actively requesting location
     private android.location.LocationListener activeLocationListener = null; // Store active listener for cleanup
-
-    // Saved state keys
-    private static final String KEY_CAMERA_LAT = "camera_lat";
-    private static final String KEY_CAMERA_LNG = "camera_lng";
-    private static final String KEY_CAMERA_ZOOM = "camera_zoom";
-
-    // Saved camera position
-    private Double savedCameraLat = null;
-    private Double savedCameraLng = null;
-    private Integer savedCameraZoom = null;
 
     @Nullable
     @Override
@@ -124,20 +113,8 @@ public class MapFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_map, container, false);
 
-        // Restore saved camera position if available
-        if (savedInstanceState != null) {
-            savedCameraLat = savedInstanceState.getDouble(KEY_CAMERA_LAT, Double.NaN);
-            savedCameraLng = savedInstanceState.getDouble(KEY_CAMERA_LNG, Double.NaN);
-            savedCameraZoom = savedInstanceState.getInt(KEY_CAMERA_ZOOM, -1);
-
-            if (savedCameraLat.isNaN() || savedCameraLng.isNaN() || savedCameraZoom == -1) {
-                savedCameraLat = null;
-                savedCameraLng = null;
-                savedCameraZoom = null;
-            } else {
-                Log.d(TAG, "Restored camera position: " + savedCameraLat + ", " + savedCameraLng + " zoom: " + savedCameraZoom);
-            }
-        }
+        // Always start at current location - do not restore saved position
+        Log.d(TAG, "Map will initialize at current location");
 
         // Initialize views
         mapView = view.findViewById(R.id.map_view);
@@ -278,19 +255,9 @@ public class MapFragment extends Fragment {
                     Toast.makeText(getContext(), "✓ 지도 활성화 됨!", Toast.LENGTH_SHORT).show();
                 }
 
-                // Center on saved position, or current location if no saved state
-                if (savedCameraLat != null && savedCameraLng != null && savedCameraZoom != null) {
-                    Log.d(TAG, "Restoring saved camera position: " + savedCameraLat + ", " + savedCameraLng + " zoom: " + savedCameraZoom);
-                    LatLng savedPosition = LatLng.from(savedCameraLat, savedCameraLng);
-                    kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(savedPosition, savedCameraZoom));
-                    // Clear saved state after using it
-                    savedCameraLat = null;
-                    savedCameraLng = null;
-                    savedCameraZoom = null;
-                } else {
-                    Log.d(TAG, "No saved camera position, moving to current location");
-                    moveToCurrentLocation();
-                }
+                // ALWAYS move to current location on initialization
+                Log.d(TAG, "Initializing map at current location");
+                moveToCurrentLocation();
 
                 // Load activity markers from Firebase with real-time updates
                 loadActivitiesFromFirebase();
@@ -311,9 +278,6 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for activity markers
         kakaoMap.setOnLabelClickListener((map, layer, label) -> {
-            // Remove yellow search marker when clicking on activity markers
-            removeSearchResultMarker();
-
             LatLng position = label.getPosition();
             if (getContext() != null && position != null) {
                 List<Activity> activities = activityGroups.get(position);
@@ -333,8 +297,6 @@ public class MapFragment extends Fragment {
 
         // Set up click listener for map (to search for nearby POIs)
         kakaoMap.setOnMapClickListener((kakaoMap1, position, screenPoint, poi) -> {
-            // Remove yellow search marker when clicking on POIs
-            removeSearchResultMarker();
             fetchPoiDetails(Objects.requireNonNull(poi).getName(), position.getLatitude(), position.getLongitude());
         });
 
@@ -482,19 +444,6 @@ public class MapFragment extends Fragment {
 
 
 
-    /**
-     * Remove the yellow search result marker from the map
-     */
-    private void removeSearchResultMarker() {
-        if (searchResultLabel != null && kakaoMap != null && kakaoMap.getLabelManager() != null) {
-            LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-            if (labelLayer != null) {
-                labelLayer.remove(searchResultLabel);
-                searchResultLabel = null;
-                Log.d(TAG, "Search result marker removed");
-            }
-        }
-    }
 
     /**
      * Move camera to a specific location and add marker
@@ -737,7 +686,7 @@ public class MapFragment extends Fragment {
             Log.w(TAG, "Cannot request location update - permission:" + !lacksLocationPermission() +
                   ", locationManager:" + (locationManager != null) +
                   ", context:" + (getContext() != null));
-            moveToDefaultLocation();
+            // Don't move to default - keep current camera position
             return;
         }
 
@@ -816,7 +765,7 @@ public class MapFragment extends Fragment {
                     activeLocationListener
                 );
             } else {
-                // No providers available - use default location
+                // No providers available - warn user but don't move to default
                 Log.w(TAG, "No location providers available - GPS: " + gpsEnabled + ", Network: " + networkEnabled);
                 if (getContext() != null) {
                     Toast.makeText(getContext(),
@@ -825,14 +774,14 @@ public class MapFragment extends Fragment {
                 }
                 isRequestingLocation = false;
                 activeLocationListener = null;
-                moveToDefaultLocation();
+                // Keep current camera position instead of moving to default
                 return;
             }
 
-            // Set a timeout - if no location received within 10 seconds, use default
+            // Set a timeout - if no location received within 10 seconds, stop requesting but keep current position
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                 if (isRequestingLocation && activeLocationListener != null) {
-                    Log.w(TAG, "Location request timeout - using default location");
+                    Log.w(TAG, "Location request timeout - keeping current camera position");
                     if (locationManager != null) {
                         try {
                             locationManager.removeUpdates(activeLocationListener);
@@ -842,7 +791,7 @@ public class MapFragment extends Fragment {
                     }
                     isRequestingLocation = false;
                     activeLocationListener = null;
-                    moveToDefaultLocation();
+                    // Don't move to default - keep camera at current position
                 }
             }, 10000); // 10 second timeout
 
@@ -850,7 +799,7 @@ public class MapFragment extends Fragment {
             Log.e(TAG, "Security exception when requesting location updates", e);
             isRequestingLocation = false;
             activeLocationListener = null;
-            moveToDefaultLocation();
+            // Don't move to default - keep current camera position
         }
     }
 
@@ -882,8 +831,8 @@ public class MapFragment extends Fragment {
      */
     private void requestLocationPermission() {
         if (getActivity() == null) {
-            Log.e(TAG, "Cannot request permissions - activity is null");
-            moveToDefaultLocation();
+            Log.e(TAG, "Cannot request permissions - activity is null, will retry");
+            // Don't move to default - activity might be temporarily null
             return;
         }
 
@@ -1007,57 +956,11 @@ public class MapFragment extends Fragment {
             // Move camera to target location with appropriate zoom level
             kakaoMap.moveCamera(CameraUpdateFactory.newCenterPosition(targetLocation, 17));
 
-            // Remove previous search result marker if it exists
-            removeSearchResultMarker();
-
-            // Add a yellow marker for the search result location
-            if (kakaoMap.getLabelManager() != null) {
-                LabelLayer labelLayer = kakaoMap.getLabelManager().getLayer();
-
-                if (labelLayer != null) {
-                    // Create yellow marker bitmap from drawable
-                    android.graphics.drawable.Drawable drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_map_pin_yellow);
-                    Bitmap markerBitmap;
-
-                    if (drawable != null) {
-                        // Use normal size for yellow marker
-                        int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 24;
-                        int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 24;
-                        markerBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                        Canvas canvas = new Canvas(markerBitmap);
-                        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                        drawable.draw(canvas);
-
-                        // Create label style with yellow marker
-                        LabelStyle labelStyle = LabelStyle.from(markerBitmap)
-                            .setAnchorPoint(0.5f, 1.0f)  // Anchor at bottom center for pin
-                            .setZoomLevel(0);  // Visible at all zoom levels
-
-                        LabelStyles styles = kakaoMap.getLabelManager()
-                            .addLabelStyles(LabelStyles.from(labelStyle));
-
-                        LabelOptions options = LabelOptions.from(
-                            "search_result",
-                            targetLocation
-                        ).setStyles(styles)
-                         .setRank(200);  // Very high rank to appear on top of all other markers
-
-                        // Add the yellow marker and store reference
-                        searchResultLabel = labelLayer.addLabel(options);
-
-                        if (searchResultLabel != null) {
-                            searchResultLabel.show();
-                            Log.d(TAG, "Yellow search result marker added at: " + latitude + ", " + longitude);
-                        }
-                    }
-                }
-            }
-
             if (getContext() != null) {
                 Toast.makeText(getContext(), "위치로 이동 됨: " + title, Toast.LENGTH_SHORT).show();
             }
 
-            Log.d(TAG, "Successfully navigated to location with yellow marker");
+            Log.d(TAG, "Successfully navigated to location");
         } catch (Exception e) {
             Log.e(TAG, "Failed to navigate to location", e);
             if (getContext() != null) {
@@ -1698,25 +1601,8 @@ public class MapFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-
-        // Save current camera position if map is initialized
-        if (kakaoMap != null) {
-            try {
-                LatLng cameraTarget = kakaoMap.getCameraPosition().getPosition();
-                int zoomLevel = kakaoMap.getCameraPosition().getZoomLevel();
-
-                if (cameraTarget != null) {
-                    outState.putDouble(KEY_CAMERA_LAT, cameraTarget.getLatitude());
-                    outState.putDouble(KEY_CAMERA_LNG, cameraTarget.getLongitude());
-                    outState.putInt(KEY_CAMERA_ZOOM, zoomLevel);
-                    Log.d(TAG, "Saved camera position: " + cameraTarget.getLatitude() +
-                            ", " + cameraTarget.getLongitude() +
-                            " zoom: " + zoomLevel);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error saving camera position", e);
-            }
-        }
+        // Do not save camera position - always start at current location
+        Log.d(TAG, "Map state saved (camera position not saved - will reset to current location)");
     }
 
     @Override
@@ -1768,7 +1654,6 @@ public class MapFragment extends Fragment {
             activityGroups.clear();
         }
         currentLocationLabel = null;
-        searchResultLabel = null; // Clear search result marker reference
 
         Log.d(TAG, "MapFragment view destroyed");
     }

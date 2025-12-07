@@ -179,7 +179,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="96dp"
             android:maxHeight="250dp"
-            app:cardBackgroundColor="@color/fab_background"
+            app:cardBackgroundColor="@color/search_result_background"
             app:cardCornerRadius="12dp"
             app:cardElevation="16dp"
             android:visibility="gone">

@@ -158,7 +158,7 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.Activi
                         int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
                         chip.setTextColor(textColor);
                         chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(textColor));
-                        chip.setChipStrokeWidth(2 * context.getResources().getDisplayMetrics().density);
+                        chip.setChipStrokeWidth(1 * context.getResources().getDisplayMetrics().density);
 
                         categoryChipGroup.addView(chip);
                     }

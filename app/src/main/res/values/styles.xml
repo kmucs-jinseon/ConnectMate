@@ -114,29 +114,57 @@
     <!--    Date & Time Picker Styles    -->
     <!-- =============================== -->
     <style name="DatePickerTheme" parent="Theme.MaterialComponents.DayNight.Dialog">
-        <item name="colorPrimary">@color/primary_blue</item>
-        <item name="colorAccent">@color/primary_blue</item>
-        <item name="colorControlActivated">@color/primary_blue</item>
-        <item name="android:colorControlActivated">@color/primary_blue</item>
+        <!-- Primary accent color for selected date and header -->
+        <item name="colorPrimary">@color/picker_primary</item>
+        <item name="colorPrimaryDark">@color/picker_primary_dark</item>
+        <item name="colorAccent">@color/picker_accent</item>
+
+        <!-- Selected/Active state colors -->
+        <item name="colorControlActivated">@color/picker_primary</item>
+        <item name="android:colorControlActivated">@color/picker_primary</item>
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/picker_text_primary</item>
+        <item name="android:textColorSecondary">@color/picker_text_secondary</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/picker_background</item>
+
+        <!-- Button styles -->
         <item name="android:buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
         <item name="android:buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
     </style>
 
     <style name="TimePickerTheme" parent="Theme.MaterialComponents.DayNight.Dialog">
-        <item name="colorPrimary">@color/primary_blue</item>
-        <item name="colorAccent">@color/primary_blue</item>
-        <item name="colorControlActivated">@color/primary_blue</item>
-        <item name="android:colorControlActivated">@color/primary_blue</item>
+        <!-- Primary accent color for selected time and clock hands -->
+        <item name="colorPrimary">@color/picker_primary</item>
+        <item name="colorPrimaryDark">@color/picker_primary_dark</item>
+        <item name="colorAccent">@color/picker_accent</item>
+
+        <!-- Selected/Active state colors -->
+        <item name="colorControlActivated">@color/picker_primary</item>
+        <item name="android:colorControlActivated">@color/picker_primary</item>
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/picker_text_primary</item>
+        <item name="android:textColorSecondary">@color/picker_text_secondary</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/picker_background</item>
+
+        <!-- Button styles -->
         <item name="android:buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
         <item name="android:buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
     </style>
 
     <style name="PositiveButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/primary_blue</item>
+        <item name="android:textColor">@color/picker_button_positive</item>
+        <item name="android:fontFamily">@font/pretendard_bold</item>
     </style>
 
     <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/gray_600</item>
+        <item name="android:textColor">@color/picker_button_negative</item>
+        <item name="android:fontFamily">@font/pretendard_medium</item>
     </style>
 
     <!-- =============================== -->
@@ -167,7 +195,7 @@
         <item name="chipBackgroundColor">@color/category_chip_background</item>
 
         <!-- Border: lighter when unchecked, darker when checked -->
-        <item name="chipStrokeWidth">2dp</item>
+        <item name="chipStrokeWidth">1dp</item>
         <item name="chipStrokeColor">@color/category_chip_stroke_color</item>
 
         <!-- Chip Shape -->
@@ -212,6 +240,28 @@
         <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">@font/pretendard_bold</item>
         <item name="textAllCaps">false</item>
+    </style>
+
+    <!-- =============================== -->
+    <!--      Popup Menu Style           -->
+    <!-- =============================== -->
+    <style name="ParticipantPopupMenu" parent="Widget.MaterialComponents.PopupMenu">
+        <item name="android:popupBackground">@drawable/popup_menu_background</item>
+        <item name="android:textColor">@color/popup_menu_text_color</item>
+        <item name="android:textColorPrimary">@color/popup_menu_text_color</item>
+        <item name="android:textColorSecondary">@color/popup_menu_text_color</item>
+    </style>
+
+    <style name="PopupMenuTextAppearance" parent="TextAppearance.AppCompat.Widget.PopupMenu.Large">
+        <item name="android:textColor">@color/popup_menu_text_color</item>
+    </style>
+
+    <!-- Theme for Toolbar popup menu (overflow menu) -->
+    <style name="ToolbarPopupTheme" parent="ThemeOverlay.MaterialComponents.Light">
+        <item name="popupMenuStyle">@style/ParticipantPopupMenu</item>
+        <item name="android:popupMenuStyle">@style/ParticipantPopupMenu</item>
+        <item name="android:textColorPrimary">@color/popup_menu_text_color</item>
+        <item name="android:textColorSecondary">@color/popup_menu_text_color</item>
     </style>
 
 </resources>

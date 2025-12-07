@@ -423,7 +423,7 @@ public class CreateActivityActivity extends AppCompatActivity {
             // Stroke: dark gray outline for both states (hardcoded to ensure it's dark in both themes)
             int strokeColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
             chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(strokeColor));
-            chip.setChipStrokeWidth(2 * getResources().getDisplayMetrics().density);
+            chip.setChipStrokeWidth(1 * getResources().getDisplayMetrics().density);
 
             Log.d(TAG, "Created chip: " + category);
 

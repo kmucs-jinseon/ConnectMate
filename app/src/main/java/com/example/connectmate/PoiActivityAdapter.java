@@ -67,7 +67,7 @@ public class PoiActivityAdapter extends RecyclerView.Adapter<PoiActivityAdapter.
                     int textColor = android.graphics.Color.parseColor("#4B5563");  // Dark gray
                     chip.setTextColor(textColor);
                     chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(textColor));
-                    chip.setChipStrokeWidth(2 * context.getResources().getDisplayMetrics().density);
+                    chip.setChipStrokeWidth(1 * context.getResources().getDisplayMetrics().density);
 
                     holder.categoryGroup.addView(chip);
                 }

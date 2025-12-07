@@ -194,4 +194,26 @@
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <!-- =============================== -->
+    <!--      Popup Menu Style           -->
+    <!-- =============================== -->
+    <style name="ParticipantPopupMenu" parent="Widget.MaterialComponents.PopupMenu">
+        <item name="android:popupBackground">@drawable/popup_menu_background</item>
+        <item name="android:textColor">@color/popup_menu_text_color</item>
+        <item name="android:textColorPrimary">@color/popup_menu_text_color</item>
+        <item name="android:textColorSecondary">@color/popup_menu_text_color</item>
+    </style>
+
+    <style name="PopupMenuTextAppearance" parent="TextAppearance.AppCompat.Widget.PopupMenu.Large">
+        <item name="android:textColor">@color/popup_menu_text_color</item>
+    </style>
+
+    <!-- Theme for Toolbar popup menu (overflow menu) - Dark Mode -->
+    <style name="ToolbarPopupTheme" parent="ThemeOverlay.MaterialComponents.Dark">
+        <item name="popupMenuStyle">@style/ParticipantPopupMenu</item>
+        <item name="android:popupMenuStyle">@style/ParticipantPopupMenu</item>
+        <item name="android:textColorPrimary">@color/popup_menu_text_color</item>
+        <item name="android:textColorSecondary">@color/popup_menu_text_color</item>
+    </style>
+
 </resources>

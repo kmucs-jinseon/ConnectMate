@@ -91,9 +91,22 @@ public class FriendRequestAdapter extends RecyclerView.Adapter<FriendRequestAdap
     }
 
     private void showPopupMenu(View view, User user) {
-        PopupMenu popup = new PopupMenu(context, view);
+        android.view.ContextThemeWrapper wrapper = new android.view.ContextThemeWrapper(context, R.style.ParticipantPopupMenu);
+        PopupMenu popup = new PopupMenu(wrapper, view);
         MenuInflater inflater = popup.getMenuInflater();
         inflater.inflate(R.menu.friend_request_options_menu, popup.getMenu());
+
+        // Use popup menu text color which adapts to theme automatically
+        int textColor = context.getResources().getColor(R.color.popup_menu_text_color);
+
+        // Apply text color to each menu item
+        android.view.Menu menu = popup.getMenu();
+        for (int i = 0; i < menu.size(); i++) {
+            android.view.MenuItem item = menu.getItem(i);
+            android.text.SpannableString spannableString = new android.text.SpannableString(item.getTitle());
+            spannableString.setSpan(new android.text.style.ForegroundColorSpan(textColor), 0, spannableString.length(), 0);
+            item.setTitle(spannableString);
+        }
 
         popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();

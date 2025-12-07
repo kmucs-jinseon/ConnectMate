@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="10dp"
-    android:background="?attr/colorSurface">
+    android:padding="0dp"
+    android:background="@android:color/transparent">
 
     <ListView
         android:id="@+id/participants_list_view"
@@ -16,7 +16,7 @@
         android:scrollbars="vertical"
         android:fadeScrollbars="false"
         android:divider="@android:color/transparent"
-        android:dividerHeight="4dp"
-        android:background="?attr/colorSurface" />
+        android:dividerHeight="0dp"
+        android:background="@android:color/transparent" />
 
 </LinearLayout>

@@ -189,47 +189,32 @@ public class FriendsActivity extends AppCompatActivity implements UserAdapter.On
 
     @Override
     public void onChatClick(User user) {
+        if (user == null || user.getUserId() == null || user.getUserId().isEmpty()) {
+            Toast.makeText(this, "사용자 정보를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "onChatClick: user or userId is null");
+            return;
+        }
+
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Toast.makeText(this, "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "onChatClick: currentUserId is null");
+            return;
+        }
+
+        Log.d(TAG, "Opening chat with user: " + user.getDisplayName() + " (ID: " + user.getUserId() + ")");
+
         String chatRoomId = getChatRoomId(currentUserId, user.getUserId());
-        FirebaseChatManager.getInstance().getChatRoomById(chatRoomId, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
-            @Override
-            public void onSuccess(ChatRoom chatRoom) {
-                if (chatRoom == null) {
-                    // Create new chat room
-                    String chatRoomName = user.getDisplayName();
-                    ChatRoom newChatRoom = new ChatRoom(chatRoomName, null);
-                    newChatRoom.setId(chatRoomId);
-                    newChatRoom.setCategory("private");
+        String chatRoomName = user.getDisplayName();
 
-                    Map<String, ChatRoom.Member> members = new HashMap<>();
-                    String currentUserName = getSharedPreferences("ConnectMate", Context.MODE_PRIVATE).getString("user_name", "Unknown User");
-                    
-                    members.put(currentUserId, new ChatRoom.Member(currentUserName, 0));
-                    members.put(user.getUserId(), new ChatRoom.Member(user.getDisplayName(), 0));
-                    newChatRoom.setMembers(members);
-
-                    FirebaseChatManager.getInstance().saveChatRoom(newChatRoom, new FirebaseChatManager.OnCompleteListener<ChatRoom>() {
-                        @Override
-                        public void onSuccess(ChatRoom result) {
-                            openChatRoom(result, chatRoomName);
-                        }
-
-                        @Override
-                        public void onError(Exception e) {
-                            Log.e(TAG, "Error creating chat room", e);
-                            Toast.makeText(FriendsActivity.this, "채팅방 생성에 실패했습니다.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } else {
-                    openChatRoom(chatRoom, user.getDisplayName());
-                }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                 Log.e(TAG, "Error getting chat room", e);
-                 Toast.makeText(FriendsActivity.this, "채팅방 정보를 불러오는데 실패했습니다.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Simply pass the chat room ID to ChatRoomActivity
+        // It will handle loading/creating the room
+        Intent intent = new Intent(this, ChatRoomActivity.class);
+        intent.putExtra("chat_room_id", chatRoomId);
+        intent.putExtra("chat_room_name", chatRoomName);
+        intent.putExtra("is_private_chat", true);
+        intent.putExtra("other_user_id", user.getUserId());
+        intent.putExtra("other_user_name", user.getDisplayName());
+        startActivity(intent);
     }
 
     private void openChatRoom(ChatRoom chatRoom, String chatRoomName) {

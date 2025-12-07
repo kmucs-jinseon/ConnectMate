@@ -122,35 +122,57 @@ public class ActivityManager {
     /**
      * Delete an activity and its associated chat room.
      */
-    public boolean deleteActivity(String activityId) {
+    public void deleteActivity(String activityId) {
         try {
-            ChatManager chatManager = ChatManager.getInstance(context);
-            ChatRoom chatRoom = chatManager.getChatRoomByActivityId(activityId);
-
-            if (chatRoom != null) {
-                // Send a final message to the chat room
-                String farewellMessage = "채팅방이 삭제되었습니다";
-                ChatMessage systemMessage = ChatMessage.createSystemMessage(chatRoom.getId(), farewellMessage);
-                chatManager.sendMessage(systemMessage);
-
-                // Delete the chat room itself
-                chatManager.deleteChatRoom(chatRoom.getId());
+            Activity activity = getActivityById(activityId);
+            if (activity == null) {
+                Log.e(TAG, "Activity is null, cannot delete.");
+                return;
             }
 
+            // Find and delete the associated chat room using activityId
+            // The chat room stores the activityId, not the other way around
+            FirebaseChatManager.getInstance().getChatRoomByActivityId(activityId, new FirebaseChatManager.OnCompleteListener<com.example.connectmate.models.ChatRoom>() {
+                @Override
+                public void onSuccess(com.example.connectmate.models.ChatRoom chatRoom) {
+                    if (chatRoom != null) {
+                        // Delete the chat room
+                        FirebaseChatManager.getInstance().deleteChatRoom(chatRoom.getId(), new FirebaseChatManager.OnCompleteListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                Log.d(TAG, "Chat room deleted from Firebase: " + chatRoom.getId());
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "Error deleting chat room from Firebase", e);
+                            }
+                        });
+                    } else {
+                        Log.d(TAG, "No chat room found for activity: " + activityId);
+                    }
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Error finding chat room for activity", e);
+                }
+            });
+
+            // Delete activity from SharedPreferences
             List<Activity> activities = getAllActivities();
             for (int i = 0; i < activities.size(); i++) {
                 if (activities.get(i).getId().equals(activityId)) {
                     activities.remove(i);
                     String json = gson.toJson(activities);
                     prefs.edit().putString(KEY_ACTIVITIES, json).commit(); // Use commit for consistency
-                    Log.d(TAG, "Activity deleted: " + activityId);
-                    return true;
+                    Log.d(TAG, "Activity deleted from SharedPreferences: " + activityId);
+                    return;
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error deleting activity", e);
         }
-        return false;
     }
 
 

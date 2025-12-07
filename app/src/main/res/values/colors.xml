@@ -100,4 +100,14 @@
     <!-- Message Input Bar Colors -->
     <color name="message_input_bar_background">@color/blue_100</color>
     <color name="message_input_icon_tint">@color/primary_blue</color>
+
+    <!-- Date & Time Picker Colors (Light Mode) -->
+    <color name="picker_primary">#14B8A6</color>              <!-- Vibrant Teal for selected items -->
+    <color name="picker_primary_dark">#0D9488</color>         <!-- Darker Teal -->
+    <color name="picker_accent">#06B6D4</color>               <!-- Cyan accent -->
+    <color name="picker_background">#FFFFFF</color>           <!-- White background -->
+    <color name="picker_text_primary">#111827</color>         <!-- Dark text -->
+    <color name="picker_text_secondary">#6B7280</color>       <!-- Gray secondary text -->
+    <color name="picker_button_positive">#14B8A6</color>      <!-- Teal for confirm button -->
+    <color name="picker_button_negative">#9CA3AF</color>      <!-- Gray for cancel button -->
 </resources>

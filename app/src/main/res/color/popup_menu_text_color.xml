@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dark mode: Darker gray for map UI (search bar, FABs) -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="#424242" />
+    <item android:color="#111827" />
 </selector>
