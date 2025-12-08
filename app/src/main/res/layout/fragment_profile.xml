@@ -399,19 +399,21 @@
                     android:textColor="@color/primary_blue"
                     app:strokeColor="@color/primary_blue"
                     app:strokeWidth="1dp"
-                    android:backgroundTint="?attr/colorSurface" />
+                    android.backgroundTint="?attr/colorSurface" />
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Theme Selection Card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/theme_selection_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardElevation="2dp"
             app:cardCornerRadius="12dp"
-            app:cardBackgroundColor="?attr/colorSurface">
+            app:cardBackgroundColor="?attr/colorSurface"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"

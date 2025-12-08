@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import com.example.connectmate.models.UserReview;
 import com.example.connectmate.utils.ThemeManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
@@ -83,6 +84,7 @@ public class ProfileFragment extends Fragment {
     private LinearLayout appInfo;
 
     // UI elements - Theme
+    private MaterialCardView themeSelectionCard;
     private MaterialButton themeButton;
 
     // UI elements - Logout
@@ -130,10 +132,12 @@ public class ProfileFragment extends Fragment {
             editProfileButton.setVisibility(View.VISIBLE);
             logoutButton.setVisibility(View.VISIBLE);
             deleteAccountButton.setVisibility(View.VISIBLE);
+            themeSelectionCard.setVisibility(View.VISIBLE);
         } else {
             editProfileButton.setVisibility(View.GONE);
             logoutButton.setVisibility(View.GONE);
             deleteAccountButton.setVisibility(View.GONE);
+            themeSelectionCard.setVisibility(View.GONE);
         }
 
         // Load user data
@@ -163,6 +167,7 @@ public class ProfileFragment extends Fragment {
         seeAllReviewsButton = view.findViewById(R.id.btn_see_all_reviews);
 
         // Theme button
+        themeSelectionCard = view.findViewById(R.id.theme_selection_card);
         themeButton = view.findViewById(R.id.theme_button);
 
         // Logout button
