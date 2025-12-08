@@ -312,23 +312,41 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "MainActivity onCreate started");
 
-        // Initialize UI components
+        // STEP 1: Initialize UI components FIRST (search bar, FABs, etc.)
         initializeViews();
 
-        // Initialize all fragments
-        initializeFragments(savedInstanceState);
-
-        // Set up map controls
+        // STEP 2: Set up map controls and FAB BEFORE fragments (ensure UI is ready)
         setupMapControls();
-
-        // Set up activity controls
+        setupFloatingActionButton();
         setupActivityControls();
 
-        // Set up bottom navigation
-        setupBottomNavigation();
+        // STEP 3: Make map UI overlay visible immediately for initial map tab
+        if (mapUiOverlay != null) {
+            mapUiOverlay.setVisibility(View.VISIBLE);
+            Log.d(TAG, "Map UI overlay set to VISIBLE on initialization");
+        }
+        if (mapControls != null) {
+            mapControls.setVisibility(View.VISIBLE);
+            Log.d(TAG, "Map controls set to VISIBLE on initialization");
+        }
+        if (fabCreateActivity != null) {
+            fabCreateActivity.setVisibility(View.VISIBLE);
+            Log.d(TAG, "FAB set to VISIBLE on initialization");
+        }
 
-        // Set up floating action button
-        setupFloatingActionButton();
+        // Check if coming from logout - if so, ignore saved instance state
+        boolean fromLogout = getIntent().getBooleanExtra("from_logout", false);
+        boolean justLoggedIn = getIntent().getBooleanExtra("just_logged_in", false);
+
+        // If coming from logout or fresh login, treat as fresh start
+        Bundle stateToUse = (fromLogout || justLoggedIn) ? null : savedInstanceState;
+        Log.d(TAG, "fromLogout: " + fromLogout + ", justLoggedIn: " + justLoggedIn + ", using fresh state: " + (stateToUse == null));
+
+        // STEP 4: Initialize fragments AFTER UI is ready
+        initializeFragments(stateToUse);
+
+        // STEP 5: Set up bottom navigation
+        setupBottomNavigation();
 
         // Handle map navigation intent
         handleNavigationIntent(getIntent());
