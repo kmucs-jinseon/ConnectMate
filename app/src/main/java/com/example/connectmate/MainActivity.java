@@ -1081,9 +1081,19 @@ public class MainActivity extends AppCompatActivity {
         mainSearchResults.addAll(results);
         if (mainSearchAdapter != null) {
             mainSearchAdapter.updateResults(mainSearchResults);
+            Log.d(TAG, "Adapter updated with " + results.size() + " results");
+        } else {
+            Log.e(TAG, "mainSearchAdapter is null!");
         }
         if (mainSearchResultsCard != null) {
             mainSearchResultsCard.setVisibility(View.VISIBLE);
+            Log.d(TAG, "Search results card visibility set to VISIBLE");
+            Log.d(TAG, "Card height: " + mainSearchResultsCard.getHeight() + ", width: " + mainSearchResultsCard.getWidth());
+            if (mainSearchResultsRecycler != null) {
+                Log.d(TAG, "RecyclerView height: " + mainSearchResultsRecycler.getHeight() + ", item count: " + mainSearchResultsRecycler.getAdapter().getItemCount());
+            }
+        } else {
+            Log.e(TAG, "mainSearchResultsCard is null!");
         }
         Log.d(TAG, "Displaying " + results.size() + " main search results");
     }

@@ -178,17 +178,23 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="96dp"
+            android:minHeight="80dp"
             android:maxHeight="250dp"
             app:cardBackgroundColor="@color/search_result_background"
             app:cardCornerRadius="12dp"
-            app:cardElevation="16dp"
+            app:cardElevation="8dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/gray_300"
             android:visibility="gone">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/main_search_results_recycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:scrollbars="vertical" />
+                android:minHeight="80dp"
+                android:scrollbars="vertical"
+                android:nestedScrollingEnabled="true"
+                android:overScrollMode="always" />
 
         </androidx.cardview.widget.CardView>
 

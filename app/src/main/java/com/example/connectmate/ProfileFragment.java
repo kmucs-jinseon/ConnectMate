@@ -1,5 +1,6 @@
 package com.example.connectmate;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -24,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import com.example.connectmate.models.UserReview;
 import com.example.connectmate.utils.ThemeManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException;
@@ -83,6 +85,7 @@ public class ProfileFragment extends Fragment {
     private LinearLayout appInfo;
 
     // UI elements - Theme
+    private MaterialCardView themeCard;
     private MaterialButton themeButton;
 
     // UI elements - Logout
@@ -130,10 +133,16 @@ public class ProfileFragment extends Fragment {
             editProfileButton.setVisibility(View.VISIBLE);
             logoutButton.setVisibility(View.VISIBLE);
             deleteAccountButton.setVisibility(View.VISIBLE);
+            if (themeCard != null) {
+                themeCard.setVisibility(View.VISIBLE);
+            }
         } else {
             editProfileButton.setVisibility(View.GONE);
             logoutButton.setVisibility(View.GONE);
             deleteAccountButton.setVisibility(View.GONE);
+            if (themeCard != null) {
+                themeCard.setVisibility(View.GONE);
+            }
         }
 
         // Load user data
@@ -162,7 +171,8 @@ public class ProfileFragment extends Fragment {
         reviewsEmptyText = view.findViewById(R.id.reviews_empty_text);
         seeAllReviewsButton = view.findViewById(R.id.btn_see_all_reviews);
 
-        // Theme button
+        // Theme card and button
+        themeCard = view.findViewById(R.id.theme_card);
         themeButton = view.findViewById(R.id.theme_button);
 
         // Logout button
@@ -889,45 +899,68 @@ public class ProfileFragment extends Fragment {
     private void finalizeSessionTermination(SharedPreferences prefs, String toastMessage) {
         android.util.Log.d("ProfileFragment", "=== Finalizing session termination ===");
 
-        // Sign out from Firebase Auth
-        if (mAuth != null && mAuth.getCurrentUser() != null) {
-            android.util.Log.d("ProfileFragment", "Signing out Firebase user: " + mAuth.getCurrentUser().getEmail());
-            mAuth.signOut();
+        // Get references early before any cleanup that might invalidate context
+        Context context = getContext();
+        Activity activity = getActivity();
+
+        if (context == null || activity == null) {
+            android.util.Log.e("ProfileFragment", "Context or Activity is null during logout");
+            return;
         }
 
-        // Clear ALL SharedPreferences data
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.clear();
-        editor.apply();
-        android.util.Log.d("ProfileFragment", "Cleared all SharedPreferences data");
-
-        // Clean up Firebase listeners
-        clearUserListener();
-
-        // Clean up chat listeners
         try {
-            com.example.connectmate.utils.FirebaseChatManager.getInstance().removeAllListeners();
-            android.util.Log.d("ProfileFragment", "Removed Firebase chat listeners");
+            // Show toast early before any cleanup
+            Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show();
+
+            // Sign out from Firebase Auth
+            if (mAuth != null && mAuth.getCurrentUser() != null) {
+                android.util.Log.d("ProfileFragment", "Signing out Firebase user: " + mAuth.getCurrentUser().getEmail());
+                mAuth.signOut();
+            }
+
+            // Clear ALL SharedPreferences data
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
+            android.util.Log.d("ProfileFragment", "Cleared all SharedPreferences data");
+
+            // Clean up Firebase listeners
+            clearUserListener();
+
+            // Clean up chat listeners
+            try {
+                com.example.connectmate.utils.FirebaseChatManager.getInstance().removeAllListeners();
+                android.util.Log.d("ProfileFragment", "Removed Firebase chat listeners");
+            } catch (Exception e) {
+                android.util.Log.e("ProfileFragment", "Error removing chat listeners", e);
+            }
+
+            android.util.Log.d("ProfileFragment", "Session terminated - " + toastMessage);
+
+            // Redirect to LoginActivity with flags to clear activity stack
+            Intent intent = new Intent(activity, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.putExtra("from_logout", true); // Flag to indicate this is from logout
+            startActivity(intent);
+
+            // Explicitly finish the current activity to prevent any further operations
+            activity.finish();
+
+            android.util.Log.d("ProfileFragment", "=== Logout complete - redirected to LoginActivity ===");
         } catch (Exception e) {
-            android.util.Log.e("ProfileFragment", "Error removing chat listeners", e);
+            android.util.Log.e("ProfileFragment", "Error during logout process", e);
+            // Even if there's an error, try to navigate to login
+            try {
+                Intent intent = new Intent(context, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                if (activity != null) {
+                    activity.finish();
+                }
+            } catch (Exception e2) {
+                android.util.Log.e("ProfileFragment", "Failed to navigate to login after error", e2);
+            }
         }
-
-        android.util.Log.d("ProfileFragment", "Session terminated - " + toastMessage);
-
-        Toast.makeText(requireContext(), toastMessage, Toast.LENGTH_SHORT).show();
-
-        // Redirect to LoginActivity with flags to clear activity stack
-        Intent intent = new Intent(requireActivity(), LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        intent.putExtra("from_logout", true); // Flag to indicate this is from logout
-        startActivity(intent);
-
-        // Explicitly finish the current activity to prevent any further operations
-        if (getActivity() != null) {
-            getActivity().finish();
-        }
-
-        android.util.Log.d("ProfileFragment", "=== Logout complete - redirected to LoginActivity ===");
     }
 
     /**

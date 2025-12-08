@@ -95,12 +95,12 @@ public class ProfileSetupActivity extends AppCompatActivity implements ProfileSe
 
         boolean isDarkMode = ThemeManager.isDarkModeActive(this);
 
-        // Show light mode icon when in dark mode (to indicate switching to light)
-        // Show dark mode icon when in light mode (to indicate switching to dark)
+        // Show dark mode icon (moon) when in dark mode
+        // Show light mode icon (sun) when in light mode
         if (isDarkMode) {
-            themeToggleButton.setImageResource(R.drawable.ic_light_mode);
-        } else {
             themeToggleButton.setImageResource(R.drawable.ic_dark_mode);
+        } else {
+            themeToggleButton.setImageResource(R.drawable.ic_light_mode);
         }
     }
 

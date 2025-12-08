@@ -406,6 +406,7 @@
 
         <!-- Theme Selection Card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/theme_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
