@@ -48,6 +48,7 @@ public class FirebaseActivityManager {
     private final DatabaseReference userNotificationsRef;
     private final DatabaseReference pendingReviewsRef;
     private final FirebaseAuth auth;
+    private Context context;
 
     private static FirebaseActivityManager instance;
 
@@ -86,6 +87,19 @@ public class FirebaseActivityManager {
     public static synchronized FirebaseActivityManager getInstance() {
         if (instance == null) {
             instance = new FirebaseActivityManager();
+        }
+        return instance;
+    }
+
+    /**
+     * Get singleton instance with context for notification support
+     */
+    public static synchronized FirebaseActivityManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new FirebaseActivityManager();
+        }
+        if (context != null) {
+            instance.context = context.getApplicationContext();
         }
         return instance;
     }
@@ -541,7 +555,22 @@ public class FirebaseActivityManager {
                 endNotif.put("activityId", activityId);
                 endNotif.put("isRead", false);
                 userRef.child(endId).setValue(endNotif)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ Activity end notification created for user: " + userId))
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "✅ Activity end notification created for user: " + userId);
+                        // Show OS-level notification
+                        if (context != null) {
+                            NotificationHelper notificationHelper = new NotificationHelper(context);
+                            notificationHelper.showNotification(
+                                "ACTIVITY",
+                                "활동 종료",
+                                endMessage,
+                                activityId,
+                                null,
+                                null,
+                                null
+                            );
+                        }
+                    })
                     .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to create activity end notification", e));
             }
 
@@ -558,7 +587,22 @@ public class FirebaseActivityManager {
                     reviewNotif.put("activityId", activityId);
                     reviewNotif.put("isRead", false);
                     userRef.child(reviewId).setValue(reviewNotif)
-                        .addOnSuccessListener(aVoid -> Log.d(TAG, "✅ Review request notification created for user: " + userId))
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "✅ Review request notification created for user: " + userId);
+                            // Show OS-level notification
+                            if (context != null) {
+                                NotificationHelper notificationHelper = new NotificationHelper(context);
+                                notificationHelper.showNotification(
+                                    "ACTIVITY",
+                                    "참여자 평가 요청",
+                                    reviewMessage,
+                                    activityId,
+                                    null,
+                                    null,
+                                    null
+                                );
+                            }
+                        })
                         .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to create review request notification", e));
                 }
             } else {
@@ -880,7 +924,8 @@ public class FirebaseActivityManager {
                                         notificationData.put("id", notificationId);
                                         notificationData.put("type", "CHAT_JOIN");
                                         notificationData.put("title", "새로운 참가자");
-                                        notificationData.put("message", newUserName + "님이 " + activityTitle + " 채팅방에 참가했습니다.");
+                                        String message = newUserName + "님이 " + activityTitle + " 채팅방에 참가했습니다.";
+                                        notificationData.put("message", message);
                                         notificationData.put("activityId", activityId);
                                         notificationData.put("senderId", newUserId);
                                         notificationData.put("senderName", newUserName);
@@ -889,7 +934,22 @@ public class FirebaseActivityManager {
                                         notificationData.put("isRead", false);
 
                                         userNotificationsRef.child(participantId).child(notificationId).setValue(notificationData)
-                                            .addOnSuccessListener(aVoid -> Log.d(TAG, "Chat join notification sent to: " + participantId))
+                                            .addOnSuccessListener(aVoid -> {
+                                                Log.d(TAG, "Chat join notification sent to: " + participantId);
+                                                // Show OS-level notification
+                                                if (context != null) {
+                                                    NotificationHelper notificationHelper = new NotificationHelper(context);
+                                                    notificationHelper.showNotification(
+                                                        "CHAT_JOIN",
+                                                        "새로운 참가자",
+                                                        message,
+                                                        activityId,
+                                                        newUserId,
+                                                        newUserName,
+                                                        profileImageUrl
+                                                    );
+                                                }
+                                            })
                                             .addOnFailureListener(e -> Log.e(TAG, "Failed to send chat join notification", e));
                                     }
                                 }

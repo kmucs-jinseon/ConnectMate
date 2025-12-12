@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.example.connectmate.models.NotificationItem;
+import com.example.connectmate.utils.NotificationHelper;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -202,8 +203,10 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
                         Map<String, Object> notificationData = new HashMap<>();
                         notificationData.put("id", notificationId);
                         notificationData.put("type", "FRIEND_REQUEST");
-                        notificationData.put("title", "친구 요청");
-                        notificationData.put("message", senderName + "님이 친구 요청을 보냈습니다");
+                        String title = "친구 요청";
+                        String message = senderName + "님이 친구 요청을 보냈습니다";
+                        notificationData.put("title", title);
+                        notificationData.put("message", message);
                         notificationData.put("senderId", currentUserId);
                         notificationData.put("senderName", senderName);
                         notificationData.put("senderProfileUrl", senderProfileUrl != null ? senderProfileUrl : "");
@@ -213,6 +216,17 @@ public class ParticipantAdapter extends ArrayAdapter<Participant> {
                         notificationsRef.child(notificationId).setValue(notificationData)
                                 .addOnSuccessListener(aVoid -> {
                                     android.util.Log.d("ParticipantAdapter", "Friend request notification created successfully at: userNotifications/" + friendId + "/" + notificationId);
+                                    // Show OS-level notification
+                                    NotificationHelper notificationHelper = new NotificationHelper(context);
+                                    notificationHelper.showNotification(
+                                        "FRIEND_REQUEST",
+                                        title,
+                                        message,
+                                        null,
+                                        currentUserId,
+                                        senderName,
+                                        senderProfileUrl
+                                    );
                                 })
                                 .addOnFailureListener(e -> {
                                     android.util.Log.e("ParticipantAdapter", "Failed to create friend request notification", e);

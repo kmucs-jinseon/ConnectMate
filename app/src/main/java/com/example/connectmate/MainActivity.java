@@ -70,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_SETTING = "TAG_SETTING";
     private static final String TAG_PROFILE = "TAG_PROFILE";
 
+    // Permission request codes
+    private static final int REQUEST_CODE_POST_NOTIFICATIONS = 1001;
+
 
     // Fragment instances
     private Fragment mapFragment;
@@ -355,6 +358,10 @@ public class MainActivity extends AppCompatActivity {
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
             updateCurrentLocationDisplay();
         }, 1500); // Delay to allow MapFragment to get location
+
+        // Request notification permission for Android 13+ and get FCM token
+        requestNotificationPermission();
+        getFCMToken();
 
         Log.d(TAG, "MainActivity initialized with background map");
     }
@@ -1311,5 +1318,79 @@ public class MainActivity extends AppCompatActivity {
             return parts[0] + " " + parts[1];
         }
         return fullAddress;
+    }
+
+    /**
+     * Requests notification permission for Android 13+ (API 33+).
+     * For Android 12 and below, notifications are allowed by default.
+     */
+    private void requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ requires runtime permission for notifications
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission");
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        REQUEST_CODE_POST_NOTIFICATIONS
+                );
+            } else {
+                Log.d(TAG, "POST_NOTIFICATIONS permission already granted");
+            }
+        } else {
+            Log.d(TAG, "Android version < 13, no notification permission required");
+        }
+    }
+
+    /**
+     * Gets the FCM token and saves it to Firebase for push notifications.
+     */
+    private void getFCMToken() {
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w(TAG, "Failed to get FCM token", task.getException());
+                        return;
+                    }
+
+                    // Get FCM registration token
+                    String token = task.getResult();
+                    Log.d(TAG, "FCM Token: " + token);
+
+                    // Save token to Firebase for this user
+                    FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                    if (currentUser != null) {
+                        String userId = currentUser.getUid();
+                        DatabaseReference tokenRef = FirebaseDatabase.getInstance()
+                                .getReference("userTokens")
+                                .child(userId);
+
+                        tokenRef.setValue(token)
+                                .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM token saved successfully"))
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to save FCM token", e));
+                    } else {
+                        Log.w(TAG, "Cannot save FCM token: User not authenticated");
+                    }
+                });
+    }
+
+    /**
+     * Handles the result of runtime permission requests.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                          @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Notification permission granted");
+                Toast.makeText(this, "알림 권한이 허용되었습니다", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.d(TAG, "Notification permission denied");
+                Toast.makeText(this, "알림을 받으려면 설정에서 권한을 허용해주세요", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }

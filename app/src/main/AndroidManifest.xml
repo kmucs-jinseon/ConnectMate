@@ -17,6 +17,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Notification permission for Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- ============================================================ -->
     <!-- Package Visibility Queries (Android 11+) -->
     <!-- ============================================================ -->
@@ -239,22 +242,19 @@
             </intent-filter>
         </activity>
 
-        <!-- Naver Login Callback Activity -->
-        <!-- Note: screenOrientation removed to prevent crashes on Android 8.0+ -->
-        <!-- Translucent activities cannot have fixed orientation on API 26+ -->
-        <activity
-            android:name="com.navercorp.nid.oauth.NidOAuthLoginActivity"
-            android:exported="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+        <!-- Naver Login: SDK 5.x handles the OAuth activity internally -->
+        <!-- No need to declare NidOAuthLoginActivity manually -->
+
+        <!-- ============================================================ -->
+        <!-- Firebase Cloud Messaging Service -->
+        <!-- ============================================================ -->
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:host="oauth"
-                    android:scheme="naverlogin" />
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-        </activity>
+        </service>
 
     </application>
 

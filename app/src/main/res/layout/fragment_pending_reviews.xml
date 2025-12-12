@@ -52,13 +52,14 @@
             android:id="@+id/pending_reviews_empty"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:gravity="center_horizontal"
             android:paddingTop="32dp"
             android:paddingBottom="32dp"
             android:text="평가할 멤버가 없습니다."
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
-            android:visibility="gone" />
+            android:visibility="gone"
+            android:background="?attr/colorSurface"/>
 
         <ProgressBar
             android:id="@+id/pending_reviews_progress"

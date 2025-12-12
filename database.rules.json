@@ -4,10 +4,47 @@
       "$uid": {
         // Users can read any user's basic profile data (needed for friends list, activity participants, etc.)
         ".read": "auth != null",
-        // Users can only write their own data
+        // Users can only write their own basic data
         ".write": "$uid === auth.uid",
         // Validate user data structure (allow deletion when newData doesn't exist)
-        ".validate": "!newData.exists() || (newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString())"
+        ".validate": "!newData.exists() || (newData.hasChildren(['email', 'displayName']) && newData.child('email').isString() && newData.child('displayName').isString())",
+
+        // Reviews - anyone can write reviews for any user
+        "reviews": {
+          "$reviewId": {
+            ".write": "auth != null"
+          }
+        },
+
+        // Friend requests - anyone can send friend requests
+        "friendRequests": {
+          "$requesterId": {
+            ".write": "auth != null"
+          }
+        },
+
+        // Friends list - anyone can add/remove friends (for reciprocal relationships)
+        "friends": {
+          "$friendId": {
+            ".write": "auth != null"
+          }
+        },
+
+        // Rating stats - anyone can update (for transactions during reviews)
+        "ratingSum": {
+          ".write": "auth != null"
+        },
+        "reviewCount": {
+          ".write": "auth != null"
+        },
+        "rating": {
+          ".write": "auth != null"
+        },
+
+        // Participation count - anyone can update (for transactions during activities)
+        "participationCount": {
+          ".write": "auth != null"
+        }
       }
     },
 
@@ -68,6 +105,51 @@
 
         // Allow writing if: user is authenticated (for sending and deleting)
         ".write": "auth != null"
+      }
+    },
+
+    "userNotifications": {
+      "$userId": {
+        // Users can read their own notifications
+        ".read": "$userId === auth.uid",
+
+        "$notificationId": {
+          // Users can manage their own notifications (mark read/delete)
+          // Other users can write (send notifications)
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "userTokens": {
+      "$userId": {
+        // Users can read and write their own FCM token
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+
+    "pendingReviews": {
+      "$userId": {
+        // Users can read their own pending reviews
+        ".read": "$userId === auth.uid",
+
+        "$reviewId": {
+          // Users can manage their own pending reviews
+          ".write": "$userId === auth.uid"
+        }
+      }
+    },
+
+    "friendships": {
+      "$userId": {
+        // Users can read their own friendships
+        ".read": "$userId === auth.uid",
+
+        "$friendId": {
+          // Users can manage their own friendships
+          ".write": "$userId === auth.uid || $friendId === auth.uid"
+        }
       }
     }
   }
