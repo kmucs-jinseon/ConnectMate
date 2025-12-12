@@ -28,14 +28,14 @@
     <!-- Notification Settings Content -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="72dp"> <!-- 여기에 paddingBottom을 72dp로 추가했습니다. -->
+            android:paddingBottom="23dp"> <!-- 여기에 paddingBottom을 72dp로 추가했습니다. -->
 
             <!-- 채팅 알림 섹션 -->
             <TextView
