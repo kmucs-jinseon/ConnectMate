@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true"
-    android:background="?attr/colorSurface"
+    android:background="@android:color/transparent"
     android:padding="16dp">
 
     <TextView
@@ -26,6 +26,7 @@
         android:fadeScrollbars="false"
         android:scrollbarThumbVertical="@android:color/darker_gray"
         android:scrollbarSize="4dp"
-        android:overScrollMode="ifContentScrolls" />
+        android:overScrollMode="ifContentScrolls"
+        android:background="@android:color/transparent"/>
 
 </LinearLayout>

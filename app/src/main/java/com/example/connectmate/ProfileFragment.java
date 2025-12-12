@@ -935,6 +935,14 @@ public class ProfileFragment extends Fragment {
                 android.util.Log.e("ProfileFragment", "Error removing chat listeners", e);
             }
 
+            // Clean up activity listeners
+            try {
+                com.example.connectmate.utils.FirebaseActivityManager.getInstance().removeAllListeners();
+                android.util.Log.d("ProfileFragment", "Removed Firebase activity listeners");
+            } catch (Exception e) {
+                android.util.Log.e("ProfileFragment", "Error removing activity listeners", e);
+            }
+
             android.util.Log.d("ProfileFragment", "Session terminated - " + toastMessage);
 
             // Redirect to LoginActivity with flags to clear activity stack
